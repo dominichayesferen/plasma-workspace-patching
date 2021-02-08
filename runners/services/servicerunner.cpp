@@ -39,6 +39,7 @@
 #include <KSycoca>
 
 #include <KIO/ApplicationLauncherJob>
+#include <KIO/DesktopExecParser>
 
 #include "debug.h"
 
@@ -176,6 +177,7 @@ private:
         QUrl url(service->storageId());
         url.setScheme(QStringLiteral("applications"));
         match.setData(url);
+        match.setId(KIO::DesktopExecParser::executableName(service->exec()));
 
         if (!service->genericName().isEmpty() && service->genericName() != name) {
             match.setSubtext(service->genericName());

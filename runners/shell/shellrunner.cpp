@@ -63,6 +63,7 @@ void ShellRunner::match(Plasma::RunnerContext &context)
         match.setData(QVariantList({command, envs}));
         match.setRelevance(0.7);
         match.setActions(m_actionList);
+        match.setId(context.query());
         context.addMatch(match);
     }
 }
