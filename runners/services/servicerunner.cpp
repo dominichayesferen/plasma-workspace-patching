@@ -177,7 +177,13 @@ private:
         QUrl url(service->storageId());
         url.setScheme(QStringLiteral("applications"));
         match.setData(url);
-        match.setId(KIO::DesktopExecParser::executableName(service->exec()));
+        QString exec = service->exec();
+        // We have a snap, remove the ENV variable
+        if (exec.contains(QLatin1String("BAMF_DESKTOP_FILE_HINT"))) {
+            const static QRegularExpression snapCleanupRegex(QStringLiteral("env BAMF_DESKTOP_FILE_HINT=.+ "));
+            exec.remove(snapCleanupRegex);
+        }
+        match.setId(KIO::DesktopExecParser::executableName(exec));
 
         if (!service->genericName().isEmpty() && service->genericName() != name) {
             match.setSubtext(service->genericName());

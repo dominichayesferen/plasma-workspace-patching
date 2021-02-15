@@ -56,14 +56,13 @@ void ShellRunner::match(Plasma::RunnerContext &context)
     if (parseShellCommand(context.query(), envs, command)) {
         const QString term = context.query();
         Plasma::QueryMatch match(this);
-        match.setId(term);
+        match.setId(context.query());
         match.setType(Plasma::QueryMatch::ExactMatch);
         match.setIcon(m_matchIcon);
         match.setText(i18n("Run %1", term));
         match.setData(QVariantList({command, envs}));
         match.setRelevance(0.7);
         match.setActions(m_actionList);
-        match.setId(context.query());
         context.addMatch(match);
     }
 }
