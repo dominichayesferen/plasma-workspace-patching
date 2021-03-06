@@ -4,6 +4,7 @@ add_definitions(-DTRANSLATION_DOMAIN=\"kcm_style\")
 ########### next target ###############
 
 set(kcm_style_PART_SRCS
+    ../kcms-common_p.h
     ../krdb/krdb.cpp
     styleconfdialog.cpp
     kcmstyle.cpp
@@ -41,12 +42,12 @@ target_link_libraries(kcm_style
     KF5::Notifications
     KF5::Plasma
     X11::X11
-    KF5::KDELibs4Support
     KF5::GuiAddons
     KF5::QuickAddons
     KF5::WindowSystem
     KF5::Archive
     KF5::NewStuff
+    KF5::KIOCore # KIO::DeleteJob
     PW::KWorkspace
 )
 

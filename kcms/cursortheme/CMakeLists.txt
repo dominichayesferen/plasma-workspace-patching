@@ -5,13 +5,16 @@ include_directories( ${LIBUSB_INCLUDE_DIR} )
 
 
 set( libnoinst_SRCS
-xcursor/thememodel.cpp
-xcursor/themeapplicator.cpp
-xcursor/cursortheme.cpp
-xcursor/xcursortheme.cpp
-xcursor/previewwidget.cpp
-xcursor/sortproxymodel.cpp
-../krdb/krdb.cpp )
+    xcursor/thememodel.cpp
+    xcursor/themeapplicator.cpp
+    xcursor/cursortheme.cpp
+    xcursor/xcursortheme.cpp
+    xcursor/previewwidget.cpp
+    xcursor/sortproxymodel.cpp
+    ../kcms-common_p.h
+    ../krdb/krdb.cpp
+)
+
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/xcursor/ )
 
 ########### next target ###############
@@ -42,7 +45,6 @@ target_link_libraries(kcm_cursortheme
     KF5::WindowSystem
     KF5::KIOCore
     KF5::KIOWidgets
-    KF5::KDELibs4Support
     KF5::NewStuffCore
     KF5::QuickAddons
     X11::X11
@@ -70,6 +72,7 @@ set(plasma-apply-cursortheme_SRCS
     xcursor/themeapplicator.cpp
     xcursor/thememodel.cpp
     xcursor/xcursortheme.cpp
+    ../kcms-common_p.h
     ../krdb/krdb.cpp
 )
 
@@ -82,7 +85,6 @@ target_link_libraries(plasma-apply-cursortheme
     KF5::GuiAddons
     KF5::I18n
     KF5::KCMUtils
-    KF5::KDELibs4Support
     KF5::WindowSystem
     X11::X11
     XCB::XCB

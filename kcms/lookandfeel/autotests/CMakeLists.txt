@@ -6,6 +6,7 @@ set( kcmTest_SRCS
      kcmtest.cpp
      ../kcm.cpp
      ../lookandfeeldata.cpp
+     ../../kcms-common_p.h
      ../../krdb/krdb.cpp
 )
 
@@ -29,9 +30,9 @@ target_link_libraries(kcmTest
         KF5::CoreAddons
         KF5::KCMUtils
         KF5::I18n
+        KF5::IconThemes
         KF5::Plasma
         KF5::PlasmaQuick
-        KF5::KDELibs4Support
         KF5::Declarative
         KF5::QuickAddons
         KF5::NewStuff

@@ -22,6 +22,7 @@
 #include "cursorthemedata.h"
 #include "kcmcursortheme.h"
 
+#include "../kcms-common_p.h"
 #include "../krdb/krdb.h"
 #include "xcursor/cursortheme.h"
 #include "xcursor/previewwidget.h"
@@ -30,7 +31,6 @@
 #include "xcursor/thememodel.h"
 
 #include <KAboutData>
-#include <KGlobalSettings>
 #include <KIO/CopyJob>
 #include <KIO/DeleteJob>
 #include <KIO/Job>
@@ -325,7 +325,7 @@ void CursorThemeConfig::save()
     }
     removeThemes();
 
-    KGlobalSettings::self()->emitChange(KGlobalSettings::CursorChanged);
+    notifyKcmChange(GlobalChangeType::CursorChanged);
 }
 
 void CursorThemeConfig::load()

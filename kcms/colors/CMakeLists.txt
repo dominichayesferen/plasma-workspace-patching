@@ -2,6 +2,7 @@
 add_definitions(-DTRANSLATION_DOMAIN=\"kcm_colors\")
 
 set(kcm_colors_SRCS
+    ../kcms-common_p.h
     ../krdb/krdb.cpp
     colors.cpp
     colorsapplicator.cpp
@@ -47,6 +48,7 @@ set(plasma-apply-colorscheme_SRCS
     plasma-apply-colorscheme.cpp
     colorsapplicator.cpp
     colorsmodel.cpp
+    ../kcms-common_p.h
     ../krdb/krdb.cpp
 )
 
