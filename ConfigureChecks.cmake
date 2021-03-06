@@ -29,20 +29,20 @@ check_include_files("sys/types.h;sys/statfs.h" HAVE_SYS_STATFS_H)
 check_include_files(unistd.h HAVE_UNISTD_H)
 check_include_files(malloc.h HAVE_MALLOC_H)
 check_function_exists(statfs HAVE_STATFS)
-macro_bool_to_01(FONTCONFIG_FOUND HAVE_FONTCONFIG) # kcontrol/{fonts,kfontinst}
-macro_bool_to_01(OPENGL_FOUND HAVE_OPENGL) # kwin
-macro_bool_to_01(X11_XShm_FOUND HAVE_XSHM) # kwin, ksplash
-macro_bool_to_01(X11_XTest_FOUND HAVE_XTEST) # khotkeys, kxkb, kdm
-macro_bool_to_01(X11_Xcomposite_FOUND HAVE_XCOMPOSITE) # kicker, kwin
-macro_bool_to_01(X11_Xcursor_FOUND HAVE_XCURSOR) # many uses
-macro_bool_to_01(X11_Xdamage_FOUND HAVE_XDAMAGE) # kwin
-macro_bool_to_01(X11_Xfixes_FOUND HAVE_XFIXES) # klipper, kicker, kwin
-macro_bool_to_01(X11_Xinerama_FOUND HAVE_XINERAMA)
-macro_bool_to_01(X11_Xrandr_FOUND HAVE_XRANDR) # kwin
-macro_bool_to_01(X11_Xrender_FOUND HAVE_XRENDER) # kcontrol/style, kicker
-macro_bool_to_01(X11_xf86misc_FOUND HAVE_XF86MISC) # kdesktop and kcontrol/lock
-macro_bool_to_01(X11_dpms_FOUND HAVE_DPMS) # kdesktop
-macro_bool_to_01(X11_XSync_FOUND HAVE_XSYNC) # kwin
+set(HAVE_FONTCONFIG FONTCONFIG_FOUND) # kcontrol/{fonts,kfontinst}
+set(HAVE_OPENGL OPENGL_FOUND) # kwin
+set(HAVE_XSHM X11_XShm_FOUND) # kwin, ksplash
+set(HAVE_XTEST X11_XTest_FOUND) # khotkeys, kxkb, kdm
+set(HAVE_XCOMPOSITE X11_Xcomposite_FOUND) # kicker, kwin
+set(HAVE_XCURSOR X11_Xcursor_FOUND) # many uses
+set(HAVE_XDAMAGE X11_Xdamage_FOUND) # kwin
+set(HAVE_XFIXES X11_Xfixes_FOUND) # klipper, kicker, kwin
+set(HAVE_XINERAMA X11_Xinerama_FOUND)
+set(HAVE_XRANDR X11_Xrandr_FOUND) # kwin
+set(HAVE_XRENDER X11_Xrender_FOUND) # kcontrol/style, kicker
+set(HAVE_XF86MISC X11_xf86misc_FOUND) # kdesktop and kcontrol/lock
+set(HAVE_DPMS X11_dpms_FOUND) # kdesktop
+set(HAVE_XSYNC X11_XSync_FOUND) # kwin
 
 set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
 check_type_size("struct ucred" STRUCT_UCRED)       # kio_fonts
@@ -53,6 +53,6 @@ check_function_exists(setpriority  HAVE_SETPRIORITY) # kscreenlocker
 set(CMAKE_REQUIRED_INCLUDES ${X11_Xrandr_INCLUDE_PATH}/Xrandr.h)
 set(CMAKE_REQUIRED_LIBRARIES ${X11_Xrandr_LIB})
 check_function_exists(XRRGetScreenSizeRange XRANDR_1_2_FOUND)
-macro_bool_to_01(XRANDR_1_2_FOUND HAS_RANDR_1_2)
+set(HAS_RANDR_1_2 XRANDR_1_2_FOUND)
 check_function_exists(XRRGetScreenResourcesCurrent XRANDR_1_3_FOUND)
-macro_bool_to_01(XRANDR_1_3_FOUND HAS_RANDR_1_3)
+set(HAS_RANDR_1_3 XRANDR_1_3_FOUND)
