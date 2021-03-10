@@ -98,6 +98,11 @@ private:
     QDir cursorThemeDir(const QString &theme, const int depth);
     const QStringList cursorSearchPaths();
 
+    static void writeNewDefaults(const QString &filename, const QString &group, const QString &key, const QString &value, KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
+    static void writeNewDefaults(KConfig &config, KConfig &configDefault, const QString &group, const QString &key, const QString &value, KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
+    static void writeNewDefaults(KConfigGroup &cg, KConfigGroup &cgd, const QString &key, const QString &value, KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
+    static KConfig configDefaults(const QString &filename);
+
     LookAndFeelData *m_data;
     QStandardItemModel *m_model;
     KPackage::Package m_package;
