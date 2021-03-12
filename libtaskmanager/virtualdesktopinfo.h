@@ -129,6 +129,13 @@ public:
      **/
     void requestRemoveDesktop(quint32 position);
 
+    /**
+     * Whether or not to wrap navigation such that activating the next virtual
+     * desktop when at the last one will go to the first one, and activating the
+     * previous virtual desktop when at the first one will go to the last one.
+     */
+    bool navigationWrappingAround();
+
 Q_SIGNALS:
     void currentDesktopChanged() const;
     void numberOfDesktopsChanged() const;
