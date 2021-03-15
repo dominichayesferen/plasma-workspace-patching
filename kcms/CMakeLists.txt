@@ -8,6 +8,7 @@ endif()
 
 add_subdirectory(style)
 add_subdirectory(krdb)
+add_subdirectory(desktoplayout)
 add_subdirectory(lookandfeel)
 add_subdirectory(colors)
 if(X11_Xcursor_FOUND)

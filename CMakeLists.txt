@@ -218,6 +218,9 @@ add_subdirectory(statusnotifierwatcher)
 add_subdirectory(startkde)
 add_subdirectory(themes)
 
+find_package(KF5I18n CONFIG REQUIRED)
+ki18n_install(po)
+
 add_subdirectory(kcms)
 
 add_subdirectory(containmentactions)
