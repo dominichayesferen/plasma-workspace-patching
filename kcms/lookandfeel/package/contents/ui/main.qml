@@ -20,7 +20,7 @@ import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.3 as QtControls
-import org.kde.kirigami 2.4 as Kirigami
+import org.kde.kirigami 2.5 as Kirigami
 import org.kde.newstuff 1.62 as NewStuff
 import org.kde.kconfig 1.0 // for KAuthorized
 import org.kde.kcm 1.3 as KCM
@@ -30,11 +30,11 @@ KCM.GridViewKCM {
     KCM.ConfigModule.quickHelp: i18n("This module lets you choose the global look and feel.")
 
     view.model: kcm.lookAndFeelModel
-    view.currentIndex: kcm.pluginIndex(kcm.lookAndFeelSettings.globalThemePackage)
+    view.currentIndex: kcm.pluginIndex(kcm.lookAndFeelSettings.lookAndFeelPackage)
 
     KCM.SettingStateBinding {
         configObject: kcm.lookAndFeelSettings
-        settingName: "globalThemePackage"
+        settingName: "lookAndFeelPackage"
     }
 
     view.delegate: KCM.GridDelegate {
@@ -62,23 +62,74 @@ KCM.GridViewKCM {
             }
         ]
         onClicked: {
-            kcm.lookAndFeelSettings.globalThemePackage = model.pluginName;
+            kcm.lookAndFeelSettings.lookAndFeelPackage = model.pluginName;
             view.forceActiveFocus();
             resetCheckbox.checked = false;
         }
     }
 
-    footer: RowLayout {
-        Layout.fillWidth: true
-
-        Item {
+    footer: ColumnLayout {
+        Kirigami.InlineMessage {
             Layout.fillWidth: true
+            type: Kirigami.MessageType.Warning
+            text: i18n("Your desktop layout will be lost and reset to the default layout provided by the selected theme.")
+            visible: resetCheckbox.checked
         }
-        NewStuff.Button {
-            text: i18n("Get New Global Themes...")
+
+        RowLayout {
+            Layout.fillWidth: true
+
+            QtControls.CheckBox {
+                id: resetCheckbox
+                checked: kcm.resetDefaultLayout
+                text: i18n("Use desktop layout from theme")
+                onCheckedChanged: kcm.resetDefaultLayout = checked;
+            }
+
+            Kirigami.ActionToolBar {
+                flat: false
+                alignment: Qt.AlignRight
+                actions: [
+                    Kirigami.Action {
+                        text: i18n("Get New Global Themes...")
+                        icon.name: "get-hot-new-stuff"
+                        onTriggered: { newStuffPage.open(); }
+                    }
+                ]
+            }
+        }
+    }
+
+    Loader {
+        id: newStuffPage
+
+        // Use this function to open the dialog. It seems roundabout, but this ensures
+        // that the dialog is not constructed until we want it to be shown the first time,
+        // since it will initialise itself on the first load (which causes it to phone
+        // home) and we don't want that until the user explicitly asks for it.
+        function open() {
+            if (item) {
+                item.open();
+            } else {
+                active = true;
+            }
+        }
+        onLoaded: {
+            item.open();
+        }
+
+        active: false
+        asynchronous: true
+
+        sourceComponent: NewStuff.Dialog {
             configFile: "lookandfeel.knsrc"
             viewMode: NewStuff.Page.ViewMode.Preview
-            onChangedEntriesChanged: kcm.reloadModel();
+            Connections {
+                target: newStuffPage.item.engine.engine
+                function onSignalEntryEvent(entry, event) {
+                    kcm.reloadModel();
+                }
+            }
         }
     }
 

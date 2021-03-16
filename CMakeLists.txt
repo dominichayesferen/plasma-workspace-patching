@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
 project(plasma-workspace)
-set(PROJECT_VERSION "5.21.2")
+set(PROJECT_VERSION "5.21.3")
 set(PROJECT_VERSION_MAJOR 5)
 
 set(QT_MIN_VERSION "5.15.0")
@@ -217,9 +217,6 @@ add_subdirectory(systemmonitor)
 add_subdirectory(statusnotifierwatcher)
 add_subdirectory(startkde)
 add_subdirectory(themes)
-
-find_package(KF5I18n CONFIG REQUIRED)
-ki18n_install(po)
 
 add_subdirectory(kcms)
 

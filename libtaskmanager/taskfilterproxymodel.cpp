@@ -40,7 +40,6 @@ public:
     bool filterByScreen = false;
     bool filterByActivity = false;
     bool filterNotMinimized = false;
-    bool filterNotMaximized = false;
     bool filterSkipTaskbar = true;
     bool filterSkipPager = false;
 
@@ -186,22 +185,6 @@ void TaskFilterProxyModel::setFilterNotMinimized(bool filter)
     }
 }
 
-bool TaskFilterProxyModel::filterNotMaximized() const
-{
-    return d->filterNotMaximized;
-}
-
-void TaskFilterProxyModel::setFilterNotMaximized(bool filter)
-{
-    if (d->filterNotMaximized != filter) {
-        d->filterNotMaximized = filter;
-
-        invalidateFilter();
-
-        emit filterNotMaximizedChanged();
-    }
-}
-
 bool TaskFilterProxyModel::filterSkipTaskbar() const
 {
     return d->filterSkipTaskbar;
@@ -314,15 +297,6 @@ bool TaskFilterProxyModel::acceptsRow(int sourceRow) const
         bool isMinimized = sourceIdx.data(AbstractTasksModel::IsMinimized).toBool();
 
         if (!isMinimized) {
-            return false;
-        }
-    }
-
-    // Filter not maximized.
-    if (d->filterNotMaximized) {
-        bool isMaximized = sourceIdx.data(AbstractTasksModel::IsMaximized).toBool();
-
-        if (!isMaximized) {
             return false;
         }
     }

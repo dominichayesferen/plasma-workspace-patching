@@ -51,7 +51,6 @@ class PanelConfigView : public PlasmaQuick::ConfigView
 {
     Q_OBJECT
     Q_PROPERTY(PanelView::VisibilityMode visibilityMode READ visibilityMode WRITE setVisibilityMode NOTIFY visibilityModeChanged)
-    Q_PROPERTY(PanelView::OpacityMode opacityMode READ opacityMode WRITE setOpacityMode NOTIFY opacityModeChanged)
     Q_PROPERTY(Plasma::FrameSvg::EnabledBorders enabledBorders READ enabledBorders NOTIFY enabledBordersChanged)
 
 public:
@@ -62,9 +61,6 @@ public:
 
     PanelView::VisibilityMode visibilityMode() const;
     void setVisibilityMode(PanelView::VisibilityMode mode);
-
-    PanelView::OpacityMode opacityMode() const;
-    void setOpacityMode(PanelView::OpacityMode mode);
 
     Plasma::FrameSvg::EnabledBorders enabledBorders() const;
 
@@ -88,7 +84,6 @@ private Q_SLOTS:
 
 Q_SIGNALS:
     void visibilityModeChanged();
-    void opacityModeChanged();
     void enabledBordersChanged();
 
 private:
