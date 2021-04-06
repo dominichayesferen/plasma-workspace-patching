@@ -47,8 +47,9 @@ int main(int argc, char **argv)
                          version,
                          i18n("Command line tool to apply global theme packages for changing the look and feel."),
                          KAboutLicense::GPL,
-                         i18n("Copyright 2017, Marco Martin, Copyright 2020, Dominic Hayes"));
+                         i18n("Copyright 2017, Marco Martin"));
     aboutData.addAuthor(i18n("Marco Martin"), i18n("Maintainer"), QStringLiteral("mart@kde.org"));
+    aboutData.addAuthor(i18n("Dominic Hayes"), i18n("Maintainer"), QStringLiteral("ferenosdev@outlook.com"));
     aboutData.setDesktopFileName("org.kde.lookandfeeltool");
     KAboutData::setApplicationData(aboutData);
 

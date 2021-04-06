@@ -362,20 +362,15 @@ void KCMLookandFeel::save()
             QDBusConnection::sessionBus().send(message);
         }
 
-        //UNUSED
-        //cg = KConfigGroup(conf, "FerenThemer");
-        //cg = KConfigGroup(&cg, "Options");
-
-
         cg = KConfigGroup(conf, "GTK");
         cg = KConfigGroup(&cg, "Settings");
         setGTK(cg.readEntry("ThemeName", QString()));
-
-        //TODO: option to enable/disable apply? they don't seem required by UI design
+        
+        // TODO: option to enable/disable apply? they don't seem required by UI design
         cg = KConfigGroup(conf, "ksplashrc");
         cg = KConfigGroup(&cg, "KSplash");
         QString splashScreen = (cg.readEntry("Theme", QString()));
-        // Retain compatibility with certain Look & Feels - L&Fs without a specified Splash Screen will have the splash screen set to their theme name instead
+        
         const auto *item = m_model->item(pluginIndex(lookAndFeelSettings()->globalThemePackage()));
         if (item->data(HasSplashRole).toBool()) {
             if (!splashScreen.isEmpty()) {
@@ -392,7 +387,6 @@ void KCMLookandFeel::save()
         }
     }
 
-    //TODO: option to enable/disable apply? they don't seem required by UI design
     setLockScreen(lookAndFeelSettings()->globalThemePackage());
 
     m_configGroup.sync();
@@ -475,6 +469,17 @@ void KCMLookandFeel::setPlasmaTheme(const QString &theme)
     KConfig config(QStringLiteral("plasmarc"));
     KConfigGroup cg(&config, "Theme");
     cg.writeEntry("name", theme);
+    
+    // If the Desktop Layout is not org.feren.default and the Plasma Theme specified is 'feren', set it to 'feren-alt' instead - same for 'feren-light' -> 'feren-light-alt'
+    KConfig config2(QStringLiteral("kdeglobals"));
+    KConfigGroup cg2(&config2, "KDE");
+    if ((cg2.readEntry("LookAndFeelPackage", QString()) != "org.feren.default") && (theme == "feren")) {
+        cg.writeEntry("name", QString("feren-alt"));
+    } else if ((cg2.readEntry("LookAndFeelPackage", QString()) != "org.feren.default") && (theme == "feren-light")) {
+        cg.writeEntry("name", QString("feren-light-alt"));
+    } else {
+        cg.writeEntry("name", theme);
+    }
     cg.sync();
 }
 
@@ -699,7 +704,6 @@ void KCMLookandFeel::setWindowDecoration(const QString &library, const QString &
     } else {
         std::system("/usr/bin/feren-theme-tool-plasma shadowfix");
     }
-
     cg.writeEntry("theme", theme, KConfig::Notify);
 
     cg.sync();

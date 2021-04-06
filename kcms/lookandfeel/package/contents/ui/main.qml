@@ -64,26 +64,21 @@ KCM.GridViewKCM {
         onClicked: {
             kcm.lookAndFeelSettings.globalThemePackage = model.pluginName;
             view.forceActiveFocus();
-            resetCheckbox.checked = false;
         }
     }
 
-    footer: RowLayout {
-        Layout.fillWidth: true
-
-        Kirigami.ActionToolBar {
-            flat: false
-            alignment: Qt.AlignRight
-            actions: [
-                Kirigami.Action {
-                    text: i18n("Get New Global Themes...")
-                    icon.name: "get-hot-new-stuff"
-                    onTriggered: { newStuffPage.open(); }
-                }
-            ]
-        }
+    footer: Kirigami.ActionToolBar {
+        flat: false
+        alignment: Qt.AlignRight
+        actions: [
+            Kirigami.Action {
+                text: i18n("Get New Global Themes...")
+                icon.name: "get-hot-new-stuff"
+                onTriggered: { newStuffPage.open(); }
+            }
+        ]
     }
-
+    
     Loader {
         id: newStuffPage
 

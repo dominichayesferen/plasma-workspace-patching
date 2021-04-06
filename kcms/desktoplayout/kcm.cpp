@@ -55,6 +55,11 @@
 #include "desktoplayoutdata.h"
 #include "desktoplayoutsettings.h"
 
+#ifdef HAVE_XCURSOR
+#include "../cursortheme/xcursor/xcursortheme.h"
+#include <X11/Xcursor/Xcursor.h>
+#endif
+
 #ifdef HAVE_XFIXES
 #include <X11/extensions/Xfixes.h>
 #endif
@@ -162,7 +167,7 @@ void KCMDesktopLayout::loadModel()
         row->setData(pkg.metadata().description(), DescriptionRole);
         row->setData(pkg.filePath("preview"), ScreenshotRole);
         row->setData(pkg.filePath("fullscreenpreview"), FullScreenPreviewRole);
-        
+
         m_model->appendRow(row);
     }
     m_model->sort(0 /*column*/);
@@ -203,9 +208,11 @@ void KCMDesktopLayout::save()
 
     if (!package.filePath("defaults").isEmpty()) {
         KSharedConfigPtr conf = KSharedConfig::openConfig(package.filePath("defaults"));
+        
         KConfigGroup cg(conf, "FerenThemer");
         cg = KConfigGroup(&cg, "Options");
         setFilesLayout(cg.readEntry("FilesStyle", QString()));
+        
         // Cleanly quit Latte Dock
         std::system("/usr/bin/killall feren-latte-launch");
         QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.kde.lattedock"), QStringLiteral("/MainApplication"),
@@ -216,6 +223,7 @@ void KCMDesktopLayout::save()
         } else {
                 std::system("/usr/bin/feren-theme-tool-plasma revertmeta");
         }
+        
         cg = KConfigGroup(conf, "kwinrc");
         cg = KConfigGroup(&cg, "org.kde.kdecoration2");
         setWindowButtonsLayout(cg.readEntry("ButtonsOnLeft", QString()), cg.readEntry("ButtonsOnRight", QString()));
@@ -245,7 +253,7 @@ void KCMDesktopLayout::save()
             cg2.writeEntry("name", QString("feren-light"));
         }
         cg2.sync();
-
+        
         // autostart
         // remove all the old package to autostart
         {
@@ -281,13 +289,11 @@ void KCMDesktopLayout::save()
                 }
             }
         }
+        
+        // Reload KWin if something changed, but only once.
+        message = QDBusMessage::createSignal(QStringLiteral("/KWin"), QStringLiteral("org.kde.KWin"), QStringLiteral("reloadConfig"));
+        QDBusConnection::sessionBus().send(message);
     }
-    
-    // Reload KWin if something changed, but only once.
-    QDBusMessage message2 = QDBusMessage::createSignal(QStringLiteral("/KWin"),
-                                            QStringLiteral("org.kde.KWin"),
-                                            QStringLiteral("reloadConfig"));
-    QDBusConnection::sessionBus().send(message2);
 
     m_configGroup.sync();
     m_package.setPath(desktopLayoutSettings()->lookAndFeelPackage());

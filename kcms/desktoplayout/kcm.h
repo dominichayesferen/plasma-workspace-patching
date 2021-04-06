@@ -71,6 +71,8 @@ private:
     // List only packages which provide at least one of the components
     QList<KPackage::Package> availablePackages(const QStringList &components);
     void loadModel();
+    QDir cursorThemeDir(const QString &theme, const int depth);
+    const QStringList cursorSearchPaths();
 
     DesktopLayoutData *m_data;
     QStandardItemModel *m_model;

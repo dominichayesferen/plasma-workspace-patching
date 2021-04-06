@@ -1,6 +1,5 @@
 [Desktop Entry]
 Icon=preferences-desktop-layout
-Exec=kcmshell5 kcm_desktoplayout
 
 Type=Service
 X-KDE-ServiceTypes=KCModule

@@ -27,7 +27,7 @@ import org.kde.kcm 1.3 as KCM
 
 KCM.GridViewKCM {
     id: root
-    KCM.ConfigModule.quickHelp: i18n("This module lets you choose the global look and feel.")
+    KCM.ConfigModule.quickHelp: i18n("This module lets you choose the desktop layout.")
 
     view.model: kcm.desktopLayoutModel
     view.currentIndex: kcm.pluginIndex(kcm.desktopLayoutSettings.lookAndFeelPackage)
@@ -64,7 +64,6 @@ KCM.GridViewKCM {
         onClicked: {
             kcm.desktopLayoutSettings.lookAndFeelPackage = model.pluginName;
             view.forceActiveFocus();
-            resetCheckbox.checked = false;
         }
     }
 
@@ -86,6 +85,39 @@ KCM.GridViewKCM {
                     onTriggered: { newStuffPage.open(); }
                 }
             ]
+        }
+    }
+
+    Loader {
+        id: newStuffPage
+
+        // Use this function to open the dialog. It seems roundabout, but this ensures
+        // that the dialog is not constructed until we want it to be shown the first time,
+        // since it will initialise itself on the first load (which causes it to phone
+        // home) and we don't want that until the user explicitly asks for it.
+        function open() {
+            if (item) {
+                item.open();
+            } else {
+                active = true;
+            }
+        }
+        onLoaded: {
+            item.open();
+        }
+
+        active: false
+        asynchronous: true
+
+        sourceComponent: NewStuff.Dialog {
+            configFile: "lookandfeel.knsrc"
+            viewMode: NewStuff.Page.ViewMode.Preview
+            Connections {
+                target: newStuffPage.item.engine.engine
+                function onSignalEntryEvent(entry, event) {
+                    kcm.reloadModel();
+                }
+            }
         }
     }
 

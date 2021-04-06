@@ -107,7 +107,6 @@ private:
     bool m_applyCursors : 1;
     bool m_applyWindowSwitcher : 1;
     bool m_applyDesktopSwitcher : 1;
-    bool m_resetDefaultLayout : 1;
     bool m_applyWindowDecoration : 1;
 };
 
