@@ -223,6 +223,26 @@ RowLayout {
                 id: closeButtonToolTip
                 text: i18nd("plasma_applet_org.kde.plasma.notifications", "Close")
             }
+
+            Charts.PieChart {
+                id: chart
+                anchors.fill: parent
+                anchors.margins: units.smallSpacing + Math.max(Math.floor(units.devicePixelRatio), 1)
+
+                opacity: (notificationHeading.remainingTime > 0 && notificationHeading.remainingTime < notificationHeading.timeout) ? 1 : 0
+                Behavior on opacity {
+                    NumberAnimation { duration: units.longDuration }
+                }
+
+                range { from: 0; to: notificationHeading.timeout; automatic: false }
+
+                valueSources: Charts.SingleValueSource { value: notificationHeading.remainingTime }
+                colorSource: Charts.SingleValueSource { value: theme.highlightColor }
+
+                thickness: Math.max(Math.floor(units.devicePixelRatio), 1) * 5
+
+                transform: Scale { origin.x: chart.width / 2; xScale: -1 }
+            }
         }
     }
 

@@ -1,6 +1,5 @@
 /*
  *   Copyright 2017 Marco MArtin <mart@kde.org>
- *   Copyright 2020 Dominic Hayes <ferenosdev@outlook.com>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as
@@ -49,7 +48,6 @@ int main(int argc, char **argv)
                          KAboutLicense::GPL,
                          i18n("Copyright 2017, Marco Martin"));
     aboutData.addAuthor(i18n("Marco Martin"), i18n("Maintainer"), QStringLiteral("mart@kde.org"));
-    aboutData.addAuthor(i18n("Dominic Hayes"), i18n("Maintainer"), QStringLiteral("ferenosdev@outlook.com"));
     aboutData.setDesktopFileName("org.kde.lookandfeeltool");
     KAboutData::setApplicationData(aboutData);
 
@@ -93,11 +91,8 @@ int main(int argc, char **argv)
 
         KCMLookandFeel *kcm = new KCMLookandFeel(nullptr, QVariantList());
         kcm->load();
-        if (parser.isSet(_resetLayout)) {
-            std::string laftheme = parser.value(_apply).toStdString();
-            std::system(("/usr/bin/desktoplayouttool -a " + laftheme).c_str());
-        }
-        kcm->lookAndFeelSettings()->setGlobalThemePackage(parser.value(_apply));
+        kcm->setResetDefaultLayout(parser.isSet(_resetLayout));
+        kcm->lookAndFeelSettings()->setLookAndFeelPackage(parser.value(_apply));
         // Save manually as we aren't in an event loop
         kcm->lookAndFeelSettings()->save();
         kcm->save();
