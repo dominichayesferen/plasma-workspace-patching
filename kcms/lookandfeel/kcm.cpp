@@ -418,8 +418,8 @@ void KCMLookandFeel::setColors(const QString &scheme, const QString &colorFile)
     }
     
     //Delete 'Header' colours in case
-    KConfigGroup deletGroup(&m_config, "Colors:Header");
-    deletGroup.deleteGroup();
+    KConfigGroup headerGroup(&m_config, "Colors:Header");
+    headerGroup.deleteGroup();
 
     KSharedConfigPtr conf = KSharedConfig::openConfig(colorFile, KSharedConfig::CascadeConfig);
     foreach (const QString &grp, conf->groupList()) {
