@@ -108,7 +108,7 @@ class PanelView : public PlasmaQuick::ContainmentView
     Q_PROPERTY(OpacityMode opacityMode READ opacityMode WRITE setOpacityMode NOTIFY opacityModeChanged)
 
     /**
-    /*  Property that determines whether adaptive opacity is used.
+     *  Property that determines whether adaptive opacity is used.
      */
     Q_PROPERTY(bool adaptiveOpacityEnabled READ adaptiveOpacityEnabled NOTIFY adaptiveOpacityEnabledChanged)
 
@@ -168,7 +168,7 @@ public:
     void setVisibilityMode(PanelView::VisibilityMode mode);
 
     PanelView::OpacityMode opacityMode() const;
-	bool adaptiveOpacityEnabled();
+    bool adaptiveOpacityEnabled();
     void setOpacityMode(PanelView::OpacityMode mode);
     void updateAdaptiveOpacityEnabled();
 

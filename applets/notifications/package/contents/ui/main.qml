@@ -93,11 +93,11 @@ Item {
         return lines.join("\n");
     }
 
-    Plasmoid.switchWidth: units.gridUnit * 14
+    Plasmoid.switchWidth: PlasmaCore.Units.gridUnit * 14
     // This is to let the plasmoid expand in a vertical panel for a "sidebar" notification panel
     // The CompactRepresentation size is limited to not have the notification icon grow gigantic
     // but it should still switch over to full rep once there's enough width (disregarding the limited height)
-    Plasmoid.switchHeight: plasmoid.formFactor === PlasmaCore.Types.Vertical ? 1 : units.gridUnit * 10
+    Plasmoid.switchHeight: plasmoid.formFactor === PlasmaCore.Types.Vertical ? 1 : PlasmaCore.Units.gridUnit * 10
 
     Plasmoid.onExpandedChanged: {
         if (!plasmoid.expanded) {
@@ -143,17 +143,23 @@ Item {
             }
             return urgencies;
         }
+
+        onCountChanged: {
+            if (count === 0) {
+                closePlasmoid();
+            }
+        }
     }
 
     Binding {
         target: plasmoid.nativeInterface
         property: "dragPixmapSize"
-        value: units.iconSizes.large
+        value: PlasmaCore.Units.iconSizes.large
         restoreMode: Binding.RestoreBinding
     }
 
-    function closePassivePlasmoid() {
-        if (plasmoid.status !== PlasmaCore.Types.PassiveStatus && plasmoid.hideOnWindowDeactivate) {
+    function closePlasmoid() {
+        if (plasmoid.hideOnWindowDeactivate) {
             plasmoid.expanded = false;
         }
     }
@@ -161,25 +167,28 @@ Item {
     function action_clearHistory() {
         historyModel.clear(NotificationManager.Notifications.ClearExpired);
         if (historyModel.count === 0) {
-            closePassivePlasmoid();
+            closePlasmoid();
         }
     }
 
-    function action_openKcm() {
+    function action_configure() {
         KQCAddons.KCMShell.openSystemSettings("kcm_notifications");
     }
 
     Component.onCompleted: {
         Globals.adopt(plasmoid);
 
-        plasmoid.setAction("clearHistory", i18n("Clear History"), "edit-clear-history");
+        plasmoid.setAction("clearHistory", i18n("Clear All Notifications"), "edit-clear-history");
         var clearAction = plasmoid.action("clearHistory");
         clearAction.visible = Qt.binding(function() {
             return historyModel.expiredNotificationsCount > 0;
         });
 
-        // FIXME only while Multi-page KCMs are broken when embedded in plasmoid config
-        plasmoid.setAction("openKcm", i18n("&Configure Event Notifications and Actions..."), "preferences-desktop-notification-bell");
-        plasmoid.action("openKcm").visible = (KQCAddons.KCMShell.authorize("kcm_notifications.desktop").length > 0);
+        // The applet's config window has nothing in it, so let's make the header's
+        // "Configure" button open the KCM instead, like we do in the Bluetooth
+        // and Networks applets
+        plasmoid.removeAction("configure");
+        plasmoid.setAction("configure", i18n("&Configure Event Notifications and Actions..."), "notifications");
+        plasmoid.action("configure").visible = (KQCAddons.KCMShell.authorize("kcm_notifications.desktop").length > 0);
     }
 }

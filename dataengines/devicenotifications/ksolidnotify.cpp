@@ -32,6 +32,7 @@
 #include <Solid/StorageVolume>
 
 #include <KLocalizedString>
+#include <KNotification>
 #include <processcore/process.h>
 #include <processcore/processes.h>
 
@@ -125,7 +126,7 @@ void KSolidNotify::queryBlockingApps(const QString &devicePath)
     connect(p, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), [=](int, QProcess::ExitStatus) {
         QStringList blockApps;
         QString out(p->readAll());
-        const QVector<QStringRef> pidList = out.splitRef(QRegularExpression(QStringLiteral("\\s+")), QString::SkipEmptyParts);
+        const QVector<QStringRef> pidList = out.splitRef(QRegularExpression(QStringLiteral("\\s+")), Qt::SkipEmptyParts);
         KSysGuard::Processes procs;
         for (const QStringRef &pidStr : pidList) {
             int pid = pidStr.toInt();
@@ -158,6 +159,7 @@ void KSolidNotify::onSolidReply(SolidReplyType type, Solid::ErrorType error, con
     switch (error) {
     case Solid::ErrorType::NoError:
         if (type != SolidReplyType::Setup && isSafelyRemovable(udi)) {
+            KNotification::event(QStringLiteral("safelyRemovable"), i18n("Device Status"), i18n("A device can now be safely removed"));
             errorMsg = i18n("This device can now be safely removed.");
         }
         break;

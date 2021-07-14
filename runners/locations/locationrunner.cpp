@@ -74,12 +74,14 @@ void LocationsRunner::match(Plasma::RunnerContext &context)
 
         match.setRelevance(1);
         match.setData(url);
+        match.setUrls({url});
         match.setType(Plasma::QueryMatch::ExactMatch);
         context.addMatch(match);
     } else if (!url.isLocalFile() && !url.isEmpty() && !url.scheme().isEmpty()) {
         const QString protocol = url.scheme();
         Plasma::QueryMatch match(this);
         match.setData(url);
+        match.setUrls({url});
 
         if (!KProtocolInfo::isKnownProtocol(protocol) || KProtocolInfo::isHelperProtocol(protocol)) {
             const KService::Ptr service = KApplicationTrader::preferredService(QLatin1String("x-scheme-handler/") + protocol);
@@ -113,13 +115,6 @@ void LocationsRunner::run(const Plasma::RunnerContext &context, const Plasma::Qu
     job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
     job->setRunExecutables(false);
     job->start();
-}
-
-QMimeData *LocationsRunner::mimeDataForMatch(const Plasma::QueryMatch &match)
-{
-    QMimeData *result = new QMimeData();
-    result->setUrls({match.data().toUrl()});
-    return result;
 }
 
 #include "locationrunner.moc"

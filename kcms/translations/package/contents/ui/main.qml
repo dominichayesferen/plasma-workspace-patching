@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2015 Marco Martin <mart@kde.org>
  * Copyright (C) 2018 Eike Hein <hein@kde.org>
+ * Copyright (C) 2021 Harald Sitter <sitter@kde.org>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -197,13 +198,56 @@ ScrollViewKCM {
                         onMoveRequested: kcm.selectedTranslationsModel.move(oldIndex, newIndex)
                     }
 
+                    QtControls.BusyIndicator {
+                        visible: model.IsInstalling
+                        running: visible
+                        // the control style (e.g. org.kde.desktop) may force a padding that will shrink the indicator way down. ignore it.
+                        padding: 0
+
+                        Layout.alignment: Qt.AlignVCenter
+
+                        implicitWidth: Kirigami.Units.iconSizes.small
+                        implicitHeight: implicitWidth
+
+                        QtControls.ToolTip {
+                            text: xi18nc('@info:tooltip/rich',
+                                         'Installing missing packages to complete this translation.')
+                        }
+
+                    }
+
+                    Kirigami.Icon {
+                        visible: model.IsIncomplete
+
+                        Layout.alignment: Qt.AlignVCenter
+
+                        implicitWidth: Kirigami.Units.iconSizes.small
+                        implicitHeight: implicitWidth
+
+                        source: "data-warning"
+                        color: Kirigami.Theme.negativeTextColor
+                        MouseArea {
+                            id: area
+                            anchors.fill: parent
+                            hoverEnabled: true
+                        }
+                        QtControls.ToolTip {
+                            visible: area.containsMouse
+                            text: xi18nc('@info:tooltip/rich',
+                                         `Not all translations for this language are installed.
+                                          Use the <interface>Install Missing Packages</interface> button to download
+                                          and install all missing packages.`)
+                        }
+
+                    }
+
                     Kirigami.Icon {
                         visible: model.IsMissing
 
                         Layout.alignment: Qt.AlignVCenter
 
-                        width: Kirigami.Units.iconSizes.smallMedium
-                        height: width
+                        implicitWidth: Kirigami.Units.iconSizes.smallMedium
+                        implicitHeight: implicitWidth
 
                         source: "error"
                         color: Kirigami.Theme.negativeTextColor
@@ -224,6 +268,12 @@ ScrollViewKCM {
 
             actions: [
                 Kirigami.Action {
+                    visible: model.IsIncomplete
+                    iconName: "install"
+                    tooltip: i18nc("@info:tooltip", "Install Missing Packages")
+                    onTriggered: kcm.selectedTranslationsModel.completeLanguage(index)
+                },
+                Kirigami.Action {
                     enabled: !model.IsMissing && index > 0
                     visible: languagesList.count > 1
                     iconName: "go-top"
@@ -233,7 +283,8 @@ ScrollViewKCM {
                 Kirigami.Action {
                     property bool removing: false
                     enabled: removing || !model.IsMissing
-                    iconName: "list-remove"
+                    iconName: "edit-delete"
+                    visible: languagesList.count > 1
                     tooltip: i18nc("@info:tooltip", "Remove")
                     onTriggered: {
                         removing = true; // Don't crash by re-evaluating `enabled` during destruction.

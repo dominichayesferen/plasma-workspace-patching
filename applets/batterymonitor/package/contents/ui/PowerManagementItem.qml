@@ -25,36 +25,28 @@ import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.kquickcontrolsaddons 2.0
 
 ColumnLayout {
-    id: powerManagementHeadingColumn
-    property alias enabled: pmCheckBox.checked
+    id: powerManagement
+    property alias disabled: pmCheckBox.checked
     property bool pluggedIn
 
     spacing: 0
 
     RowLayout {
         Layout.fillWidth: true
-        Layout.leftMargin: units.smallSpacing
+        Layout.leftMargin: PlasmaCore.Units.smallSpacing
 
         PlasmaComponents3.CheckBox {
             id: pmCheckBox
             Layout.fillWidth: true
-            text: i18nc("Minimize the length of this string as much as possible", "Allow automatic sleep and screen locking")
-            checked: true
+            text: i18nc("Minimize the length of this string as much as possible", "Inhibit automatic sleep and screen locking")
+            checked: false
         }
     }
 
     ColumnLayout {
         Layout.fillWidth: true
-        Layout.leftMargin: units.gridUnit + units.smallSpacing // width of checkbox and spacer
-        spacing: units.smallSpacing
-
-        InhibitionHint {
-            Layout.fillWidth: true
-            readonly property var chargeStopThreshold: pmSource.data["Battery"] ? pmSource.data["Battery"]["Charge Stop Threshold"] : undefined
-            visible: powerManagementHeadingColumn.pluggedIn && typeof chargeStopThreshold === "number" && chargeStopThreshold > 0 && chargeStopThreshold < 100
-            iconSource: "kt-speed-limits" // FIXME good icon
-            text: i18n("Your battery is configured to only charge up to %1%.", chargeStopThreshold || 0)
-        }
+        Layout.leftMargin: PlasmaCore.Units.gridUnit + PlasmaCore.Units.smallSpacing // width of checkbox and spacer
+        spacing: PlasmaCore.Units.smallSpacing
 
         InhibitionHint {
             Layout.fillWidth: true
@@ -63,29 +55,42 @@ ColumnLayout {
             text: i18nc("Minimize the length of this string as much as possible", "Your notebook is configured not to sleep when closing the lid while an external monitor is connected.")
         }
 
+
+        // UI to display when there is only one inhibition
+        InhibitionHint {
+            // Don't need to show the inhibitions when power management
+            // isn't enabled anyway
+            visible: inhibitions.length === 1 && !powerManagement.disabled
+            Layout.fillWidth: true
+            iconSource: visible ? inhibitions[0].Icon : ""
+            text: visible ?
+                    inhibitions[0].Reason ?
+                        i18n("%1 is inhibiting sleep and screen locking (%2)", inhibitions[0].Name, inhibitions[0].Reason)
+                    :
+                        i18n("%1 is inhibiting sleep and screen locking (unknown reason)", inhibitions[0].Name)
+                :
+                    ""
+        }
+
+
+        // UI to display when there is more than one inhibition
         PlasmaComponents3.Label {
             id: inhibitionExplanation
             Layout.fillWidth: true
             // Don't need to show the inhibitions when power management
             // isn't enabled anyway
-            visible: inhibitions.length > 0 && pmCheckBox.checked
-            font: theme.smallestFont
+            visible: inhibitions.length > 1 && !powerManagement.disabled
+            font: PlasmaCore.Theme.smallestFont
             wrapMode: Text.WordWrap
             elide: Text.ElideRight
             maximumLineCount: 3
-            text: {
-                if (inhibitions.length === 1) {
-                    return i18n("An application is preventing sleep and screen locking:")
-                } else if (inhibitions.length > 1) {
-                    return i18np("%1 application is preventing sleep and screen locking:",
-                                 "%1 applications are preventing sleep and screen locking:",
-                                 inhibitions.length)
-                } else {
-                    return ""
-                }
-            }
+            text: i18np("%1 application is inhibiting sleep and screen locking:",
+                        "%1 applications are inhibiting sleep and screen locking:",
+                        inhibitions.length)
         }
         Repeater {
+            visible: inhibitions.length > 1
+
             model: inhibitionExplanation.visible ? inhibitions.length : null
 
             InhibitionHint {

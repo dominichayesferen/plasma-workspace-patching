@@ -61,10 +61,9 @@ public:
 
     Q_INVOKABLE bool isPrimaryScreen(const QRect &rect) const;
 
-    Q_INVOKABLE QString iconNameForUrl(const QUrl &url) const;
     Q_INVOKABLE void forceActivateWindow(QWindow *window);
 
-signals:
+Q_SIGNALS:
     void dragActiveChanged();
     void dragPixmapSizeChanged();
     void focussedPlasmaDialogChanged();

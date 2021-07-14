@@ -77,7 +77,7 @@ KWin.Switcher {
                         horizontalAlignment: Text.AlignHCenter
                         text: display
                         font.bold: true
-                        color: theme.textColor
+                        color: PlasmaCore.Theme.textColor
                         elide: Text.ElideMiddle
                         anchors {
                             left: iconElement.right
@@ -149,7 +149,7 @@ KWin.Switcher {
                     prefix: "hover"
                     width: listView.width
                 }
-                highlightMoveDuration: 250
+                highlightMoveDuration: PlasmaCore.Units.longDuration
                 boundsBehavior: Flickable.StopAtBounds
                 Connections {
                     target: tabBox

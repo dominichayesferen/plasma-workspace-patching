@@ -24,6 +24,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QKeyEvent>
+#include <QScreen>
 #include <QWidgetAction>
 
 #include <KHelpMenu>
@@ -69,8 +70,8 @@ kdbgstream &operator<<(kdbgstream &stream, const QKeyEvent &e)
 
 KlipperPopup::KlipperPopup(History *history)
     : m_dirty(true)
-    , m_textForEmptyHistory(i18n("<empty clipboard>"))
-    , m_textForNoMatch(i18n("<no matches>"))
+    , m_textForEmptyHistory(i18n("Clipboard is empty"))
+    , m_textForNoMatch(i18n("No matches"))
     , m_history(history)
     , m_helpMenu(nullptr)
     , m_popupProxy(nullptr)
@@ -83,9 +84,12 @@ KlipperPopup::KlipperPopup(History *history)
     ensurePolished();
     KWindowInfo windowInfo(winId(), NET::WMGeometry);
     QRect geometry = windowInfo.geometry();
-    QRect screen = qApp->desktop()->screenGeometry(geometry.center());
-    int menuHeight = (screen.height()) * 3 / 4;
-    int menuWidth = (screen.width()) * 1 / 3;
+    QScreen *screen = QGuiApplication::screenAt(geometry.center());
+    if (screen == nullptr) {
+        screen = QGuiApplication::screens()[0];
+    }
+    int menuHeight = (screen->geometry().height()) * 3 / 4;
+    int menuWidth = (screen->geometry().width()) * 1 / 3;
 
     m_popupProxy = new PopupProxy(this, menuHeight, menuWidth);
 

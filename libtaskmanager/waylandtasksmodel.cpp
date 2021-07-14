@@ -48,6 +48,7 @@ public:
     Private(WaylandTasksModel *q);
     QList<KWayland::Client::PlasmaWindow *> windows;
     QHash<KWayland::Client::PlasmaWindow *, AppData> appDataCache;
+    QHash<KWayland::Client::PlasmaWindow *, QTime> lastActivated;
     KWayland::Client::PlasmaWindowManagement *windowManagement = nullptr;
     KSharedConfig::Ptr rulesConfig;
     KDirWatch *configWatcher = nullptr;
@@ -89,15 +90,15 @@ void WaylandTasksModel::Private::init()
         appDataCache.clear();
 
         // Emit changes of all roles satisfied from app data cache.
-        q->dataChanged(q->index(0, 0),
-                       q->index(windows.count() - 1, 0),
-                       QVector<int>{Qt::DecorationRole,
-                                    AbstractTasksModel::AppId,
-                                    AbstractTasksModel::AppName,
-                                    AbstractTasksModel::GenericName,
-                                    AbstractTasksModel::LauncherUrl,
-                                    AbstractTasksModel::LauncherUrlWithoutIcon,
-                                    AbstractTasksModel::SkipTaskbar});
+        Q_EMIT q->dataChanged(q->index(0, 0),
+                              q->index(windows.count() - 1, 0),
+                              QVector<int>{Qt::DecorationRole,
+                                           AbstractTasksModel::AppId,
+                                           AbstractTasksModel::AppName,
+                                           AbstractTasksModel::GenericName,
+                                           AbstractTasksModel::LauncherUrl,
+                                           AbstractTasksModel::LauncherUrlWithoutIcon,
+                                           AbstractTasksModel::SkipTaskbar});
     };
 
     rulesConfig = KSharedConfig::openConfig(QStringLiteral("taskmanagerrulesrc"));
@@ -149,6 +150,12 @@ void WaylandTasksModel::Private::initWayland()
             addWindow(window);
         });
 
+        QObject::connect(windowManagement, &KWayland::Client::PlasmaWindowManagement::stackingOrderUuidsChanged, q, [this]() {
+            for (const auto window : qAsConst(windows)) {
+                this->dataChanged(window, StackingOrder);
+            }
+        });
+
         const auto windows = windowManagement->windows();
         for (auto it = windows.constBegin(); it != windows.constEnd(); ++it) {
             addWindow(*it);
@@ -178,6 +185,7 @@ void WaylandTasksModel::Private::addWindow(KWayland::Client::PlasmaWindow *windo
             q->beginRemoveRows(QModelIndex(), row, row);
             windows.removeAt(row);
             appDataCache.remove(window);
+            lastActivated.remove(window);
             q->endRemoveRows();
         }
     };
@@ -211,6 +219,9 @@ void WaylandTasksModel::Private::addWindow(KWayland::Client::PlasmaWindow *windo
     });
 
     QObject::connect(window, &KWayland::Client::PlasmaWindow::activeChanged, q, [window, this] {
+        if (window->isActive()) {
+            lastActivated[window] = QTime::currentTime();
+        }
         this->dataChanged(window, IsActive);
     });
 
@@ -274,7 +285,7 @@ void WaylandTasksModel::Private::addWindow(KWayland::Client::PlasmaWindow *windo
         // If the count has changed from 0, the window may no longer be on all virtual
         // desktops.
         if (window->plasmaVirtualDesktops().count() > 0) {
-            this->dataChanged(window, VirtualDesktops);
+            this->dataChanged(window, IsOnAllVirtualDesktops);
         }
     });
 
@@ -283,7 +294,7 @@ void WaylandTasksModel::Private::addWindow(KWayland::Client::PlasmaWindow *windo
 
         // If the count has changed to 0, the window is now on all virtual desktops.
         if (window->plasmaVirtualDesktops().count() == 0) {
-            this->dataChanged(window, VirtualDesktops);
+            this->dataChanged(window, IsOnAllVirtualDesktops);
         }
     });
 
@@ -301,6 +312,14 @@ void WaylandTasksModel::Private::addWindow(KWayland::Client::PlasmaWindow *windo
 
     QObject::connect(window, &KWayland::Client::PlasmaWindow::applicationMenuChanged, q, [window, this] {
         this->dataChanged(window, QVector<int>{ApplicationMenuServiceName, ApplicationMenuObjectPath});
+    });
+
+    QObject::connect(window, &KWayland::Client::PlasmaWindow::plasmaActivityEntered, q, [window, this] {
+        this->dataChanged(window, Activities);
+    });
+
+    QObject::connect(window, &KWayland::Client::PlasmaWindow::plasmaActivityLeft, q, [window, this] {
+        this->dataChanged(window, Activities);
     });
 }
 
@@ -415,7 +434,7 @@ QVariant WaylandTasksModel::data(const QModelIndex &index, int role) const
         return window->isMaximized();
     } else if (role == IsMinimizable) {
         return window->isMinimizeable();
-    } else if (role == IsMinimized) {
+    } else if (role == IsMinimized || role == IsHidden) {
         return window->isMinimized();
     } else if (role == IsKeepAbove) {
         return window->isKeepAbove();
@@ -441,7 +460,7 @@ QVariant WaylandTasksModel::data(const QModelIndex &index, int role) const
     } else if (role == ScreenGeometry) {
         return screenGeometry(window->geometry().center());
     } else if (role == Activities) {
-        // FIXME Implement.
+        return window->plasmaActivities();
     } else if (role == IsDemandingAttention) {
         return window->isDemandingAttention();
     } else if (role == SkipTaskbar) {
@@ -452,6 +471,10 @@ QVariant WaylandTasksModel::data(const QModelIndex &index, int role) const
         return window->pid();
     } else if (role == StackingOrder) {
         return d->windowManagement->stackingOrderUuids().indexOf(window->uuid());
+    } else if (role == LastActivated) {
+        if (d->lastActivated.contains(window)) {
+            return d->lastActivated.value(window);
+        }
     } else if (role == ApplicationMenuObjectPath) {
         return window->applicationMenuObjectPath();
     } else if (role == ApplicationMenuServiceName) {
@@ -663,14 +686,30 @@ void WaylandTasksModel::requestNewVirtualDesktop(const QModelIndex &index)
 
 void WaylandTasksModel::requestActivities(const QModelIndex &index, const QStringList &activities)
 {
-    Q_UNUSED(index)
-    Q_UNUSED(activities)
+    if (!index.isValid() || index.model() != this || index.row() < 0 || index.row() >= d->windows.count()) {
+        return;
+    }
+
+    auto *const window = d->windows.at(index.row());
+    const auto newActivities = QSet(activities.begin(), activities.end());
+    const auto plasmaActivities = window->plasmaActivities();
+    const auto oldActivities = QSet(plasmaActivities.begin(), plasmaActivities.end());
+
+    const auto activitiesToAdd = newActivities - oldActivities;
+    for (const auto &activity : activitiesToAdd) {
+        window->requestEnterActivity(activity);
+    }
+
+    const auto activitiesToRemove = oldActivities - newActivities;
+    for (const auto &activity : activitiesToRemove) {
+        window->requestLeaveActivity(activity);
+    }
 }
 
 void WaylandTasksModel::requestPublishDelegateGeometry(const QModelIndex &index, const QRect &geometry, QObject *delegate)
 {
     /*
-    FIXME: This introduces the dependency on Qt5::Quick. I might prefer
+    FIXME: This introduces the dependency on Qt::Quick. I might prefer
     reversing this and publishing the window pointer through the model,
     then calling PlasmaWindow::setMinimizeGeometry in the applet backend,
     rather than hand delegate items into the lib, keeping the lib more UI-
@@ -710,7 +749,7 @@ void WaylandTasksModel::requestPublishDelegateGeometry(const QModelIndex &index,
     window->setMinimizedGeometry(surface, rect);
 }
 
-quint32 WaylandTasksModel::winIdFromMimeData(const QMimeData *mimeData, bool *ok)
+QUuid WaylandTasksModel::winIdFromMimeData(const QMimeData *mimeData, bool *ok)
 {
     Q_ASSERT(mimeData);
 
@@ -722,15 +761,16 @@ quint32 WaylandTasksModel::winIdFromMimeData(const QMimeData *mimeData, bool *ok
         return 0;
     }
 
-    quint32 id = mimeData->data(Private::mimeType()).toUInt(ok);
+    QUuid id(mimeData->data(Private::mimeType()));
+    *ok = !id.isNull();
 
     return id;
 }
 
-QList<quint32> WaylandTasksModel::winIdsFromMimeData(const QMimeData *mimeData, bool *ok)
+QList<QUuid> WaylandTasksModel::winIdsFromMimeData(const QMimeData *mimeData, bool *ok)
 {
     Q_ASSERT(mimeData);
-    QList<quint32> ids;
+    QList<QUuid> ids;
 
     if (ok) {
         *ok = false;
@@ -739,7 +779,7 @@ QList<quint32> WaylandTasksModel::winIdsFromMimeData(const QMimeData *mimeData, 
     if (!mimeData->hasFormat(Private::groupMimeType())) {
         // Try to extract single window id.
         bool singularOk;
-        WId id = winIdFromMimeData(mimeData, &singularOk);
+        QUuid id = winIdFromMimeData(mimeData, &singularOk);
 
         if (ok) {
             *ok = singularOk;

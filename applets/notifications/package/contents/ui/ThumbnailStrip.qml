@@ -49,7 +49,7 @@ DraggableFileArea {
     property int bottomPadding: 0
 
     signal openUrl(string url)
-    signal fileActionInvoked
+    signal fileActionInvoked(QtObject action)
 
     dragParent: previewPixmap
     dragUrl: thumbnailer.url
@@ -72,7 +72,7 @@ DraggableFileArea {
         id: fileMenu
         url: thumbnailer.url
         visualParent: menuButton
-        onActionTriggered: thumbnailArea.fileActionInvoked()
+        onActionTriggered: thumbnailArea.fileActionInvoked(action)
     }
 
     Notifications.Thumbnailer {
@@ -119,7 +119,7 @@ DraggableFileArea {
         PlasmaCore.IconItem {
             anchors.centerIn: parent
             width: height
-            height: units.roundToIconSize(parent.height)
+            height: PlasmaCore.Units.roundToIconSize(parent.height)
             usesPlasmaTheme: false
             source: !thumbnailer.busy && !thumbnailer.hasPreview ? thumbnailer.iconName : ""
         }
@@ -135,7 +135,7 @@ DraggableFileArea {
             anchors {
                 top: parent.top
                 right: parent.right
-                margins: units.smallSpacing
+                margins: PlasmaCore.Units.smallSpacing
             }
             Accessible.name: tooltip.text
             icon.name: "application-menu"

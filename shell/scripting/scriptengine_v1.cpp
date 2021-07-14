@@ -53,7 +53,8 @@
 
 namespace
 {
-template<typename T> inline void awaitFuture(const QFuture<T> &future)
+template<typename T>
+inline void awaitFuture(const QFuture<T> &future)
 {
     while (!future.isFinished()) {
         QCoreApplication::processEvents();
@@ -70,7 +71,8 @@ public:
 
     // operator + is commonly used for these things
     // to avoid having the lambda inside the parenthesis
-    template<typename Function> void operator+(Function function) const
+    template<typename Function>
+    void operator+(Function function) const
     {
         if (!array.isArray())
             return;
@@ -97,7 +99,8 @@ public:
 
     // operator + is commonly used for these things
     // to avoid having the lambda inside the parenthesis
-    template<typename Function> void operator+(Function function) const
+    template<typename Function>
+    void operator+(Function function) const
     {
         QJSValueIterator it(object);
         while (it.hasNext()) {
@@ -113,7 +116,8 @@ private:
 #define SCRIPT_OBJECT_FOREACH(Key, Value, Array) ScriptObject_forEach_Helper(Array) + [&](const QString &Key, const QJSValue &Value)
 
 // Case insensitive comparison of two strings
-template<typename StringType> inline bool matches(const QString &object, const StringType &string)
+template<typename StringType>
+inline bool matches(const QString &object, const StringType &string)
 {
     return object.compare(string, Qt::CaseInsensitive) == 0;
 }
@@ -199,6 +203,21 @@ QJSValue ScriptEngine::V1::desktopForScreen(const QJSValue &param) const
     const uint screen = param.toInt();
     const auto containments = m_engine->m_corona->containmentsForScreen(screen);
     return m_engine->wrap(containments.empty() ? nullptr : containments[0]);
+}
+
+QJSValue ScriptEngine::V1::screenForConnector(const QJSValue &param) const
+{
+    // this needs to work also for string of numerals, like "20"
+    if (param.isUndefined()) {
+        return m_engine->newError(i18n("screenForConnector requires a connector name"));
+    }
+
+    const QString connector = param.toString();
+    ShellCorona *sc = qobject_cast<ShellCorona *>(m_engine->m_corona);
+    if (sc) {
+        return m_engine->toScriptValue<int>(sc->screenPool()->id(connector));
+    }
+    return m_engine->toScriptValue<int>(-1);
 }
 
 QJSValue ScriptEngine::V1::createActivity(const QJSValue &nameParam, const QString &pluginParam)
@@ -307,12 +326,13 @@ QJSValue ScriptEngine::V1::activities() const
 }
 
 // Utility function to process configs and config groups
-template<typename Object> void loadSerializedConfigs(Object *object, const QJSValue &configs)
+template<typename Object>
+void loadSerializedConfigs(Object *object, const QJSValue &configs)
 {
     SCRIPT_OBJECT_FOREACH(escapedGroup, config, configs)
     {
         // If the config group is set, pass it on to the containment
-        QStringList groups = escapedGroup.split('/', QString::SkipEmptyParts);
+        QStringList groups = escapedGroup.split('/', Qt::SkipEmptyParts);
         for (QString &group : groups) {
             group = QUrl::fromPercentEncoding(group.toUtf8());
         }
@@ -470,8 +490,10 @@ QJSValue ScriptEngine::V1::panels() const
     const auto result = m_engine->m_corona->containments();
 
     for (const auto c : result) {
-        panels.setProperty(count, m_engine->wrap(c));
-        ++count;
+        if (isPanel(c)) {
+            panels.setProperty(count, m_engine->wrap(c));
+            ++count;
+        }
     }
     panels.setProperty(QStringLiteral("length"), count);
 

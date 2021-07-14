@@ -2,6 +2,7 @@
    Copyright (c) 2014 Marco Martin <mart@kde.org>
    Copyright (c) 2014 Vishesh Handa <me@vhanda.in>
    Copyright (c) 2019 Cyril Rossi <cyril.rossi@enioka.com>
+   Copyright (c) 2021 Benjamin Port <benjamin.port@enioka.com>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -38,6 +39,7 @@ class KCMLookandFeel : public KQuickAddons::ManagedConfigModule
     Q_OBJECT
     Q_PROPERTY(LookAndFeelSettings *lookAndFeelSettings READ lookAndFeelSettings CONSTANT)
     Q_PROPERTY(QStandardItemModel *lookAndFeelModel READ lookAndFeelModel CONSTANT)
+    Q_PROPERTY(bool resetDefaultLayout READ resetDefaultLayout WRITE setResetDefaultLayout NOTIFY resetDefaultLayoutChanged)
 
 public:
     enum Roles {
@@ -66,11 +68,13 @@ public:
 
     Q_INVOKABLE int pluginIndex(const QString &pluginName) const;
 
+    bool resetDefaultLayout() const;
+    void setResetDefaultLayout(bool reset);
+
     // Setters of the various theme pieces
     void setWidgetStyle(const QString &style);
     void setColors(const QString &scheme, const QString &colorFile);
     void setIcons(const QString &theme);
-    void setGTK(const QString &theme);
     void setPlasmaTheme(const QString &theme);
     void setCursorTheme(const QString theme);
     void setSplashScreen(const QString &theme);
@@ -81,9 +85,15 @@ public:
 
     Q_INVOKABLE void reloadModel();
 
+    bool isSaveNeeded() const override;
+
 public Q_SLOTS:
     void load() override;
     void save() override;
+    void defaults() override;
+
+Q_SIGNALS:
+    void resetDefaultLayoutChanged();
 
 private:
     // List only packages which provide at least one of the components
@@ -91,6 +101,23 @@ private:
     void loadModel();
     QDir cursorThemeDir(const QString &theme, const int depth);
     const QStringList cursorSearchPaths();
+
+    void revertKeyIfNeeded(KConfigGroup &group, KConfigGroup &home, KConfigGroup &defaults);
+
+    void writeNewDefaults(const QString &filename,
+                          const QString &group,
+                          const QString &key,
+                          const QString &value,
+                          KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
+    void writeNewDefaults(KConfig &config,
+                          KConfig &configDefault,
+                          const QString &group,
+                          const QString &key,
+                          const QString &value,
+                          KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
+    void
+    writeNewDefaults(KConfigGroup &cg, KConfigGroup &cgd, const QString &key, const QString &value, KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
+    static KConfig configDefaults(const QString &filename);
 
     LookAndFeelData *m_data;
     QStandardItemModel *m_model;
@@ -107,6 +134,7 @@ private:
     bool m_applyCursors : 1;
     bool m_applyWindowSwitcher : 1;
     bool m_applyDesktopSwitcher : 1;
+    bool m_resetDefaultLayout : 1;
     bool m_applyWindowDecoration : 1;
 };
 

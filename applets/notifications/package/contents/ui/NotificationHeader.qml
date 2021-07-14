@@ -70,8 +70,8 @@ RowLayout {
         ageLabel.agoText = ageLabel.generateAgoText();
     }
 
-    spacing: units.smallSpacing
-    Layout.preferredHeight: Math.max(applicationNameLabel.implicitHeight, units.iconSizes.small)
+    spacing: PlasmaCore.Units.smallSpacing
+    Layout.preferredHeight: Math.max(applicationNameLabel.implicitHeight, PlasmaCore.Units.iconSizes.small)
 
     Component.onCompleted: updateAgoText()
 
@@ -85,8 +85,8 @@ RowLayout {
 
     PlasmaCore.IconItem {
         id: applicationIconItem
-        Layout.preferredWidth: units.iconSizes.small
-        Layout.preferredHeight: units.iconSizes.small
+        Layout.preferredWidth: PlasmaCore.Units.iconSizes.small
+        Layout.preferredHeight: PlasmaCore.Units.iconSizes.small
         source: notificationHeading.applicationIconSource
         usesPlasmaTheme: false
         visible: valid
@@ -156,7 +156,7 @@ RowLayout {
             }
 
             var eta = remaining / details.speed;
-            if (!eta) {
+            if (eta < 0.5) { // Avoid showing "0 seconds remaining"
                 return "";
             }
 
@@ -222,6 +222,26 @@ RowLayout {
             PlasmaComponents3.ToolTip {
                 id: closeButtonToolTip
                 text: i18nd("plasma_applet_org.kde.plasma.notifications", "Close")
+            }
+
+            Charts.PieChart {
+                id: chart
+                anchors.fill: parent
+                anchors.margins: PlasmaCore.Units.smallSpacing + Math.max(Math.floor(PlasmaCore.Units.devicePixelRatio), 1)
+
+                opacity: (notificationHeading.remainingTime > 0 && notificationHeading.remainingTime < notificationHeading.timeout) ? 1 : 0
+                Behavior on opacity {
+                    NumberAnimation { duration: PlasmaCore.Units.longDuration }
+                }
+
+                range { from: 0; to: notificationHeading.timeout; automatic: false }
+
+                valueSources: Charts.SingleValueSource { value: notificationHeading.remainingTime }
+                colorSource: Charts.SingleValueSource { value: PlasmaCore.Theme.highlightColor }
+
+                thickness: Math.max(Math.floor(PlasmaCore.Units.devicePixelRatio), 1) * 5
+
+                transform: Scale { origin.x: chart.width / 2; xScale: -1 }
             }
         }
     }

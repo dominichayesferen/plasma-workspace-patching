@@ -28,11 +28,13 @@
 #include <QSharedPointer>
 #include <QString>
 #include <QUrl>
+#include <QTimer>
+
+#include <chrono>
 
 #include "job.h"
 #include "notifications.h"
 
-class QTimer;
 class KFilePlacesModel;
 
 namespace NotificationManager
@@ -45,10 +47,18 @@ public:
     JobPrivate(uint id, QObject *parent);
     ~JobPrivate() override;
 
+    enum class ShowCondition {
+        OnTimeout = 1 << 0,
+        OnSummary = 1 << 1,
+        OnTermination = 1 << 2
+    };
+    Q_DECLARE_FLAGS(ShowConditions, ShowCondition)
+
     QDBusObjectPath objectPath() const;
     QUrl descriptionUrl() const;
     QString text() const;
 
+    void delayedShow(std::chrono::milliseconds delay, ShowConditions showConditions);
     void kill();
 
     // DBus
@@ -69,7 +79,8 @@ public:
     void terminate(uint errorCode, const QString &errorMessage, const QVariantMap &hints);
     void update(const QVariantMap &properties);
 
-signals:
+Q_SIGNALS:
+    void showRequested();
     void closed();
 
     void infoMessageChanged();
@@ -85,7 +96,8 @@ signals:
 private:
     friend class Job;
 
-    template<typename T> bool updateField(const T &newValue, T &target, void (Job::*changeSignal)())
+    template<typename T>
+    bool updateField(const T &newValue, T &target, void (Job::*changeSignal)())
     {
         if (target != newValue) {
             target = newValue;
@@ -95,7 +107,8 @@ private:
         return false;
     }
 
-    template<typename T> bool updateFieldFromProperties(const QVariantMap &properties, const QString &keyName, T &target, void (Job::*changeSignal)())
+    template<typename T>
+    bool updateFieldFromProperties(const QVariantMap &properties, const QString &keyName, T &target, void (Job::*changeSignal)())
     {
         auto it = properties.find(keyName);
         if (it == properties.end()) {
@@ -109,10 +122,17 @@ private:
 
     static QUrl localFileOrUrl(const QString &stringUrl);
 
-    QString prettyDestUrl() const;
+    void requestShow();
+
+    QUrl destUrl() const;
+    QString prettyUrl(const QUrl &url) const;
     void updateHasDetails();
 
     void finish();
+
+    QTimer m_showTimer;
+    ShowConditions m_showConditions = {};
+    bool m_showRequested = false;
 
     QTimer *m_killTimer = nullptr;
 
@@ -165,3 +185,5 @@ private:
 };
 
 } // namespace NotificationManager
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(NotificationManager::JobPrivate::ShowConditions)

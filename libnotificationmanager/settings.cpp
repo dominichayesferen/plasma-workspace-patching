@@ -347,20 +347,6 @@ bool Settings::dirty() const
     return d->dirty;
 }
 
-bool Settings::keepCriticalAlwaysOnTop() const
-{
-    return d->notificationSettings.criticalAlwaysOnTop();
-}
-
-void Settings::setKeepCriticalAlwaysOnTop(bool enable)
-{
-    if (this->keepCriticalAlwaysOnTop() == enable) {
-        return;
-    }
-    d->notificationSettings.setCriticalAlwaysOnTop(enable);
-    d->setDirty(true);
-}
-
 bool Settings::criticalPopupsInDoNotDisturbMode() const
 {
     return d->notificationSettings.criticalInDndMode();
@@ -372,6 +358,20 @@ void Settings::setCriticalPopupsInDoNotDisturbMode(bool enable)
         return;
     }
     d->notificationSettings.setCriticalInDndMode(enable);
+    d->setDirty(true);
+}
+
+bool Settings::keepNormalAlwaysOnTop() const
+{
+    return d->notificationSettings.normalAlwaysOnTop();
+}
+
+void Settings::setKeepNormalAlwaysOnTop(bool enable)
+{
+    if (this->keepNormalAlwaysOnTop() == enable) {
+        return;
+    }
+    d->notificationSettings.setNormalAlwaysOnTop(enable);
     d->setDirty(true);
 }
 
@@ -592,6 +592,21 @@ void Settings::setScreensMirrored(bool mirrored)
     if (d->mirroredScreensTracker) {
         d->mirroredScreensTracker->setScreensMirrored(mirrored);
     }
+}
+
+bool Settings::inhibitNotificationsWhenScreenSharing() const
+{
+    return d->dndSettings.whenScreenSharing();
+}
+
+void Settings::setInhibitNotificationsWhenScreenSharing(bool inhibit)
+{
+    if (inhibit == inhibitNotificationsWhenScreenSharing()) {
+        return;
+    }
+
+    d->dndSettings.setWhenScreenSharing(inhibit);
+    d->setDirty(true);
 }
 
 void Settings::revokeApplicationInhibitions()

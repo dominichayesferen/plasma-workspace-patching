@@ -32,6 +32,8 @@
 #include <KLocalizedString>
 #include <KSharedConfig>
 
+#include <cmath>
+
 K_EXPORT_PLASMA_RUNNER_WITH_JSON(PowerDevilRunner, "plasma-runner-powerdevil.json")
 
 PowerDevilRunner::PowerDevilRunner(QObject *parent, const KPluginMetaData &metaData, const QVariantList &args)
@@ -40,7 +42,6 @@ PowerDevilRunner::PowerDevilRunner(QObject *parent, const KPluginMetaData &metaD
 {
     setObjectName(QStringLiteral("PowerDevil"));
     updateStatus();
-    initUpdateTriggers();
     setMinLetterCount(3);
     const KLocalizedString suspend = ki18nc("Note this is a KRunner keyword", "suspend");
     m_suspend = RunnerKeyword{suspend.untranslatedText(), suspend.toString()};
@@ -85,22 +86,6 @@ PowerDevilRunner::~PowerDevilRunner()
 {
 }
 
-void PowerDevilRunner::initUpdateTriggers()
-{
-    // Also receive updates triggered through the DBus
-    QDBusConnection dbus = QDBusConnection::sessionBus();
-    if (dbus.interface()->isServiceRegistered(QStringLiteral("org.kde.Solid.PowerManagement"))) {
-        if (!dbus.connect(QStringLiteral("org.kde.Solid.PowerManagement"),
-                          QStringLiteral("/org/kde/Solid/PowerManagement"),
-                          QStringLiteral("org.kde.Solid.PowerManagement"),
-                          QStringLiteral("configurationReloaded"),
-                          this,
-                          SLOT(updateStatus()))) {
-            qDebug() << "error!";
-        }
-    }
-}
-
 void PowerDevilRunner::updateStatus()
 {
     updateSyntaxes();
@@ -114,7 +99,6 @@ void PowerDevilRunner::match(Plasma::RunnerContext &context)
     Plasma::QueryMatch::Type type = Plasma::QueryMatch::ExactMatch;
     QList<Plasma::QueryMatch> matches;
 
-    QString parameter;
     int screenBrightnessResults = matchesScreenBrightnessKeywords(term);
     if (screenBrightnessResults != -1) {
         Plasma::QueryMatch match(this);
@@ -197,7 +181,9 @@ void PowerDevilRunner::run(const Plasma::RunnerContext &context, const Plasma::Q
     if (match.id().startsWith(QLatin1String("PowerDevil_ProfileChange"))) {
         iface.asyncCall(QStringLiteral("loadProfile"), match.data().toString());
     } else if (match.id() == QLatin1String("PowerDevil_BrightnessChange")) {
-        brightnessIface.asyncCall(QStringLiteral("setBrightness"), match.data().toInt());
+        QDBusReply<int> max = brightnessIface.call("brightnessMax");
+        const int value = max.isValid() ? std::round(match.data().toInt() * max / 100.0) : match.data().toInt();
+        brightnessIface.asyncCall("setBrightness", value);
     } else if (match.id() == QLatin1String("PowerDevil_DimTotal")) {
         brightnessIface.asyncCall(QStringLiteral("setBrightness"), 0);
     } else if (match.id() == QLatin1String("PowerDevil_DimHalf")) {

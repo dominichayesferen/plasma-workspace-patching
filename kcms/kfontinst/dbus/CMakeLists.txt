@@ -1,6 +1,3 @@
-
-add_definitions(${QT_DEFINITIONS})
-
 set(fontinst_bin_SRCS FcConfig.cpp FontInst.cpp Folder.cpp Main.cpp Utils.cpp ${libkfontinstdbusiface_SRCS} )
 set(fontinst_helper_SRCS FcConfig.cpp Helper.cpp Folder.cpp Utils.cpp ${libkfontinstdbusiface_SRCS} )
 
@@ -13,11 +10,11 @@ add_executable(fontinst_helper ${fontinst_helper_SRCS})
 
 set_target_properties(fontinst_bin PROPERTIES OUTPUT_NAME fontinst)
 target_link_libraries(fontinst_bin 
-                      Qt5::DBus Qt5::Xml KF5::AuthCore ${FONTCONFIG_LIBRARIES} kfontinst)
+                      Qt::DBus Qt::Xml KF5::AuthCore KF5::KIOCore kfontinst)
 
 set_target_properties(fontinst_helper PROPERTIES OUTPUT_NAME fontinst_helper)
 target_link_libraries(fontinst_helper 
-                      Qt5::DBus Qt5::Xml KF5::AuthCore ${FONTCONFIG_LIBRARIES} kfontinst)
+                      Qt::DBus Qt::Xml KF5::AuthCore KF5::KIOCore kfontinst)
 
 install(TARGETS fontinst_bin DESTINATION ${KAUTH_HELPER_INSTALL_DIR} )
 install(TARGETS fontinst_helper DESTINATION ${KAUTH_HELPER_INSTALL_DIR} )

@@ -149,7 +149,7 @@ QtObject {
 
         // When no explicit screen corner is configured,
         // restrict notification popup position by horizontal panel width
-        if (notificationSettings.popupPosition === NotificationManager.Settings.CloseToWidget
+        if (visualParent && notificationSettings.popupPosition === NotificationManager.Settings.CloseToWidget
             && plasmoid.formFactor === PlasmaCore.Types.Horizontal) {
             const visualParentWindow = visualParent.Window.window;
             if (visualParentWindow) {
@@ -456,7 +456,8 @@ QtObject {
             readonly property var notificationId: model.notificationId
 
             popupWidth: globals.popupWidth
-            type: model.urgency === NotificationManager.Notifications.CriticalUrgency && notificationSettings.keepCriticalAlwaysOnTop
+            type: model.urgency === NotificationManager.Notifications.CriticalUrgency
+                  || (model.urgency === NotificationManager.Notifications.NormalUrgency && notificationSettings.keepNormalAlwaysOnTop)
                   ? PlasmaCore.Dialog.CriticalNotification : PlasmaCore.Dialog.Notification
 
             notificationType: model.type
@@ -510,8 +511,17 @@ QtObject {
             replySubmitButtonText: model.replySubmitButtonText || ""
             replySubmitButtonIconName: model.replySubmitButtonIconName || ""
 
-            onExpired: popupNotificationsModel.expire(popupNotificationsModel.index(index, 0))
+            onExpired: {
+                if (model.resident) {
+                    // When resident, only mark it as expired so the popup disappears
+                    // but don't actually invalidate the notification
+                    model.expired = true;
+                } else {
+                    popupNotificationsModel.expire(popupNotificationsModel.index(index, 0))
+                }
+            }
             onHoverEntered: model.read = true
+            // explicit close, even when resident
             onCloseClicked: popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
             onDismissClicked: model.dismissed = true
             onConfigureClicked: popupNotificationsModel.configure(popupNotificationsModel.index(index, 0))
@@ -540,33 +550,55 @@ QtObject {
 
                         if (highestIdx && highestIdx.valid) {
                             tasksModel.requestActivate(highestIdx);
-                            popupNotificationsModel.close(popupNotificationsModel.index(index, 0));
+                            if (!model.resident) {
+                                popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                            }
 
                         }
                         return;
                     }
 
                     tasksModel.requestActivate(defaultActionFallbackWindowIdx);
-                    popupNotificationsModel.close(popupNotificationsModel.index(index, 0));
+                    if (!model.resident) {
+                        popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                    }
                     return;
                 }
 
                 popupNotificationsModel.invokeDefaultAction(popupNotificationsModel.index(index, 0))
-                popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                if (!model.resident) {
+                    popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                }
             }
             onActionInvoked: {
                 popupNotificationsModel.invokeAction(popupNotificationsModel.index(index, 0), actionName)
-                popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                if (!model.resident) {
+                    popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                }
             }
             onReplied: {
                 popupNotificationsModel.reply(popupNotificationsModel.index(index, 0), text);
-                popupNotificationsModel.close(popupNotificationsModel.index(index, 0));
+                if (!model.resident) {
+                    popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                }
             }
             onOpenUrl: {
                 Qt.openUrlExternally(url);
-                popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                // Client isn't informed of this action, so we always hide the popup
+                if (model.resident) {
+                    model.expired = true;
+                } else {
+                    popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+                }
             }
-            onFileActionInvoked: popupNotificationsModel.close(popupNotificationsModel.index(index, 0))
+            onFileActionInvoked: {
+                if (!model.resident
+                    || (action.objectName === "movetotrash" || action.objectName === "deletefile")) {
+                    popupNotificationsModel.close(popupNotificationsModel.index(index, 0));
+                } else {
+                    model.expired = true;
+                }
+            }
 
             onSuspendJobClicked: popupNotificationsModel.suspendJob(popupNotificationsModel.index(index, 0))
             onResumeJobClicked: popupNotificationsModel.resumeJob(popupNotificationsModel.index(index, 0))

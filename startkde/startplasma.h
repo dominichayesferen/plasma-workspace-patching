@@ -23,6 +23,7 @@
 #include "config-startplasma.h"
 #include "kcheckrunning/kcheckrunning.h"
 #include <ksplashinterface.h>
+#include <optional>
 
 extern QTextStream out;
 
@@ -34,9 +35,11 @@ void messageBox(const QString &text);
 void createConfigDirectory();
 void runStartupConfig();
 void setupCursor(bool wayland);
+std::optional<QStringList> getSystemdEnvironment();
+void importSystemdEnvrionment();
 void runEnvironmentScripts();
 void setupPlasmaEnvironment();
-void cleanupPlasmaEnvironment();
+void cleanupPlasmaEnvironment(const std::optional<QStringList> &oldSystemdEnvironment);
 void cleanupX11();
 bool syncDBusEnvironment();
 void setupFontDpi();
@@ -48,8 +51,10 @@ bool startPlasmaSession(bool wayland);
 
 void waitForKonqi();
 
+static void resetSystemdFailedUnits();
 static bool hasSystemdService(const QString &serviceName);
 static bool useSystemdBoot();
+static void migrateUserScriptsAutostart();
 
 struct KillBeforeDeleter {
     static inline void cleanup(QProcess *pointer)

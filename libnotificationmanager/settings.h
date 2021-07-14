@@ -52,9 +52,9 @@ class NOTIFICATIONMANAGER_EXPORT Settings : public QObject
      */
     Q_PROPERTY(bool criticalPopupsInDoNotDisturbMode READ criticalPopupsInDoNotDisturbMode WRITE setCriticalPopupsInDoNotDisturbMode NOTIFY settingsChanged)
     /**
-     * Whether to keep critical notifications always on top.
+     * Whether to keep normal notifications always on top.
      */
-    Q_PROPERTY(bool keepCriticalAlwaysOnTop READ keepCriticalAlwaysOnTop WRITE setKeepCriticalAlwaysOnTop NOTIFY settingsChanged)
+    Q_PROPERTY(bool keepNormalAlwaysOnTop READ keepNormalAlwaysOnTop WRITE setKeepNormalAlwaysOnTop NOTIFY settingsChanged)
     /**
      * Whether to show popups for low priority notifications.
      */
@@ -176,6 +176,14 @@ class NOTIFICATIONMANAGER_EXPORT Settings : public QObject
     Q_PROPERTY(bool screensMirrored READ screensMirrored WRITE setScreensMirrored NOTIFY screensMirroredChanged)
 
     /**
+     * Whether to enable do not disturb mode while screen sharing
+     *
+     * @since 5.22
+     */
+    Q_PROPERTY(bool inhibitNotificationsWhenScreenSharing READ inhibitNotificationsWhenScreenSharing WRITE setInhibitNotificationsWhenScreenSharing NOTIFY
+                   settingsChanged)
+
+    /**
      * Whether notification sounds should be disabled
      *
      * This does not reflect the actual mute state of the Notification Sounds
@@ -256,8 +264,8 @@ public:
     bool criticalPopupsInDoNotDisturbMode() const;
     void setCriticalPopupsInDoNotDisturbMode(bool enable);
 
-    bool keepCriticalAlwaysOnTop() const;
-    void setKeepCriticalAlwaysOnTop(bool enable);
+    bool keepNormalAlwaysOnTop() const;
+    void setKeepNormalAlwaysOnTop(bool enable);
 
     bool lowPriorityPopups() const;
     void setLowPriorityPopups(bool enable);
@@ -311,6 +319,9 @@ public:
     bool screensMirrored() const;
     void setScreensMirrored(bool enable);
 
+    bool inhibitNotificationsWhenScreenSharing() const;
+    void setInhibitNotificationsWhenScreenSharing(bool inhibit);
+
     bool notificationSoundsInhibited() const;
     void setNotificationSoundsInhibited(bool inhibited);
 
@@ -322,7 +333,7 @@ public:
      */
     Q_INVOKABLE void revokeApplicationInhibitions();
 
-signals:
+Q_SIGNALS:
     void settingsChanged();
 
     void liveChanged();

@@ -23,6 +23,7 @@
 #include <QString>
 #include <QUrl>
 
+#include <KConfigGroup>
 #include <KSharedConfig>
 
 namespace KDeclarative
@@ -78,7 +79,7 @@ private:
     QTimer *m_osdTimer = nullptr;
     int m_timeout = 0;
 
-    KSharedConfig::Ptr m_config;
+    KConfigGroup m_osdConfigGroup;
 };
 
 #endif // OSD_H

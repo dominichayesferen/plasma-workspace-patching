@@ -95,21 +95,22 @@ ColumnLayout {
     readonly property bool dragging: (thumbnailStripLoader.item && thumbnailStripLoader.item.dragging)
                                         || (jobLoader.item && jobLoader.item.dragging)
     property bool replying: false
+    readonly property bool hasPendingReply: replyLoader.item && replyLoader.item.text !== ""
 
-    signal bodyClicked(var mouse)
+    signal bodyClicked
     signal closeClicked
     signal configureClicked
     signal dismissClicked
     signal actionInvoked(string actionName)
     signal replied(string text)
     signal openUrl(string url)
-    signal fileActionInvoked
+    signal fileActionInvoked(QtObject action)
 
     signal suspendJobClicked
     signal resumeJobClicked
     signal killJobClicked
 
-    spacing: units.smallSpacing
+    spacing: PlasmaCore.Units.smallSpacing
 
     Item {
         id: headingElement
@@ -166,7 +167,7 @@ ColumnLayout {
     RowLayout {
         id: bodyRow
         Layout.fillWidth: true
-        spacing: units.smallSpacing
+        spacing: PlasmaCore.Units.smallSpacing
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -225,7 +226,7 @@ ColumnLayout {
                 id: bodyTextRow
 
                 Layout.fillWidth: true
-                spacing: units.smallSpacing
+                spacing: PlasmaCore.Units.smallSpacing
 
                 SelectableLabel {
                     id: bodyLabel
@@ -249,12 +250,12 @@ ColumnLayout {
         Item {
             id: iconContainer
 
-            Layout.preferredWidth: units.iconSizes.large
-            Layout.preferredHeight: units.iconSizes.large
-            Layout.topMargin: units.smallSpacing
-            Layout.bottomMargin: units.smallSpacing
+            Layout.preferredWidth: PlasmaCore.Units.iconSizes.large
+            Layout.preferredHeight: PlasmaCore.Units.iconSizes.large
+            Layout.topMargin: PlasmaCore.Units.smallSpacing
+            Layout.bottomMargin: PlasmaCore.Units.smallSpacing
 
-            visible: iconItem.active || imageItem.active
+            visible: iconItem.active
 
             PlasmaCore.IconItem {
                 id: iconItem
@@ -263,30 +264,9 @@ ColumnLayout {
                 anchors.fill: parent
                 usesPlasmaTheme: false
                 smooth: true
-                source: {
-                    var icon = notificationItem.icon;
-                    if (typeof icon !== "string") { // displayed by QImageItem below
-                        return "";
-                    }
-
-                    // don't show a generic "info" icon since this is a notification already
-                    if (icon === "dialog-information") {
-                        return "";
-                    }
-
-                    return icon;
-                }
+                // don't show a generic "info" icon since this is a notification already
+                source: notificationItem.icon !== "dialog-information" ? notificationItem.icon : ""
                 visible: active
-            }
-
-            KQCAddons.QImageItem {
-                id: imageItem
-                readonly property bool active: !null && nativeWidth > 0
-                anchors.fill: parent
-                smooth: true
-                fillMode: KQCAddons.QImageItem.PreserveAspectFit
-                visible: active
-                image: typeof notificationItem.icon === "object" ? notificationItem.icon : undefined
             }
 
             // JobItem reparents a file icon here for finished jobs with one total file
@@ -316,7 +296,7 @@ ColumnLayout {
             onKillJobClicked: notificationItem.killJobClicked()
 
             onOpenUrl: notificationItem.openUrl(url)
-            onFileActionInvoked: notificationItem.fileActionInvoked()
+            onFileActionInvoked: notificationItem.fileActionInvoked(action)
 
             hovered: notificationItem.hovered
         }
@@ -332,13 +312,13 @@ ColumnLayout {
         Flow { // it's a Flow so it can wrap if too long
             id: actionFlow
             width: parent.width
-            spacing: units.smallSpacing
+            spacing: PlasmaCore.Units.smallSpacing
             layoutDirection: Qt.RightToLeft
             enabled: !replyLoader.active
             opacity: replyLoader.active ? 0 : 1
             Behavior on opacity {
                 NumberAnimation {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                     easing.type: Easing.InOutQuad
                 }
             }
@@ -397,13 +377,13 @@ ColumnLayout {
             x: active ? 0 : parent.width
             Behavior on x {
                 NumberAnimation {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                     easing.type: Easing.InOutQuad
                 }
             }
             Behavior on opacity {
                 NumberAnimation {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                     easing.type: Easing.InOutQuad
                 }
             }
@@ -445,7 +425,7 @@ ColumnLayout {
             bottomPadding: -thumbnailStripLoader.Layout.bottomMargin
             urls: notificationItem.urls
             onOpenUrl: notificationItem.openUrl(url)
-            onFileActionInvoked: notificationItem.fileActionInvoked()
+            onFileActionInvoked: notificationItem.fileActionInvoked(action)
         }
     }
 

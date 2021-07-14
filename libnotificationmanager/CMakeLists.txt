@@ -35,9 +35,14 @@ set(notificationmanager_LIB_SRCS
 ecm_qt_declare_logging_category(notificationmanager_LIB_SRCS
     HEADER debug.h
     IDENTIFIER NOTIFICATIONMANAGER
-    CATEGORY_NAME org.kde.plasma.notifications)
+    CATEGORY_NAME org.kde.plasma.notifications
+    DESCRIPTION "Plasma Notifications" EXPORT LIBNOTIFICATIONMANAGER)
 
-install(FILES libnotificationmanager.categories DESTINATION ${KDE_INSTALL_LOGGINGCATEGORIESDIR})
+ecm_qt_install_logging_categories(
+        EXPORT LIBNOTIFICATIONMANAGER
+        FILE libnotificationmanager.categories
+        DESTINATION ${KDE_INSTALL_LOGGINGCATEGORIESDIR}
+        )
 
 # Settings
 kconfig_add_kcfg_files(notificationmanager_LIB_SRCS kcfg/donotdisturbsettings.kcfgc GENERATE_MOC)
@@ -65,17 +70,17 @@ target_compile_definitions(notificationmanager PRIVATE -DPROJECT_VERSION="${PROJ
 
 generate_export_header(notificationmanager)
 
-target_include_directories(notificationmanager PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}/notificationmanager>")
+target_include_directories(notificationmanager PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>" "$<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}/notificationmanager>")
 
 target_link_libraries(notificationmanager
     PUBLIC
-        Qt5::Core
-        Qt5::Gui
-        Qt5::Quick
+        Qt::Core
+        Qt::Gui
+        Qt::Quick
         KF5::ConfigCore
         KF5::ItemModels
     PRIVATE
-        Qt5::DBus
+        Qt::DBus
         KF5::ConfigGui
         KF5::I18n
         KF5::KIOFileWidgets

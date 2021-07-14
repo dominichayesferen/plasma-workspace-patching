@@ -36,10 +36,10 @@ Item {
 
     Plasmoid.switchWidth: Plasmoid.formFactor === PlasmaCore.Types.Planar
         ? -1
-        : (Plasmoid.fullRepresentationItem ? Plasmoid.fullRepresentationItem.Layout.minimumWidth : units.gridUnit * 8)
+        : (Plasmoid.fullRepresentationItem ? Plasmoid.fullRepresentationItem.Layout.minimumWidth : PlasmaCore.Units.gridUnit * 8)
     Plasmoid.switchHeight: Plasmoid.formFactor === PlasmaCore.Types.Planar
         ? -1
-        : (Plasmoid.fullRepresentationItem ? Plasmoid.fullRepresentationItem.Layout.minimumHeight : units.gridUnit * 12)
+        : (Plasmoid.fullRepresentationItem ? Plasmoid.fullRepresentationItem.Layout.minimumHeight : PlasmaCore.Units.gridUnit * 12)
 
     Plasmoid.preferredRepresentation: Plasmoid.formFactor === PlasmaCore.Types.Planar ? Plasmoid.fullRepresentation : null
 
@@ -52,4 +52,19 @@ Item {
     }
 
     Plasmoid.configurationRequired: plasmoid.nativeInterface.faceController.highPrioritySensorIds.length == 0 && plasmoid.nativeInterface.faceController.lowPrioritySensorIds.length == 0 && plasmoid.nativeInterface.faceController.totalSensor.length == 0
+
+    MouseArea {
+        parent: plasmoid
+        anchors.fill: plasmoid
+        acceptedButtons: Qt.MiddleButton
+        onClicked: action_openSystemMonitor()
+    }
+
+    function action_openSystemMonitor() {
+        Plasmoid.nativeInterface.openSystemMonitor()
+    }
+
+    Component.onCompleted: {
+        Plasmoid.setAction("openSystemMonitor", i18nc("@action", "Open System Monitor..."), "utilities-system-monitor")
+    }
 }

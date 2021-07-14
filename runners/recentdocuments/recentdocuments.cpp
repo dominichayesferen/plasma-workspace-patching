@@ -46,7 +46,7 @@ RecentDocuments::RecentDocuments(QObject *parent, const KPluginMetaData &metaDat
 
     addSyntax(Plasma::RunnerSyntax(QStringLiteral(":q:"), i18n("Looks for documents recently used with names matching :q:.")));
 
-    addAction(QStringLiteral("openParentDir"), QIcon::fromTheme(QStringLiteral("document-open-folder")), i18n("Open Containing Folder"));
+    m_actions = {new QAction(QIcon::fromTheme(QStringLiteral("document-open-folder")), i18n("Open Containing Folder"), this)};
     setMinLetterCount(3);
 }
 
@@ -96,8 +96,10 @@ void RecentDocuments::match(Plasma::RunnerContext &context)
         match.setIconName(KIO::iconNameForUrl(url));
         match.setRelevance(relevance);
         match.setData(QVariant(url));
+        match.setUrls({url});
+        match.setId(url.toString());
         if (url.isLocalFile()) {
-            match.setActions(actions().values());
+            match.setActions(m_actions);
         }
         match.setText(name);
 
@@ -123,13 +125,6 @@ void RecentDocuments::run(const Plasma::RunnerContext &context, const Plasma::Qu
     job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
     job->setRunExecutables(false);
     job->start();
-}
-
-QMimeData *RecentDocuments::mimeDataForMatch(const Plasma::QueryMatch &match)
-{
-    QMimeData *result = new QMimeData();
-    result->setUrls({match.data().toUrl()});
-    return result;
 }
 
 #include "recentdocuments.moc"

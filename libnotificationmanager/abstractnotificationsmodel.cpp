@@ -101,7 +101,18 @@ void AbstractNotificationsModel::Private::onNotificationReplaced(uint replacedId
 
     setupNotificationTimeout(notification);
 
-    notifications[row] = notification;
+    Notification newNotification(notification);
+
+    const Notification &oldNotification = notifications.at(row);
+    // As per spec a notification must be replaced atomically with no visual cues.
+    // Transfer over properties that might cause this, such as unread showing the bell again,
+    // or created() which should indicate the original date, whereas updated() is when it was last updated
+    newNotification.setCreated(oldNotification.created());
+    newNotification.setExpired(oldNotification.expired());
+    newNotification.setDismissed(oldNotification.dismissed());
+    newNotification.setRead(oldNotification.read());
+
+    notifications[row] = newNotification;
     const QModelIndex idx = q->index(row, 0);
     emit q->dataChanged(idx, idx);
 }
@@ -342,6 +353,10 @@ QVariant AbstractNotificationsModel::data(const QModelIndex &index, int role) co
         return notification.expired();
     case Notifications::ReadRole:
         return notification.read();
+    case Notifications::ResidentRole:
+        return notification.resident();
+    case Notifications::TransientRole:
+        return notification.transient();
 
     case Notifications::HasReplyActionRole:
         return notification.hasReplyAction();
@@ -371,6 +386,13 @@ bool AbstractNotificationsModel::setData(const QModelIndex &index, const QVarian
     case Notifications::ReadRole:
         if (value.toBool() != notification.read()) {
             notification.setRead(value.toBool());
+            dirty = true;
+        }
+        break;
+    // Allows to mark a notification as expired without actually sending that out through expire() for persistency
+    case Notifications::ExpiredRole:
+        if (value.toBool() != notification.expired()) {
+            notification.setExpired(value.toBool());
             dirty = true;
         }
         break;

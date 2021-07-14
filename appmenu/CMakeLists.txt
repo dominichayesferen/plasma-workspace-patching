@@ -16,17 +16,23 @@ qt5_add_dbus_adaptor(kded_appmenu_SRCS org.kde.kappmenu.xml
 add_library(appmenu MODULE ${kded_appmenu_SRCS})
 kcoreaddons_desktop_to_json(appmenu appmenu.desktop)
 
+pkg_check_modules(XKBCommon REQUIRED IMPORTED_TARGET xkbcommon)
+
 target_link_libraries(appmenu
-    Qt5::DBus
+    Qt::DBus
+    Qt::WaylandClientPrivate
+    Qt::XkbCommonSupportPrivate
     KF5::DBusAddons
     KF5::KIOCore
+    KF5::WaylandClient
     KF5::WindowSystem
-    ${X11_LIBRARIES}
+    Wayland::Client
+    PkgConfig::XKBCommon
     dbusmenuqt
 )
 
 if (HAVE_X11)
-    target_link_libraries(appmenu Qt5::X11Extras XCB::XCB)
+    target_link_libraries(appmenu Qt::X11Extras XCB::XCB)
 endif()
 
 install(TARGETS appmenu DESTINATION ${KDE_INSTALL_PLUGINDIR}/kf5/kded )

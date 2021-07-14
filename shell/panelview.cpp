@@ -480,7 +480,7 @@ void PanelView::positionPanel()
         m_shellSurface->setPosition(pos);
     }
 
-    KWindowEffects::slideWindow(winId(), slideLocation, -1);
+    KWindowEffects::slideWindow(this, slideLocation, -1);
 }
 
 QRect PanelView::geometryByDistance(int distance) const
@@ -633,7 +633,8 @@ void PanelView::restore()
     // the place for this config key is changed in Plasma 5.9
     // Do NOT use readConfigValueWithFallBack
     setVisibilityMode((VisibilityMode)panelConfig.parent().readEntry<int>("panelVisibility", panelConfig.readEntry<int>("panelVisibility", (int)NormalPanel)));
-    setOpacityMode((OpacityMode)readConfigValueWithFallBack("panelOpacity", PanelView::OpacityMode::Adaptive));
+    setOpacityMode((OpacityMode)config().parent().readEntry<int>("panelOpacity",
+                                                                 configDefaults().parent().readEntry<int>("panelOpacity", PanelView::OpacityMode::Adaptive)));
     m_initCompleted = true;
     resizePanel();
     positionPanel();
@@ -772,7 +773,7 @@ void PanelView::setAutoHideEnabled(bool enabled)
         value |= hideType << 8;
 
         xcb_change_property(c, XCB_PROP_MODE_REPLACE, winId(), atom->atom, XCB_ATOM_CARDINAL, 32, 1, &value);
-        KWindowEffects::slideWindow(winId(), slideLocation, -1);
+        KWindowEffects::slideWindow(this, slideLocation, -1);
     }
 #endif
     if (m_shellSurface && (m_visibilityMode == PanelView::AutoHide || m_visibilityMode == PanelView::LetWindowsCover)) {
@@ -1056,9 +1057,9 @@ QPointF PanelView::positionAdjustedForContainment(const QPointF &point) const
     }
 
     QRectF containmentRect(containmentItem->mapToScene(QPoint(0, 0)), QSizeF(containmentItem->width(), containmentItem->height()));
-    
-    // We are removing 1 to the e.g. containmentRect.right() - m_rightPadding because the last pixel would otherwise 
-    // the first one in the margin, and thus the mouse event would be discarded. Instead, the first pixel given by 
+
+    // We are removing 1 to the e.g. containmentRect.right() - m_rightPadding because the last pixel would otherwise
+    // the first one in the margin, and thus the mouse event would be discarded. Instead, the first pixel given by
     // containmentRect.left() + m_leftPadding the first one *not* in the margin, so it work.
     return QPointF(qBound(containmentRect.left() + m_leftPadding, point.x(), containmentRect.right() - m_rightPadding - 1),
                    qBound(containmentRect.top() + m_topPadding, point.y(), containmentRect.bottom() - m_bottomPadding - 1));
@@ -1067,8 +1068,8 @@ QPointF PanelView::positionAdjustedForContainment(const QPointF &point) const
 void PanelView::updateMask()
 {
     if (m_backgroundHints == Plasma::Types::NoBackground) {
-        KWindowEffects::enableBlurBehind(winId(), false);
-        KWindowEffects::enableBackgroundContrast(winId(), false);
+        KWindowEffects::enableBlurBehind(this, false);
+        KWindowEffects::enableBackgroundContrast(this, false);
         setMask(QRegion());
     } else {
         QRegion mask;
@@ -1081,8 +1082,8 @@ void PanelView::updateMask()
             }
         }
 
-        KWindowEffects::enableBlurBehind(winId(), m_theme.blurBehindEnabled(), mask);
-        KWindowEffects::enableBackgroundContrast(winId(),
+        KWindowEffects::enableBlurBehind(this, m_theme.blurBehindEnabled(), mask);
+        KWindowEffects::enableBackgroundContrast(this,
                                                  m_theme.backgroundContrastEnabled(),
                                                  m_theme.backgroundContrast(),
                                                  m_theme.backgroundIntensity(),
@@ -1275,10 +1276,13 @@ void PanelView::handleQmlStatusChange(QQmlComponent::Status status)
         disconnect(this, &QuickViewSharedEngine::statusChanged, this, &PanelView::handleQmlStatusChange);
 
         updatePadding();
-        connect(rootObject, SIGNAL(bottomPaddingChanged()), this, SLOT(updatePadding()));
-        connect(rootObject, SIGNAL(topPaddingChanged()), this, SLOT(updatePadding()));
-        connect(rootObject, SIGNAL(rightPaddingChanged()), this, SLOT(updatePadding()));
-        connect(rootObject, SIGNAL(leftPaddingChanged()), this, SLOT(updatePadding()));
+        int paddingSignal = rootObject->metaObject()->indexOfSignal(SIGNAL(bottomPaddingChanged()));
+        if (paddingSignal >= 0) {
+            connect(rootObject, SIGNAL(bottomPaddingChanged()), this, SLOT(updatePadding()));
+            connect(rootObject, SIGNAL(topPaddingChanged()), this, SLOT(updatePadding()));
+            connect(rootObject, SIGNAL(rightPaddingChanged()), this, SLOT(updatePadding()));
+            connect(rootObject, SIGNAL(leftPaddingChanged()), this, SLOT(updatePadding()));
+        }
 
         const QVariant maskProperty = rootObject->property("panelMask");
         if (static_cast<QMetaType::Type>(maskProperty.type()) == QMetaType::QRegion) {

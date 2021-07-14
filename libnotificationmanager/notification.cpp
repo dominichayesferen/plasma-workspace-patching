@@ -372,6 +372,9 @@ void Notification::Private::processHints(const QVariantMap &hints)
         }
     }
 
+    resident = hints.value(QStringLiteral("resident")).toBool();
+    transient = hints.value(QStringLiteral("transient")).toBool();
+
     userActionFeedback = hints.value(QStringLiteral("x-kde-user-action-feedback")).toBool();
     if (userActionFeedback) {
         // A confirmation of an explicit user interaction is assumed to have been seen by the user.
@@ -443,7 +446,7 @@ Notification::Notification(const Notification &other)
 {
 }
 
-Notification::Notification(Notification &&other)
+Notification::Notification(Notification &&other) noexcept
     : d(other.d)
 {
     other.d = nullptr;
@@ -455,7 +458,7 @@ Notification &Notification::operator=(const Notification &other)
     return *this;
 }
 
-Notification &Notification::operator=(Notification &&other)
+Notification &Notification::operator=(Notification &&other) noexcept
 {
     d = other.d;
     other.d = nullptr;
@@ -485,6 +488,11 @@ void Notification::setDBusService(const QString &dBusService)
 QDateTime Notification::created() const
 {
     return d->created;
+}
+
+void Notification::setCreated(const QDateTime &created)
+{
+    d->created = created;
 }
 
 QDateTime Notification::updated() const
@@ -751,6 +759,26 @@ bool Notification::dismissed() const
 void Notification::setDismissed(bool dismissed)
 {
     d->dismissed = dismissed;
+}
+
+bool Notification::resident() const
+{
+    return d->resident;
+}
+
+void Notification::setResident(bool resident)
+{
+    d->resident = resident;
+}
+
+bool Notification::transient() const
+{
+    return d->transient;
+}
+
+void Notification::setTransient(bool transient)
+{
+    d->transient = transient;
 }
 
 QVariantMap Notification::hints() const

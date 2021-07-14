@@ -31,8 +31,8 @@ import org.kde.plasma.extras 2.0 as PlasmaExtras
 Item {
     id: popup
     //set width/height to avoid useless Dialog resize
-    readonly property int defaultWidth: units.gridUnit * 24
-    readonly property int defaultHeight: units.gridUnit * 24
+    readonly property int defaultWidth: PlasmaCore.Units.gridUnit * 24
+    readonly property int defaultHeight: PlasmaCore.Units.gridUnit * 24
 
     width: defaultWidth
     Layout.minimumWidth: defaultWidth
@@ -55,6 +55,9 @@ Item {
             right: parent.right
         }
         height: trayHeading.height + bottomPadding + container.headingHeight
+        Behavior on height {
+            NumberAnimation { duration: PlasmaCore.Units.shortDuration/2; easing.type: Easing.InOutQuad }
+        }
     }
 
     // Main content layout
@@ -71,14 +74,14 @@ Item {
 
             PlasmaComponents.ToolButton {
                 id: backButton
-                visible: systemTrayState.activeApplet && systemTrayState.activeApplet.expanded && (hiddenItemsView.itemCount > 0)
+                visible: systemTrayState.activeApplet && systemTrayState.activeApplet.expanded && (hiddenLayout.itemCount > 0)
                 icon.name: LayoutMirroring.enabled ? "go-previous-symbolic-rtl" : "go-previous-symbolic"
                 onClicked: systemTrayState.setActiveApplet(null)
             }
 
             PlasmaExtras.Heading {
                 Layout.fillWidth: true
-                leftPadding: systemTrayState.activeApplet ? 0 : units.smallSpacing * 2
+                leftPadding: systemTrayState.activeApplet ? 0 : PlasmaCore.Units.smallSpacing * 2
 
                 level: 1
                 text: systemTrayState.activeApplet ? systemTrayState.activeApplet.title : i18n("Status and Notifications")
@@ -162,7 +165,7 @@ Item {
                         action: modelData
                     }
                     onObjectAdded: {
-                        if (object !== actionsButton.applet.action("configure")) {
+                        if (object.action !== actionsButton.applet.action("configure")) {
                             configMenu.addMenuItem(object);
                         }
                     }
@@ -194,7 +197,7 @@ Item {
             id: hiddenItemsView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.topMargin: units.smallSpacing
+            Layout.topMargin: PlasmaCore.Units.smallSpacing
             visible: !systemTrayState.activeApplet
         }
 

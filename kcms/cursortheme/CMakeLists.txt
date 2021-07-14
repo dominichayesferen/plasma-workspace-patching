@@ -6,11 +6,14 @@ include_directories( ${LIBUSB_INCLUDE_DIR} )
 
 set( libnoinst_SRCS
 xcursor/thememodel.cpp
+xcursor/themeapplicator.cpp
 xcursor/cursortheme.cpp
 xcursor/xcursortheme.cpp
 xcursor/previewwidget.cpp
 xcursor/sortproxymodel.cpp
-../krdb/krdb.cpp )
+../kcms-common_p.h
+)
+
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/xcursor/ )
 
 ########### next target ###############
@@ -31,9 +34,9 @@ add_library(kcm_cursortheme MODULE ${kcm_cursortheme_PART_SRCS})
 
 
 target_link_libraries(kcm_cursortheme
-    Qt5::DBus
-    Qt5::X11Extras
-    Qt5::Quick
+    Qt::DBus
+    Qt::X11Extras
+    Qt::Quick
     KF5::Archive
     KF5::KCMUtils
     KF5::I18n
@@ -41,24 +44,59 @@ target_link_libraries(kcm_cursortheme
     KF5::WindowSystem
     KF5::KIOCore
     KF5::KIOWidgets
-    KF5::KDELibs4Support
     KF5::NewStuffCore
     KF5::QuickAddons
-    ${X11_LIBRARIES}
-    XCB::XCB
     PW::KWorkspace
+    krdb
 )
 
 if (X11_Xcursor_FOUND)
-   target_link_libraries(kcm_cursortheme ${X11_Xcursor_LIB})
+   target_link_libraries(kcm_cursortheme X11::Xcursor)
 endif ()
 if (X11_Xfixes_FOUND)
-   target_link_libraries(kcm_cursortheme ${X11_Xfixes_LIB})
+   target_link_libraries(kcm_cursortheme X11::Xfixes)
 endif ()
 
+set_target_properties(kcm_cursortheme PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/kcms")
 install(TARGETS kcm_cursortheme  DESTINATION ${KDE_INSTALL_PLUGINDIR}/kcms )
 
 kcoreaddons_desktop_to_json(kcm_cursortheme "kcm_cursortheme.desktop")
+
+########### next target ###############
+
+set(plasma-apply-cursortheme_SRCS
+    plasma-apply-cursortheme.cpp
+
+    xcursor/cursortheme.cpp
+    xcursor/themeapplicator.cpp
+    xcursor/thememodel.cpp
+    xcursor/xcursortheme.cpp
+    ../kcms-common_p.h
+    ../krdb/krdb.cpp
+)
+
+kconfig_add_kcfg_files(plasma-apply-cursortheme_SRCS cursorthemesettings.kcfgc GENERATE_MOC)
+add_executable(plasma-apply-cursortheme ${plasma-apply-cursortheme_SRCS})
+
+target_link_libraries(plasma-apply-cursortheme
+    Qt::DBus
+    Qt::X11Extras
+    KF5::GuiAddons
+    KF5::I18n
+    KF5::KCMUtils
+    KF5::WindowSystem
+    X11::X11
+    XCB::XCB
+    PW::KWorkspace
+)
+if (X11_Xcursor_FOUND)
+   target_link_libraries(plasma-apply-cursortheme X11::Xcursor)
+endif ()
+if (X11_Xfixes_FOUND)
+   target_link_libraries(plasma-apply-cursortheme X11::Xfixes)
+endif ()
+
+install(TARGETS plasma-apply-cursortheme  DESTINATION ${KDE_INSTALL_BINDIR})
 
 ########### install files ###############
 

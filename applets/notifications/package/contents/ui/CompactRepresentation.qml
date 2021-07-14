@@ -36,11 +36,11 @@ MouseArea {
         || plasmoid.location === PlasmaCore.Types.BottomEdge
         || plasmoid.location === PlasmaCore.Types.LeftEdge)
 
-    Layout.minimumWidth: plasmoid.formFactor === PlasmaCore.Types.Horizontal ? height : units.iconSizes.small
-    Layout.minimumHeight: plasmoid.formFactor === PlasmaCore.Types.Vertical ? width : (units.iconSizes.small + 2 * theme.mSize(theme.defaultFont).height)
+    Layout.minimumWidth: plasmoid.formFactor === PlasmaCore.Types.Horizontal ? height : PlasmaCore.Units.iconSizes.small
+    Layout.minimumHeight: plasmoid.formFactor === PlasmaCore.Types.Vertical ? width : (PlasmaCore.Units.iconSizes.small + 2 * PlasmaCore.Theme.mSize(PlasmaCore.Theme.defaultFont).height)
 
-    Layout.maximumWidth: inPanel ? units.iconSizeHints.panel : -1
-    Layout.maximumHeight: inPanel ? units.iconSizeHints.panel : -1
+    Layout.maximumWidth: inPanel ? PlasmaCore.Units.iconSizeHints.panel : -1
+    Layout.maximumHeight: inPanel ? PlasmaCore.Units.iconSizeHints.panel : -1
 
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
 
@@ -71,7 +71,7 @@ MouseArea {
     PlasmaCore.SvgItem {
         id: notificationIcon
         anchors.centerIn: parent
-        width: units.roundToIconSize(Math.min(parent.width, parent.height))
+        width: PlasmaCore.Units.roundToIconSize(Math.min(parent.width, parent.height))
         height: width
         svg: notificationSvg
         visible: opacity > 0
@@ -88,9 +88,9 @@ MouseArea {
             range { from: 0; to: 100; automatic: false }
 
             valueSources: Charts.SingleValueSource { value: compactRoot.jobsPercentage }
-            colorSource: Charts.SingleValueSource { value: theme.highlightColor }
+            colorSource: Charts.SingleValueSource { value: PlasmaCore.Theme.highlightColor }
 
-            thickness: units.devicePixelRatio * 5
+            thickness: PlasmaCore.Units.devicePixelRatio * 5
         }
 
         PlasmaComponents3.Label {
@@ -101,7 +101,7 @@ MouseArea {
             fontSizeMode: Text.Fit
             font.pointSize: 1024
             font.pixelSize: -1
-            minimumPointSize: 5//theme.smallestFont.pointSize
+            minimumPointSize: 5//PlasmaCore.Theme.smallestFont.pointSize
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             text: compactRoot.unreadCount || ""
@@ -180,7 +180,7 @@ MouseArea {
             NumberAnimation {
                 targets: [notificationIcon, dndIcon]
                 properties: "opacity,scale"
-                duration: units.longDuration
+                duration: PlasmaCore.Units.longDuration
                 easing.type: Easing.InOutQuad
             }
         },
@@ -192,19 +192,19 @@ MouseArea {
                     target: notificationIcon
                     to: 30
                     easing.type: Easing.InOutQuad
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                 }
                 RotationAnimation {
                     target: notificationIcon
                     to: -30
                     easing.type: Easing.InOutQuad
-                    duration: units.longDuration * 2 // twice the swing distance, keep speed uniform
+                    duration: PlasmaCore.Units.longDuration * 2 // twice the swing distance, keep speed uniform
                 }
                 RotationAnimation {
                     target: notificationIcon
                     to: 0
                     easing.type: Easing.InOutQuad
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                 }
             }
         }

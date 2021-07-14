@@ -32,8 +32,8 @@ Item {
 
     signal clearSearchField
 
-    Plasmoid.switchWidth: units.gridUnit * 5
-    Plasmoid.switchHeight: units.gridUnit * 5
+    Plasmoid.switchWidth: PlasmaCore.Units.gridUnit * 5
+    Plasmoid.switchHeight: PlasmaCore.Units.gridUnit * 5
     Plasmoid.status: isClipboardEmpty ? PlasmaCore.Types.PassiveStatus : PlasmaCore.Types.ActiveStatus
     Plasmoid.toolTipMainText: i18n("Clipboard Contents")
     Plasmoid.toolTipSubText: isClipboardEmpty ? i18n("Clipboard is empty") : clipboardSource.data["clipboard"]["current"]
@@ -67,6 +67,9 @@ Item {
         plasmoid.setAction("configure", i18n("Configure Clipboard..."), "configure", "alt+d, s");
 
         plasmoid.setAction("clearHistory", i18n("Clear History"), "edit-clear-history");
+        plasmoid.action("clearHistory").visible = Qt.binding(() => {
+            return !main.isClipboardEmpty;
+        });
     }
 
     PlasmaCore.DataSource {
@@ -90,8 +93,8 @@ Item {
 
     Plasmoid.fullRepresentation: PlasmaComponents3.Page {
         id: dialogItem
-        Layout.minimumWidth: units.gridUnit * 5
-        Layout.minimumHeight: units.gridUnit * 5
+        Layout.minimumWidth: PlasmaCore.Units.gridUnit * 5
+        Layout.minimumHeight: PlasmaCore.Units.gridUnit * 5
 
         focus: true
 

@@ -334,7 +334,7 @@ PlasmaExtras.Representation {
                     id: timeMetrics
                     text: i18nc("Remaining time for song e.g -5:42", "-%1",
                                 KCoreAddons.Format.formatDuration(seekSlider.to / 1000, expandedRepresentation.durationFormattingOptions))
-                    font: theme.smallestFont
+                    font: PlasmaCore.Theme.smallestFont
                 }
 
                 PlasmaComponents3.Label { // Time Elapsed
@@ -343,7 +343,7 @@ PlasmaExtras.Representation {
                     horizontalAlignment: Text.AlignRight
                     text: KCoreAddons.Format.formatDuration(seekSlider.value / 1000, expandedRepresentation.durationFormattingOptions)
                     opacity: 0.9
-                    font: theme.smallestFont
+                    font: PlasmaCore.Theme.smallestFont
                     color: PlasmaCore.ColorScope.textColor
                 }
 
@@ -406,7 +406,7 @@ PlasmaExtras.Representation {
                     text: i18nc("Remaining time for song e.g -5:42", "-%1",
                                 KCoreAddons.Format.formatDuration((seekSlider.to - seekSlider.value) / 1000, expandedRepresentation.durationFormattingOptions))
                     opacity: 0.9
-                    font: theme.smallestFont
+                    font: PlasmaCore.Theme.smallestFont
                     color: PlasmaCore.ColorScope.textColor
                 }
             }
@@ -415,7 +415,7 @@ PlasmaExtras.Representation {
                 id: playerControls
 
                 property bool enabled: root.canControl
-                property int controlsSize: theme.mSize(theme.defaultFont).height * 3
+                property int controlsSize: PlasmaCore.Theme.mSize(PlasmaCore.Theme.defaultFont).height * 3
 
                 Layout.alignment: Qt.AlignHCenter
                 Layout.bottomMargin: PlasmaCore.Units.smallSpacing
@@ -426,7 +426,7 @@ PlasmaExtras.Representation {
                     Layout.leftMargin: LayoutMirroring.enabled ? PlasmaCore.Units.largeSpacing - playerControls.spacing : 0
                     icon.name: "media-playlist-shuffle"
                     icon.width: expandedRepresentation.controlSize
-                    icon.height: icon.width
+                    icon.height: expandedRepresentation.controlSize
                     checked: root.shuffle === true
                     enabled: root.canControl && root.shuffle !== undefined
                     Accessible.name: i18n("Shuffle")
@@ -444,7 +444,7 @@ PlasmaExtras.Representation {
 
                 PlasmaComponents3.ToolButton { // Previous
                     icon.width: expandedRepresentation.controlSize
-                    icon.height: icon.width
+                    icon.height: expandedRepresentation.controlSize
                     Layout.alignment: Qt.AlignVCenter
                     enabled: playerControls.enabled && root.canGoPrevious
                     icon.name: LayoutMirroring.enabled ? "media-skip-forward" : "media-skip-backward"
@@ -456,7 +456,7 @@ PlasmaExtras.Representation {
 
                 PlasmaComponents3.ToolButton { // Pause/Play
                     icon.width: expandedRepresentation.controlSize
-                    icon.height: icon.width
+                    icon.height: expandedRepresentation.controlSize
                     Layout.alignment: Qt.AlignVCenter
                     enabled: root.state == "playing" ? root.canPause : root.canPlay
                     icon.name: root.state == "playing" ? "media-playback-pause" : "media-playback-start"
@@ -465,7 +465,7 @@ PlasmaExtras.Representation {
 
                 PlasmaComponents3.ToolButton { // Next
                     icon.width: expandedRepresentation.controlSize
-                    icon.height: icon.width
+                    icon.height: expandedRepresentation.controlSize
                     Layout.alignment: Qt.AlignVCenter
                     enabled: playerControls.enabled && root.canGoNext
                     icon.name: LayoutMirroring.enabled ? "media-skip-backward" : "media-skip-forward"
@@ -480,7 +480,7 @@ PlasmaExtras.Representation {
                     Layout.rightMargin: LayoutMirroring.enabled ? PlasmaCore.Units.largeSpacing - playerControls.spacing : 0
                     icon.name: root.loopStatus === "Track" ? "media-playlist-repeat-song" : "media-playlist-repeat"
                     icon.width: expandedRepresentation.controlSize
-                    icon.height: icon.width
+                    icon.height: expandedRepresentation.controlSize
                     checked: root.loopStatus !== undefined && root.loopStatus !== "None"
                     enabled: root.canControl && root.loopStatus !== undefined
                     Accessible.name: root.loopStatus === "Track" ? i18n("Repeat Track") : i18n("Repeat")

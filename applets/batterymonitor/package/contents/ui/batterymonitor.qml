@@ -29,8 +29,8 @@ import "logic.js" as Logic
 
 Item {
     id: batterymonitor
-    Plasmoid.switchWidth: units.gridUnit * 10
-    Plasmoid.switchHeight: units.gridUnit * 10
+    Plasmoid.switchWidth: PlasmaCore.Units.gridUnit * 10
+    Plasmoid.switchHeight: PlasmaCore.Units.gridUnit * 10
 
     LayoutMirroring.enabled: Qt.application.layoutDirection == Qt.RightToLeft
     LayoutMirroring.childrenInherit: true
@@ -114,10 +114,7 @@ Item {
 
     property var inhibitions: []
 
-    readonly property var kcms: ["powerdevilprofilesconfig.desktop",
-                                 "powerdevilactivitiesconfig.desktop",
-                                 "powerdevilglobalconfig.desktop"]
-    readonly property bool kcmsAuthorized: KCMShell.authorize(batterymonitor.kcms).length > 0
+    readonly property bool kcmAuthorized: KCMShell.authorize("powerdevilprofilesconfig.desktop").length > 0
 
     readonly property bool kcmEnergyInformationAuthorized: KCMShell.authorize("kcm_energyinfo.desktop").length > 0
 
@@ -152,12 +149,20 @@ Item {
         });
     }
 
-    function action_powerdevilkcm() {
-        KCMShell.open(batterymonitor.kcms);
+    function action_configure() {
+        KCMShell.openSystemSettings("powerdevilprofilesconfig");
     }
 
     function action_energyinformationkcm() {
         KCMShell.openInfoCenter("kcm_energyinfo");
+    }
+
+    function action_showPercentage() {
+        if (!plasmoid.configuration.showPercentage) {
+            plasmoid.configuration.showPercentage = true;
+        } else {
+            plasmoid.configuration.showPercentage = false;
+        }
     }
 
     Component.onCompleted: {
@@ -165,28 +170,15 @@ Item {
         Logic.updateInhibitions(batterymonitor, pmSource)
 
         if (batterymonitor.kcmEnergyInformationAuthorized) {
-            plasmoid.setAction("energyinformationkcm", i18n("&Show Energy Information..."), "battery");
+            plasmoid.setAction("energyinformationkcm", i18n("&Show Energy Information..."), "documentinfo");
         }
-        if (batterymonitor.kcmsAuthorized) {
-            plasmoid.setAction("powerdevilkcm", i18n("&Configure Power Saving..."), "preferences-system-power-management");
-        }
-    }
+        plasmoid.setAction("showPercentage", i18n("Show Battery Percentage on Icon"), "format-number-percent");
+        plasmoid.action("showPercentage").checkable = true;
+        plasmoid.action("showPercentage").checked = Qt.binding(() => {return plasmoid.configuration.showPercentage;});
 
-    Plasmoid.compactRepresentation: CompactRepresentation {
-        property int wheelDelta: 0
-
-        onEntered: wheelDelta = 0
-        onExited: wheelDelta = 0
-        onWheel: {
-            var delta = wheel.angleDelta.y || wheel.angleDelta.x
-
-            var maximumBrightness = batterymonitor.maximumScreenBrightness
-            // Don't allow the UI to turn off the screen
-            // Please see https://git.reviewboard.kde.org/r/122505/ for more information
-            var minimumBrightness = (maximumBrightness > 100 ? 1 : 0)
-            var steps = Math.max(1, Math.round(maximumBrightness / 20))
-            var deltaSteps = delta / 120;
-            batterymonitor.screenBrightness = Math.max(minimumBrightness, Math.min(maximumBrightness, batterymonitor.screenBrightness + deltaSteps * steps));
+        if (batterymonitor.kcmAuthorized) {
+            plasmoid.removeAction("configure");
+            plasmoid.setAction("configure", i18n("&Configure Energy Saving..."), "configure", "alt+d, s");
         }
     }
 
@@ -222,10 +214,12 @@ Item {
         }
     }
 
+    Plasmoid.compactRepresentation: CompactRepresentation {}
+
     Plasmoid.fullRepresentation: PopupDialog {
         id: dialogItem
-        Layout.minimumWidth: units.iconSizes.medium * 9
-        Layout.minimumHeight: units.gridUnit * 15
+        Layout.minimumWidth: PlasmaCore.Units.iconSizes.medium * 9
+        Layout.minimumHeight: PlasmaCore.Units.gridUnit * 15
         // TODO Probably needs a sensible preferredHeight too
 
         model: plasmoid.expanded ? batteries : null
@@ -241,22 +235,7 @@ Item {
         property int cookie2: -1
         onPowermanagementChanged: {
             var service = pmSource.serviceForSource("PowerDevil");
-            if (checked) {
-                var op1 = service.operationDescription("stopSuppressingSleep");
-                op1.cookie = cookie1;
-                var op2 = service.operationDescription("stopSuppressingScreenPowerManagement");
-                op2.cookie = cookie2;
-
-                var job1 = service.startOperationCall(op1);
-                job1.finished.connect(function(job) {
-                    cookie1 = -1;
-                });
-
-                var job2 = service.startOperationCall(op2);
-                job2.finished.connect(function(job) {
-                    cookie2 = -1;
-                });
-            } else {
+            if (disabled) {
                 var reason = i18n("The battery applet has enabled system-wide inhibition");
                 var op1 = service.operationDescription("beginSuppressingSleep");
                 op1.reason = reason;
@@ -272,8 +251,23 @@ Item {
                 job2.finished.connect(function(job) {
                     cookie2 = job.result;
                 });
+            } else {
+                var op1 = service.operationDescription("stopSuppressingSleep");
+                op1.cookie = cookie1;
+                var op2 = service.operationDescription("stopSuppressingScreenPowerManagement");
+                op2.cookie = cookie2;
+
+                var job1 = service.startOperationCall(op1);
+                job1.finished.connect(function(job) {
+                    cookie1 = -1;
+                });
+
+                var job2 = service.startOperationCall(op2);
+                job2.finished.connect(function(job) {
+                    cookie2 = -1;
+                });
             }
-            batterymonitor.powermanagementDisabled = !checked
+            batterymonitor.powermanagementDisabled = disabled
         }
     }
 }

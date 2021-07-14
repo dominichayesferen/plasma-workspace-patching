@@ -116,6 +116,9 @@ KCM.GridViewKCM {
             kcm.model.selectedStyle = model.styleName;
             view.forceActiveFocus();
         }
+        onDoubleClicked: {
+            kcm.save();
+        }
     }
 
     footer: ColumnLayout {
@@ -134,7 +137,6 @@ KCM.GridViewKCM {
                     effectSettingsPopupLoader.item.open();
                 }
             }
-
             Kirigami.ActionToolBar {
                 flat: false
                 alignment: Qt.AlignRight

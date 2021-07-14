@@ -1,6 +1,7 @@
 /*
  *   Copyright (C) 2007 Barış Metin <baris@pardus.org.tr>
  *   Copyright (C) 2010 Matteo Agostinelli <agostinelli@gmail.com>
+ *   Copyright (C) 2021 Alexander Lohnau <alexander.lohnau@gmx.de>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU Library General Public License version 2 as
@@ -20,6 +21,7 @@
 #ifndef CALCULATORRUNNER_H
 #define CALCULATORRUNNER_H
 
+#include <QAction>
 #include <QMimeData>
 
 #ifdef ENABLE_QALCULATE
@@ -49,12 +51,15 @@ private:
     QString calculate(const QString &term, bool *isApproximate);
     void userFriendlyMultiplication(QString &cmd);
     void userFriendlySubstitutions(QString &cmd);
+#ifndef ENABLE_QALCULATE
     void powSubstitutions(QString &cmd);
     void hexSubstitutions(QString &cmd);
+#endif
 
 #ifdef ENABLE_QALCULATE
     QalculateEngine *m_engine;
 #endif
+    QList<QAction *> m_actions;
 };
 
 #endif

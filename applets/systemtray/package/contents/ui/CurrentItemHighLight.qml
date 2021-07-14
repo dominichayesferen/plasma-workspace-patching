@@ -22,25 +22,15 @@ import org.kde.plasma.plasmoid 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
 
 PlasmaCore.FrameSvgItem {
-    id: expandedItem
+    id: currentItemHighLight
 
     property int location
+
     property bool animationEnabled: true
+    property var highlightedItem: null
 
     z: -1 // always draw behind icons
-    width: parent.width
-    height: parent.height
-    opacity: parent && systemTrayState.expanded ? 1 : 0
-
-    function changeHighlightedItem(nextItem) {
-        parent = nextItem;
-    }
-
-    function changeHighlightedItemNoAnimation(nextItem) {
-        animationEnabled = false;
-        parent = nextItem;
-        animationEnabled = true;
-    }
+    opacity: systemTrayState.expanded ? 1 : 0
 
     imagePath: "widgets/tabbar"
     prefix: {
@@ -64,59 +54,115 @@ PlasmaCore.FrameSvgItem {
             return prefix;
     }
 
+    // update when System Tray is expanded - applet activated or hidden icons shown
     Connections {
         target: systemTrayState
 
         function onActiveAppletChanged() {
-            if (systemTrayState.activeApplet && systemTrayState.activeApplet.parent.inVisibleLayout) {
-                changeHighlightedItem(systemTrayState.activeApplet.parent.container)
-            } else if (systemTrayState.expanded) {
-                changeHighlightedItem(root)
-            }
+            Qt.callLater(updateHighlightedItem);
         }
 
         function onExpandedChanged() {
-            if (systemTrayState.expanded && !systemTrayState.activeApplet) {
-                changeHighlightedItemNoAnimation(root)
-            }
+            Qt.callLater(updateHighlightedItem);
         }
+    }
+
+    // update when applet changes parent (e.g. moves from active to hidden icons)
+    Connections {
+        target: systemTrayState.activeApplet
+
+        function onParentChanged() {
+            Qt.callLater(updateHighlightedItem);
+        }
+    }
+
+    // update when System Tray size changes
+    Connections {
+        target: parent
+
+        function onWidthChanged() {
+            Qt.callLater(updateHighlightedItem);
+        }
+
+        function onHeightChanged() {
+            Qt.callLater(updateHighlightedItem);
+        }
+    }
+
+    // update when scale of newly added tray item changes (check 'add' animation in GridView in main.qml)
+    Connections {
+        target: !!highlightedItem && highlightedItem.parent ? highlightedItem.parent : null
+
+        function onScaleChanged() {
+            Qt.callLater(updateHighlightedItem);
+        }
+    }
+
+    function updateHighlightedItem() {
+        if (systemTrayState.expanded) {
+            if (systemTrayState.activeApplet && systemTrayState.activeApplet.parent && systemTrayState.activeApplet.parent.inVisibleLayout) {
+                changeHighlightedItem(systemTrayState.activeApplet.parent.container);
+            } else { // 'Show hiden items' popup
+                changeHighlightedItem(parent);
+            }
+        } else {
+            highlightedItem = null;
+        }
+    }
+
+    function changeHighlightedItem(nextItem) {
+        // do not animate the first appearance
+        // or when the property value of a highlighted item changes
+        if (!highlightedItem || (highlightedItem === nextItem)) {
+            animationEnabled = false;
+        }
+
+        highlightedItem = nextItem;
+
+        const p = parent.mapFromItem(highlightedItem, 0, 0)
+        x = p.x;
+        y = p.y;
+        width = highlightedItem.width
+        height = highlightedItem.height
+
+        animationEnabled = true;
     }
 
     Behavior on opacity {
         NumberAnimation {
-            duration: units.longDuration
-            easing.type: parent && systemTrayState.expanded ? Easing.OutCubic : Easing.InCubic
+            duration: PlasmaCore.Units.longDuration
+            easing.type: systemTrayState.expanded ? Easing.OutCubic : Easing.InCubic
         }
     }
     Behavior on x {
         id: xAnim
-        enabled: parent && animationEnabled
+        enabled: animationEnabled
         NumberAnimation {
-            duration: units.longDuration
+            duration: PlasmaCore.Units.longDuration
             easing.type: Easing.InOutCubic
         }
     }
     Behavior on y {
         id: yAnim
-        enabled: parent && animationEnabled
+        enabled: animationEnabled
         NumberAnimation {
-            duration: units.longDuration
+            duration: PlasmaCore.Units.longDuration
             easing.type: Easing.InOutCubic
         }
     }
     Behavior on width {
         id: widthAnim
-        enabled: parent && animationEnabled
+        enabled: animationEnabled
         NumberAnimation {
-            duration: units.longDuration
+            duration: PlasmaCore.Units.longDuration
             easing.type: Easing.InOutCubic
         }
     }
     Behavior on height {
         id: heightAnim
-        enabled: parent && animationEnabled
+        enabled: animationEnabled
         NumberAnimation {
-            duration: units.longDuration
+            duration: PlasmaCore.Units.longDuration
             easing.type: Easing.InOutCubic
         }
     }

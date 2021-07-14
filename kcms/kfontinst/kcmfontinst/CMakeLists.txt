@@ -15,10 +15,10 @@ target_link_libraries(kcm_fontinst
     KF5::NewStuff
     kfontinstui
     kfontinst
-    ${X11_LIBRARIES}
+    X11::X11
 )
 
-install(TARGETS kcm_fontinst  DESTINATION ${KDE_INSTALL_PLUGINDIR} )
+install(TARGETS kcm_fontinst  DESTINATION ${KDE_INSTALL_PLUGINDIR})
 install( FILES fontinst.desktop  DESTINATION  ${KDE_INSTALL_KSERVICES5DIR} )
 install( FILES kfontinst.knsrc DESTINATION  ${KDE_INSTALL_KNSRCDIR} )
 

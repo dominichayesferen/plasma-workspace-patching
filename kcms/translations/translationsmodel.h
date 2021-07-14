@@ -1,6 +1,7 @@
 /*
  *  Copyright (C) 2014 John Layt <john@layt.net>
  *  Copyright (C) 2018 Eike Hein <hein@kde.org>
+ *  Copyright (C) 2021 Harald Sitter <sitter@kde.org>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -35,11 +36,12 @@ public:
     enum AdditionalRoles {
         LanguageCode = Qt::UserRole + 1,
         IsMissing,
+        IsIncomplete,
+        IsInstalling,
     };
     Q_ENUM(AdditionalRoles)
 
     explicit TranslationsModel(QObject *parent = nullptr);
-    ~TranslationsModel() override;
 
     QHash<int, QByteArray> roleNames() const override;
 
@@ -62,8 +64,7 @@ class SelectedTranslationsModel : public TranslationsModel
     Q_PROPERTY(QStringList missingLanguages READ missingLanguages NOTIFY missingLanguagesChanged)
 
 public:
-    explicit SelectedTranslationsModel(QObject *parent = nullptr);
-    ~SelectedTranslationsModel() override;
+    using TranslationsModel::TranslationsModel;
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -72,6 +73,7 @@ public:
     void setSelectedLanguages(const QStringList &languages);
 
     QStringList missingLanguages() const;
+    Q_INVOKABLE void completeLanguage(int index);
 
     Q_INVOKABLE void move(int from, int to);
     Q_INVOKABLE void remove(const QString &languageCode);
@@ -81,8 +83,13 @@ Q_SIGNALS:
     void missingLanguagesChanged() const;
 
 private:
+    void reloadCompleteness(const QString &languageCode);
+
     QStringList m_selectedLanguages;
     QStringList m_missingLanguages;
+
+    QHash<QString, QStringList> m_incompleteLanguagesWithPackages;
+    QStringList m_installingLanguages;
 };
 
 class AvailableTranslationsModel : public TranslationsModel
@@ -90,8 +97,7 @@ class AvailableTranslationsModel : public TranslationsModel
     Q_OBJECT
 
 public:
-    explicit AvailableTranslationsModel(QObject *parent = nullptr);
-    ~AvailableTranslationsModel() override;
+    using TranslationsModel::TranslationsModel;
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;

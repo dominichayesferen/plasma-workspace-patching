@@ -93,6 +93,7 @@ private:
 Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mode)
     : QObject(parent)
     , m_overflowCounter(0)
+    , m_quitAction(nullptr)
     , m_locklevel(0)
     , m_config(config)
     , m_pendingContentsCheck(false)
@@ -159,10 +160,12 @@ Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mo
     m_configureAction->setText(i18n("&Configure Klipper..."));
     connect(m_configureAction, &QAction::triggered, this, &Klipper::slotConfigure);
 
-    m_quitAction = m_collection->addAction(QStringLiteral("quit"));
-    m_quitAction->setIcon(QIcon::fromTheme(QStringLiteral("application-exit")));
-    m_quitAction->setText(i18nc("@item:inmenu Quit Klipper", "&Quit"));
-    connect(m_quitAction, &QAction::triggered, this, &Klipper::slotQuit);
+    if (KlipperMode::Standalone == m_mode) {
+        m_quitAction = m_collection->addAction(QStringLiteral("quit"));
+        m_quitAction->setIcon(QIcon::fromTheme(QStringLiteral("application-exit")));
+        m_quitAction->setText(i18nc("@item:inmenu Quit Klipper", "&Quit"));
+        connect(m_quitAction, &QAction::triggered, this, &Klipper::slotQuit);
+    }
 
     m_repeatAction = m_collection->addAction(QStringLiteral("repeat_action"));
     m_repeatAction->setText(i18n("Manually Invoke Action on Current Clipboard"));
@@ -199,7 +202,7 @@ Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mo
     // Action to show Klipper popup on mouse position
     m_showOnMousePos = m_collection->addAction(QStringLiteral("show-on-mouse-pos"));
     m_showOnMousePos->setText(i18n("Open Klipper at Mouse Position"));
-    KGlobalAccel::setGlobalShortcut(m_showOnMousePos, QKeySequence());
+    KGlobalAccel::setGlobalShortcut(m_showOnMousePos, QKeySequence(Qt::META + Qt::Key_V));
     connect(m_showOnMousePos, &QAction::triggered, this, &Klipper::slotPopupMenu);
 
     connect(history(), &History::topChanged, this, &Klipper::slotHistoryTopChanged);
@@ -212,6 +215,7 @@ Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mo
         m_popup->plugAction(m_repeatAction);
         m_popup->plugAction(m_editAction);
         m_popup->plugAction(m_showBarcodeAction);
+        Q_ASSERT(m_quitAction);
         m_popup->plugAction(m_quitAction);
     }
 
@@ -480,8 +484,10 @@ void Klipper::disableURLGrabber()
 {
     QMessageBox *message = new QMessageBox(QMessageBox::Information,
                                            QString(),
-                                           i18n("You can enable URL actions later by left-clicking on the "
-                                                "Klipper icon and selecting 'Enable Clipboard Actions'"));
+                                           xi18nc("@info",
+                                                  "You can enable URL actions later in the "
+                                                  "<interface>Actions</interface> page of the "
+                                                  "Clipboard applet's configuration window"));
     message->setAttribute(Qt::WA_DeleteOnClose);
     message->setModal(false);
     message->show();
@@ -977,14 +983,14 @@ void Klipper::showBarcode(const QSharedPointer<const HistoryItem> &item)
 
 void Klipper::slotAskClearHistory()
 {
-    int clearHist = KMessageBox::questionYesNo(nullptr,
+    int clearHist = KMessageBox::warningContinueCancel(nullptr,
                                                i18n("Really delete entire clipboard history?"),
                                                i18n("Delete clipboard history?"),
-                                               KStandardGuiItem::yes(),
-                                               KStandardGuiItem::no(),
-                                               QStringLiteral("really_clear_history"),
+                                               KStandardGuiItem::cont(),
+                                               KStandardGuiItem::cancel(),
+                                               QStringLiteral("klipperClearHistoryAskAgain"),
                                                KMessageBox::Dangerous);
-    if (clearHist == KMessageBox::Yes) {
+    if (clearHist == KMessageBox::Continue) {
         history()->slotClear();
         saveHistory();
     }

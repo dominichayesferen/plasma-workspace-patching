@@ -62,9 +62,7 @@ void BaseModel::onConfigurationChanged()
     m_shownItems = m_settings->shownItems();
     m_hiddenItems = m_settings->hiddenItems();
 
-    for (int i = 0; i < rowCount(); i++) {
-        dataChanged(index(i, 0), index(i, 0), {static_cast<int>(BaseModel::BaseRole::EffectiveStatus)});
-    }
+    Q_EMIT dataChanged(index(0, 0), index(rowCount() - 1, 0), {static_cast<int>(BaseModel::BaseRole::EffectiveStatus)});
 }
 
 Plasma::Types::ItemStatus BaseModel::calculateEffectiveStatus(bool canRender, Plasma::Types::ItemStatus status, QString itemId) const
@@ -210,10 +208,10 @@ void PlasmoidModel::addApplet(Plasma::Applet *applet)
     connect(applet, &Plasma::Applet::statusChanged, this, [this, applet](Plasma::Types::ItemStatus status) {
         Q_UNUSED(status)
         int idx = indexOfPluginId(applet->pluginMetaData().pluginId());
-        dataChanged(index(idx, 0), index(idx, 0), {static_cast<int>(BaseRole::Status)});
+        Q_EMIT dataChanged(index(idx, 0), index(idx, 0), {static_cast<int>(BaseRole::Status)});
     });
 
-    dataChanged(index(idx, 0), index(idx, 0));
+    Q_EMIT dataChanged(index(idx, 0), index(idx, 0));
 }
 
 void PlasmoidModel::removeApplet(Plasma::Applet *applet)
@@ -221,7 +219,7 @@ void PlasmoidModel::removeApplet(Plasma::Applet *applet)
     int idx = indexOfPluginId(applet->pluginMetaData().pluginId());
     if (idx >= 0) {
         m_items[idx].applet = nullptr;
-        dataChanged(index(idx, 0), index(idx, 0));
+        Q_EMIT dataChanged(index(idx, 0), index(idx, 0));
         applet->disconnect(this);
     }
 }
@@ -291,6 +289,17 @@ static QVariant extractIcon(const Plasma::DataEngine::Data &sniData, const QStri
     }
 }
 
+static QString extractItemId(const Plasma::DataEngine::Data &sniData)
+{
+    const QString itemId = sniData.value(QStringLiteral("Id")).toString();
+    // Bug 378910: workaround for Dropbox not following the SNI specification
+    if (itemId.startsWith(QLatin1String("dropbox-client-"))) {
+        return QLatin1String("dropbox-client-PID");
+    } else {
+        return itemId;
+    }
+}
+
 QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const
 {
     if (!checkIndex(index, CheckIndexOption::IndexIsValid)) {
@@ -300,6 +309,7 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const
     StatusNotifierModel::Item item = m_items[index.row()];
     Plasma::DataContainer *dataContainer = m_dataEngine->containerForSource(item.source);
     const Plasma::DataEngine::Data &sniData = dataContainer->data();
+    const QString itemId = extractItemId(sniData);
 
     if (role <= Qt::UserRole) {
         switch (role) {
@@ -317,7 +327,7 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const
         case BaseRole::ItemType:
             return QStringLiteral("StatusNotifier");
         case BaseRole::ItemId:
-            return sniData.value(QStringLiteral("Id"));
+            return itemId;
         case BaseRole::CanRender:
             return true;
         case BaseRole::Category: {
@@ -327,7 +337,7 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const
         case BaseRole::Status:
             return extractStatus(sniData);
         case BaseRole::EffectiveStatus:
-            return calculateEffectiveStatus(true, extractStatus(sniData), sniData.value(QStringLiteral("Id")).toString());
+            return calculateEffectiveStatus(true, extractStatus(sniData), itemId);
         default:
             return QVariant();
         }
@@ -353,7 +363,7 @@ QVariant StatusNotifierModel::data(const QModelIndex &index, int role) const
     case Role::IconThemePath:
         return sniData.value(QStringLiteral("IconThemePath"));
     case Role::Id:
-        return sniData.value(QStringLiteral("Id"));
+        return itemId;
     case Role::ItemIsMenu:
         return sniData.value(QStringLiteral("ItemIsMenu"));
     case Role::OverlayIconName:
@@ -439,7 +449,7 @@ void StatusNotifierModel::dataUpdated(const QString &sourceName, const Plasma::D
 
         endInsertRows();
     } else {
-        dataChanged(index(idx, 0), index(idx, 0));
+        Q_EMIT dataChanged(index(idx, 0), index(idx, 0));
     }
 }
 
@@ -454,9 +464,9 @@ int StatusNotifierModel::indexOfSource(const QString &source) const
 }
 
 SystemTrayModel::SystemTrayModel(QObject *parent)
-    : KConcatenateRowsProxyModel(parent)
+    : QConcatenateTablesProxyModel(parent)
 {
-    m_roleNames = KConcatenateRowsProxyModel::roleNames();
+    m_roleNames = QConcatenateTablesProxyModel::roleNames();
 }
 
 QHash<int, QByteArray> SystemTrayModel::roleNames() const
@@ -475,5 +485,5 @@ void SystemTrayModel::addSourceModel(QAbstractItemModel *sourceModel)
         }
     }
 
-    KConcatenateRowsProxyModel::addSourceModel(sourceModel);
+    QConcatenateTablesProxyModel::addSourceModel(sourceModel);
 }

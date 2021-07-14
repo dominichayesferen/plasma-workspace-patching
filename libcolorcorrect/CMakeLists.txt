@@ -11,6 +11,7 @@ set(colorcorrect_LIB_SRCS
     )
 
 add_library(colorcorrect ${colorcorrect_LIB_SRCS})
+add_library(PW::LibColorCorrect ALIAS colorcorrect)
 
 generate_export_header(colorcorrect)
 
@@ -20,12 +21,12 @@ target_link_libraries(colorcorrect
                     PUBLIC
                       KF5::Plasma
 
-                      Qt5::Core
-                      Qt5::Quick
+                      Qt::Core
+                      Qt::Quick
                     PRIVATE
                       KF5::I18n
 
-                      Qt5::DBus)
+                      Qt::DBus)
 
 set_target_properties(colorcorrect PROPERTIES
                       VERSION ${PROJECT_VERSION}

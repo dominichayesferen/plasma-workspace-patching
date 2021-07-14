@@ -18,13 +18,13 @@ set(plasmashellprivateplugin_SRCS
 
 add_library(plasmashellprivateplugin SHARED ${plasmashellprivateplugin_SRCS})
 target_link_libraries(plasmashellprivateplugin
-        Qt5::Core
-        Qt5::Quick
-        Qt5::Qml
-        Qt5::Gui
-        Qt5::Widgets
-        Qt5::Quick
-        Qt5::Qml
+        Qt::Core
+        Qt::Quick
+        Qt::Qml
+        Qt::Gui
+        Qt::Widgets
+        Qt::Quick
+        Qt::Qml
         KF5::Plasma
         KF5::PlasmaQuick
         KF5::I18n
@@ -34,6 +34,7 @@ target_link_libraries(plasmashellprivateplugin
         KF5::WindowSystem
         KF5::Declarative
         KF5::Activities
+        KF5::TextWidgets
 )
 
 if (KF5TextEditor_FOUND)

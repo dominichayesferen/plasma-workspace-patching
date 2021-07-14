@@ -132,6 +132,7 @@ StatusNotifierItemSource::StatusNotifierItemSource(const QString &notifierItemId
         connect(m_statusNotifierItemInterface, &OrgKdeStatusNotifierItem::NewOverlayIcon, this, &StatusNotifierItemSource::refreshIcons);
         connect(m_statusNotifierItemInterface, &OrgKdeStatusNotifierItem::NewToolTip, this, &StatusNotifierItemSource::refreshToolTip);
         connect(m_statusNotifierItemInterface, &OrgKdeStatusNotifierItem::NewStatus, this, &StatusNotifierItemSource::syncStatus);
+        connect(m_statusNotifierItemInterface, &OrgKdeStatusNotifierItem::NewMenu, this, &StatusNotifierItemSource::refreshMenu);
         refresh();
     }
 }
@@ -176,6 +177,15 @@ void StatusNotifierItemSource::refreshIcons()
 void StatusNotifierItemSource::refreshToolTip()
 {
     m_tooltipUpdate = true;
+    refresh();
+}
+
+void StatusNotifierItemSource::refreshMenu()
+{
+    if (m_menuImporter) {
+        m_menuImporter->deleteLater();
+        m_menuImporter = nullptr;
+    }
     refresh();
 }
 
@@ -243,7 +253,7 @@ void StatusNotifierItemSource::refreshCallback(QDBusPendingCallWatcher *call)
             }
             // FIXME: If last part of path is not "icons", this won't work!
             QString appName;
-            auto tokens = path.splitRef('/', QString::SkipEmptyParts);
+            auto tokens = path.splitRef('/', Qt::SkipEmptyParts);
             if (tokens.length() >= 3 && tokens.takeLast() == QLatin1String("icons"))
                 appName = tokens.takeLast().toString();
 
@@ -254,6 +264,11 @@ void StatusNotifierItemSource::refreshCallback(QDBusPendingCallWatcher *call)
 
             // add app dir requires an app name, though this is completely unused in this context
             m_customIconLoader->addAppDir(appName.size() ? appName : QStringLiteral("unused"), path);
+
+            connect(m_customIconLoader, &KIconLoader::iconChanged, this, [=] {
+                m_customIconLoader->reconfigure(appName, QStringList(path));
+                m_customIconLoader->addAppDir(appName.size() ? appName : QStringLiteral("unused"), path);
+            });
         }
         setData(QStringLiteral("IconThemePath"), path);
 

@@ -117,7 +117,7 @@ PlasmaCore.ColorScope {
         onClicked: root.cancelRequested()
     }
     UserDelegate {
-        width: units.gridUnit * 7
+        width: PlasmaCore.Units.gridUnit * 7
         height: width
         anchors {
             horizontalCenter: parent.horizontalCenter
@@ -132,17 +132,17 @@ PlasmaCore.ColorScope {
     ColumnLayout {
         anchors {
             top: parent.verticalCenter
-            topMargin: units.gridUnit * 2
+            topMargin: PlasmaCore.Units.gridUnit * 2
             horizontalCenter: parent.horizontalCenter
         }
-        spacing: units.largeSpacing
+        spacing: PlasmaCore.Units.largeSpacing
 
-        height: Math.max(implicitHeight, units.gridUnit * 10)
-        width: Math.max(implicitWidth, units.gridUnit * 16)
+        height: Math.max(implicitHeight, PlasmaCore.Units.gridUnit * 10)
+        width: Math.max(implicitWidth, PlasmaCore.Units.gridUnit * 16)
 
         PlasmaComponents.Label {
-            font.pointSize: theme.defaultFont.pointSize + 1
-            Layout.maximumWidth: units.gridUnit * 16
+            font.pointSize: PlasmaCore.Theme.defaultFont.pointSize + 1
+            Layout.maximumWidth: PlasmaCore.Units.gridUnit * 16
             Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
@@ -156,8 +156,8 @@ PlasmaCore.ColorScope {
         }
 
         PlasmaComponents.Label {
-            font.pointSize: theme.defaultFont.pointSize + 1
-            Layout.maximumWidth: units.gridUnit * 16
+            font.pointSize: PlasmaCore.Theme.defaultFont.pointSize + 1
+            Layout.maximumWidth: PlasmaCore.Units.gridUnit * 16
             Layout.alignment: Qt.AlignHCenter
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
@@ -168,7 +168,7 @@ PlasmaCore.ColorScope {
         }
 
         RowLayout {
-            spacing: units.largeSpacing * 2
+            spacing: PlasmaCore.Units.largeSpacing * 2
             Layout.alignment: Qt.AlignHCenter
             LogoutButton {
                 id: suspendButton
@@ -221,13 +221,13 @@ PlasmaCore.ColorScope {
         }
 
         PlasmaComponents.Label {
-            font.pointSize: theme.defaultFont.pointSize + 1
+            font.pointSize: PlasmaCore.Theme.defaultFont.pointSize + 1
             Layout.alignment: Qt.AlignHCenter
             //opacity, as visible would re-layout
             opacity: countDownTimer.running ? 1 : 0
             Behavior on opacity {
                 OpacityAnimator {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                     easing.type: Easing.InOutQuad
                 }
             }
@@ -246,15 +246,15 @@ PlasmaCore.ColorScope {
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             PlasmaComponents.Button {
-                implicitWidth: units.gridUnit * 6
-                font.pointSize: theme.defaultFont.pointSize + 1
+                implicitWidth: PlasmaCore.Units.gridUnit * 6
+                font.pointSize: PlasmaCore.Theme.defaultFont.pointSize + 1
                 enabled: root.currentAction !== null
                 text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "OK")
                 onClicked: root.currentAction()
             }
             PlasmaComponents.Button {
-                implicitWidth: units.gridUnit * 6
-                font.pointSize: theme.defaultFont.pointSize + 1
+                implicitWidth: PlasmaCore.Units.gridUnit * 6
+                font.pointSize: PlasmaCore.Theme.defaultFont.pointSize + 1
                 text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Cancel")
                 onClicked: root.cancelRequested()
             }

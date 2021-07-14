@@ -60,6 +60,7 @@ MouseArea {
 
     CurrentItemHighLight {
         location: plasmoid.location
+        parent: root
     }
 
     DnD.DropArea {
@@ -132,7 +133,7 @@ MouseArea {
             readonly property int smallSizeCellLength: gridThickness < smallIconSize ? smallIconSize : smallIconSize + PlasmaCore.Units.smallSpacing * 2
             cellHeight: {
                 if (root.vertical) {
-                    return autoSize ? root.width : smallSizeCellLength
+                    return autoSize ? root.width + PlasmaCore.Units.smallSpacing : smallSizeCellLength
                 } else {
                     return autoSize ? root.height : Math.floor(root.height / rowsOrColumns)
                 }
@@ -141,7 +142,7 @@ MouseArea {
                 if (root.vertical) {
                     return autoSize ? root.width : Math.floor(root.width / rowsOrColumns)
                 } else {
-                    return autoSize ? root.height : smallSizeCellLength
+                    return autoSize ? root.height + PlasmaCore.Units.smallSpacing : smallSizeCellLength
                 }
             }
 
@@ -206,6 +207,7 @@ MouseArea {
             id: expander
             Layout.fillWidth: vertical
             Layout.fillHeight: !vertical
+            Layout.alignment: vertical ? Qt.AlignVCenter : Qt.AlignHCenter
             visible: root.hiddenLayout.itemCount > 0
         }
     }

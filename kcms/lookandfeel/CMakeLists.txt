@@ -5,22 +5,15 @@ if(X11_Xcursor_FOUND)
     set(HAVE_XCURSOR TRUE)
 endif()
 
-if(${Breeze_FOUND})
-    if(${BREEZE_WITH_KDECORATION})
-        set(HAVE_BREEZE_DECO true)
-    else()
-        set(HAVE_BREEZE_DECO FALSE)
-    endif()
-else()
-    set(HAVE_BREEZE_DECO FALSE)
+if(${Breeze_FOUND} AND ${BREEZE_WITH_KDECORATION})
+    set(HAVE_BREEZE_DECO TRUE)
 endif()
 
 configure_file (config-kcm.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-kcm.h )
 
 set(kcm_lookandfeel_SRCS
-    kcmmain.cpp
     kcm.cpp
-    ../krdb/krdb.cpp
+    ../kcms-common_p.h
 )
 
 if (X11_Xcursor_FOUND)
@@ -38,45 +31,40 @@ kcmutils_generate_module_data(
     SETTINGS_HEADERS lookandfeelsettings.h
     SETTINGS_CLASSES LookAndFeelSettings
 )
-
 kconfig_add_kcfg_files(kcm_lookandfeel_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
 
-add_library(kcm_lookandfeel MODULE ${kcm_lookandfeel_SRCS})
-
-target_link_libraries(kcm_lookandfeel
-  KF5::KIOWidgets
-  KF5::CoreAddons
-  KF5::GuiAddons
-  KF5::KCMUtils
-  KF5::I18n
-  KF5::Plasma
-  KF5::PlasmaQuick
-  KF5::KDELibs4Support
-  KF5::Declarative
-  KF5::QuickAddons
-  PW::KWorkspace
-
-  Qt5::DBus
-  Qt5::Widgets
-  Qt5::QuickWidgets
-  ${X11_LIBRARIES}
+add_library(kcm_lookandfeel_static STATIC ${kcm_lookandfeel_SRCS})
+target_link_libraries(kcm_lookandfeel_static
+    Qt::DBus
+    KF5::I18n
+    KF5::KCMUtils
+    KF5::IconThemes
+    KF5::JobWidgets
+    KF5::Service
+    KF5::QuickAddons
+    KF5::KIOWidgets
+    KF5::Declarative
+    PW::KWorkspace
+    krdb
 )
-
 if(X11_FOUND)
-    target_link_libraries(kcm_lookandfeel Qt5::X11Extras)
+    target_link_libraries(kcm_lookandfeel_static Qt::X11Extras)
 endif()
 if (X11_Xcursor_FOUND)
-   target_link_libraries(kcm_lookandfeel ${X11_Xcursor_LIB})
+   target_link_libraries(kcm_lookandfeel_static X11::Xcursor)
 endif ()
 if (X11_Xfixes_FOUND)
-   target_link_libraries(kcm_lookandfeel ${X11_Xfixes_LIB})
+   target_link_libraries(kcm_lookandfeel_static X11::Xfixes)
 endif ()
 
+add_library(kcm_lookandfeel MODULE kcmmain.cpp)
 kcoreaddons_desktop_to_json(kcm_lookandfeel "kcm_lookandfeel.desktop" SERVICE_TYPES kcmodule.desktop)
+target_link_libraries(kcm_lookandfeel kcm_lookandfeel_static)
 
 #this desktop file is installed only for retrocompatibility with sycoca
 install(FILES lookandfeelsettings.kcfg DESTINATION ${KDE_INSTALL_KCFGDIR})
 install(FILES kcm_lookandfeel.desktop DESTINATION ${KDE_INSTALL_KSERVICES5DIR})
+set_target_properties(kcm_lookandfeel PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/kcms")
 install(TARGETS kcm_lookandfeel DESTINATION ${KDE_INSTALL_PLUGINDIR}/kcms)
 install(FILES lookandfeel.knsrc DESTINATION ${KDE_INSTALL_KNSRCDIR})
 
@@ -87,165 +75,15 @@ endif()
 
 kpackage_install_package(package kcm_lookandfeel kcms)
 
-###### Qt Style tool
-
-set(qtstyletool_SRCS
-    qtstyletool.cpp
-    # TODO: load kcm plugin instead of using code copy
-    kcm.cpp
-    lookandfeeldata.cpp
-    ../krdb/krdb.cpp
-)
-
-if (X11_Xcursor_FOUND)
-    set(qtstyletool_SRCS
-        ${qtstyletool_SRCS}
-        ../cursortheme/xcursor/cursortheme.cpp
-        ../cursortheme/xcursor/xcursortheme.cpp
-    )
-endif ()
-
-kconfig_add_kcfg_files(qtstyletool_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
-
-add_executable(qtstyletool ${qtstyletool_SRCS})
-
-target_link_libraries(qtstyletool
-  KF5::KIOWidgets
-  KF5::CoreAddons
-  KF5::KCMUtils
-  KF5::I18n
-  #TODO:kpackage
-  KF5::Plasma
-  KF5::PlasmaQuick
-  KF5::KDELibs4Support
-  KF5::Declarative
-  KF5::QuickAddons
-  KF5::NewStuff
-  PW::KWorkspace
-
-  Qt5::DBus
-  Qt5::Widgets
-  Qt5::QuickWidgets
-  ${X11_LIBRARIES}
-)
-
-if(X11_FOUND)
-    target_link_libraries(qtstyletool Qt5::X11Extras)
-endif()
-if (X11_Xcursor_FOUND)
-   target_link_libraries(qtstyletool ${X11_Xcursor_LIB})
-endif ()
-if (X11_Xfixes_FOUND)
-   target_link_libraries(qtstyletool ${X11_Xfixes_LIB})
-endif ()
-
-install( TARGETS qtstyletool ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )
-
-###### Colors KCM tool
-
-set(colorskcmtool_SRCS
-    colorskcmtool.cpp
-    # TODO: load kcm plugin instead of using code copy
-    kcm.cpp
-    lookandfeeldata.cpp
-    ../krdb/krdb.cpp
-)
-
-if (X11_Xcursor_FOUND)
-    set(colorskcmtool_SRCS
-        ${colorskcmtool_SRCS}
-        ../cursortheme/xcursor/cursortheme.cpp
-        ../cursortheme/xcursor/xcursortheme.cpp
-    )
-endif ()
-
-kconfig_add_kcfg_files(colorskcmtool_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
-
-add_executable(colorskcmtool ${colorskcmtool_SRCS})
-
-target_link_libraries(colorskcmtool
-  KF5::KIOWidgets
-  KF5::CoreAddons
-  KF5::KCMUtils
-  KF5::I18n
-  #TODO:kpackage
-  KF5::Plasma
-  KF5::PlasmaQuick
-  KF5::KDELibs4Support
-  KF5::Declarative
-  KF5::QuickAddons
-  KF5::NewStuff
-  PW::KWorkspace
-
-  Qt5::DBus
-  Qt5::Widgets
-  Qt5::QuickWidgets
-  ${X11_LIBRARIES}
-)
-
-if(X11_FOUND)
-    target_link_libraries(colorskcmtool Qt5::X11Extras)
-endif()
-if (X11_Xcursor_FOUND)
-   target_link_libraries(colorskcmtool ${X11_Xcursor_LIB})
-endif ()
-if (X11_Xfixes_FOUND)
-   target_link_libraries(colorskcmtool ${X11_Xfixes_LIB})
-endif ()
-
-install( TARGETS colorskcmtool ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )
-
 ###### Command line tool
 
-set(lookandfeeltool_SRCS
-    lnftool.cpp
-    # TODO: load kcm plugin instead of using code copy
-    kcm.cpp
-    lookandfeeldata.cpp
-    ../krdb/krdb.cpp
-)
+kconfig_add_kcfg_files(plasma-apply-lookandfeel_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
 
-if (X11_Xcursor_FOUND)
-    set(lookandfeeltool_SRCS
-        ${lookandfeeltool_SRCS}
-        ../cursortheme/xcursor/cursortheme.cpp
-        ../cursortheme/xcursor/xcursortheme.cpp
-    )
-endif ()
+add_executable(plasma-apply-lookandfeel lnftool.cpp)
 
-kconfig_add_kcfg_files(lookandfeeltool_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
+target_link_libraries(plasma-apply-lookandfeel kcm_lookandfeel_static)
 
-add_executable(lookandfeeltool ${lookandfeeltool_SRCS})
-
-target_link_libraries(lookandfeeltool
-  KF5::KIOWidgets
-  KF5::CoreAddons
-  KF5::KCMUtils
-  KF5::I18n
-  #TODO:kpackage
-  KF5::Plasma
-  KF5::PlasmaQuick
-  KF5::KDELibs4Support
-  KF5::Declarative
-  KF5::QuickAddons
-  KF5::NewStuff
-  PW::KWorkspace
-
-  Qt5::DBus
-  Qt5::Widgets
-  Qt5::QuickWidgets
-  ${X11_LIBRARIES}
-)
-
-if(X11_FOUND)
-    target_link_libraries(lookandfeeltool Qt5::X11Extras)
-endif()
-if (X11_Xcursor_FOUND)
-   target_link_libraries(lookandfeeltool ${X11_Xcursor_LIB})
-endif ()
-if (X11_Xfixes_FOUND)
-   target_link_libraries(lookandfeeltool ${X11_Xfixes_LIB})
-endif ()
-
-install( TARGETS lookandfeeltool ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )
-
+ADD_CUSTOM_TARGET(plasma-apply-lookandfeel_link ALL
+                  COMMAND ${CMAKE_COMMAND} -E create_symlink ${KDE_INSTALL_FULL_BINDIR}/plasma-apply-lookandfeel ${CMAKE_CURRENT_BINARY_DIR}/lookandfeeltool)
+install( FILES ${CMAKE_CURRENT_BINARY_DIR}/lookandfeeltool DESTINATION ${KDE_INSTALL_FULL_BINDIR}/ )
+install( TARGETS plasma-apply-lookandfeel ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )

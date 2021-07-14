@@ -1,3 +1,5 @@
+add_subdirectory(krdb)
+
 add_subdirectory(desktoptheme)
 add_subdirectory(icons)
 add_subdirectory(translations)
@@ -7,17 +9,18 @@ if(KUserFeedback_FOUND)
 endif()
 
 add_subdirectory(style)
-add_subdirectory(krdb)
 add_subdirectory(lookandfeel)
-add_subdirectory(desktoplayout)
 add_subdirectory(colors)
 if(X11_Xcursor_FOUND)
     add_subdirectory(cursortheme)
 endif()
 
-set(libkxftconfig_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/fonts/kxftconfig.cpp )
-
-if(FONTCONFIG_FOUND AND FREETYPE_FOUND)
+if(FONTCONFIG_FOUND)
     add_subdirectory( kfontinst )
     add_subdirectory( fonts )
 endif()
+
+add_subdirectory(autostart)
+add_subdirectory(formats)
+add_subdirectory(notifications)
+add_subdirectory(nightcolor)

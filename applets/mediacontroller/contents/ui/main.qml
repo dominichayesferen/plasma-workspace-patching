@@ -167,9 +167,15 @@ Item {
     Plasmoid.fullRepresentation: ExpandedRepresentation {}
 
     Plasmoid.compactRepresentation: PlasmaCore.IconItem {
-        source: root.state === "playing" ? "media-playback-playing" :
-                root.state === "paused" ?  "media-playback-paused" :
-                                           "media-playback-stopped"
+        source: {
+            if (root.state === "playing") {
+                return "media-playback-playing";
+            } else if (root.state === "paused") {
+                return "media-playback-paused";
+            } else {
+                return "media-playback-stopped";
+            }
+        }
         active: compactMouse.containsMouse
 
         MouseArea {
@@ -297,9 +303,15 @@ Item {
                 continue
             }
 
+            const playerData = mpris2Source.data[source];
+            // source data is removed before its name is removed from the list
+            if (!playerData) {
+                continue;
+            }
+
             model.push({
-                'text': mpris2Source.data[source]["Identity"],
-                'icon': mpris2Source.data[source]["Desktop Icon Name"] || mpris2Source.data[source]["DesktopEntry"] || "emblem-music-symbolic",
+                'text': playerData["Identity"],
+                'icon': playerData["Desktop Icon Name"] || playerData["DesktopEntry"] || "emblem-music-symbolic",
                 'source': source
             });
         }

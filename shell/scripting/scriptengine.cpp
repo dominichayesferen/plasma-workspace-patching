@@ -202,6 +202,7 @@ void ScriptEngine::setupEngine()
     m_scriptSelf.setProperty(QStringLiteral("desktops"), globalScriptEngineObject.property("desktops"));
     m_scriptSelf.setProperty(QStringLiteral("desktopById"), globalScriptEngineObject.property("desktopById"));
     m_scriptSelf.setProperty(QStringLiteral("desktopForScreen"), globalScriptEngineObject.property("desktopForScreen"));
+    m_scriptSelf.setProperty(QStringLiteral("screenForConnector"), globalScriptEngineObject.property("screenForConnector"));
     m_scriptSelf.setProperty(QStringLiteral("panelById"), globalScriptEngineObject.property("panelById"));
     m_scriptSelf.setProperty(QStringLiteral("panels"), globalScriptEngineObject.property("panels"));
     m_scriptSelf.setProperty(QStringLiteral("fileExists"), globalScriptEngineObject.property("fileExists"));
@@ -381,9 +382,9 @@ QList<Containment *> ScriptEngine::desktopsForActivity(const QString &id)
 Plasma::Containment *ScriptEngine::createContainment(const QString &type, const QString &plugin)
 {
     bool exists = false;
-    const KPluginInfo::List list = Plasma::PluginLoader::listContainmentsOfType(type);
-    foreach (const KPluginInfo &info, list) {
-        if (info.pluginName() == plugin) {
+    const QList<KPluginMetaData> list = Plasma::PluginLoader::listContainmentsMetaDataOfType(type);
+    foreach (const KPluginMetaData &pluginInfo, list) {
+        if (pluginInfo.pluginId() == plugin) {
             exists = true;
             break;
         }

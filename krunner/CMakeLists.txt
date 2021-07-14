@@ -13,8 +13,8 @@ ecm_generate_dbus_service_file(NAME org.kde.krunner
 add_executable(krunner ${krunner_SRCS})
 
 target_link_libraries(krunner
-    Qt5::Quick
-    Qt5::Widgets
+    Qt::Quick
+    Qt::Widgets
     KF5::KIOGui
     KF5::Declarative
     KF5::I18n
@@ -31,7 +31,8 @@ target_compile_definitions(krunner PRIVATE -DPROJECT_VERSION="${PROJECT_VERSION}
 install(TARGETS krunner ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES ${krunner_dbusAppXML} DESTINATION ${KDE_INSTALL_DBUSINTERFACEDIR} )
 
-install(FILES krunner.desktop DESTINATION ${DATA_INSTALL_DIR}/kglobalaccel)
+configure_file(org.kde.krunner.desktop.cmake ${CMAKE_CURRENT_BINARY_DIR}/org.kde.krunner.desktop @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/org.kde.krunner.desktop DESTINATION ${KDE_INSTALL_DATADIR}/kglobalaccel)
 
 set(CMAKECONFIG_INSTALL_DIR "${KDE_INSTALL_CMAKEPACKAGEDIR}/KRunnerAppDBusInterface")
 configure_package_config_file(KRunnerAppDBusInterfaceConfig.cmake.in

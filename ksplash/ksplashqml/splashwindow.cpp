@@ -30,11 +30,11 @@
 #include <QSurfaceFormat>
 #include <QTimer>
 
+#include <LayerShellQt/Window>
+
 #include <KPackage/Package>
 #include <KPackage/PackageLoader>
 
-#include <KWayland/Client/plasmashell.h>
-#include <KWayland/Client/surface.h>
 #include <KWindowSystem>
 
 SplashWindow::SplashWindow(bool testing, bool window, const QString &theme)
@@ -44,6 +44,14 @@ SplashWindow::SplashWindow(bool testing, bool window, const QString &theme)
     , m_window(window)
     , m_theme(theme)
 {
+    if (KWindowSystem::isPlatformWayland()) {
+        if (auto layerShellWindow = LayerShellQt::Window::get(this)) {
+            layerShellWindow->setScope(QStringLiteral("ksplashqml"));
+            layerShellWindow->setLayer(LayerShellQt::Window::LayerOverlay);
+            layerShellWindow->setExclusiveZone(-1);
+        }
+    }
+
     setColor(Qt::transparent);
     setDefaultAlphaBuffer(true);
     setClearBeforeRendering(true);
@@ -78,23 +86,6 @@ void SplashWindow::setStage(int stage)
     m_stage = stage;
 
     rootObject()->setProperty("stage", stage);
-}
-
-bool SplashWindow::event(QEvent *e)
-{
-    if (e->type() == QEvent::PlatformSurface) {
-        auto pe = static_cast<QPlatformSurfaceEvent *>(e);
-        switch (pe->surfaceEventType()) {
-        case QPlatformSurfaceEvent::SurfaceCreated:
-            setupWaylandIntegration();
-            break;
-        case QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed:
-            delete m_shellSurface;
-            m_shellSurface = nullptr;
-            break;
-        }
-    }
-    return KQuickAddons::QuickViewSharedEngine::event(e);
 }
 
 void SplashWindow::keyPressEvent(QKeyEvent *event)
@@ -132,33 +123,5 @@ void SplashWindow::setGeometry(const QRect &rect)
 
         Q_ASSERT(package.isValid());
         setSource(QUrl::fromLocalFile(package.filePath("splashmainscript")));
-    }
-
-    if (m_shellSurface) {
-        m_shellSurface->setPosition(geometry().topLeft());
-    }
-}
-
-void SplashWindow::setupWaylandIntegration()
-{
-    if (m_shellSurface) {
-        // already setup
-        return;
-    }
-    if (SplashApp *a = qobject_cast<SplashApp *>(qApp)) {
-        using namespace KWayland::Client;
-        PlasmaShell *interface = a->waylandPlasmaShellInterface();
-        if (!interface) {
-            return;
-        }
-        Surface *s = Surface::fromWindow(this);
-        if (!s) {
-            return;
-        }
-        m_shellSurface = interface->createSurface(s, this);
-        // Use OSD to make it go above all other windows
-        // that's the closest we have to the X11 unmanged layer we have on Wayland
-        m_shellSurface->setRole(PlasmaShellSurface::Role::OnScreenDisplay);
-        m_shellSurface->setPosition(geometry().topLeft());
     }
 }

@@ -24,6 +24,7 @@
 #include <KNotificationJobUiDelegate>
 #include <KShell>
 #include <KToolInvocation>
+#include <QAction>
 #include <QRegularExpression>
 #include <QStandardPaths>
 
@@ -35,13 +36,14 @@ ShellRunner::ShellRunner(QObject *parent, const KPluginMetaData &metaData, const
     : Plasma::AbstractRunner(parent, metaData, args)
 {
     setObjectName(QStringLiteral("Command"));
-    setPriority(AbstractRunner::HighestPriority);
+    // The results from the services runner are preferred, consequently we set a low priority
+    setPriority(AbstractRunner::LowestPriority);
     // If the runner is not authorized we can suspend it
     bool enabled = KAuthorized::authorize(QStringLiteral("run_command")) && KAuthorized::authorize(QStringLiteral("shell_access"));
     suspendMatching(!enabled);
 
     addSyntax(Plasma::RunnerSyntax(QStringLiteral(":q:"), i18n("Finds commands that match :q:, using common shell syntax")));
-    m_actionList = {addAction(QStringLiteral("runInTerminal"), QIcon::fromTheme(QStringLiteral("utilities-terminal")), i18n("Run in Terminal Window"))};
+    m_actionList = {new QAction(QIcon::fromTheme(QStringLiteral("utilities-terminal")), i18n("Run in Terminal Window"), this)};
     m_matchIcon = QIcon::fromTheme(QStringLiteral("system-run"));
 }
 
@@ -56,7 +58,7 @@ void ShellRunner::match(Plasma::RunnerContext &context)
     if (parseShellCommand(context.query(), envs, command)) {
         const QString term = context.query();
         Plasma::QueryMatch match(this);
-        match.setId(term);
+        match.setId(QStringLiteral("exec://") + command);
         match.setType(Plasma::QueryMatch::ExactMatch);
         match.setIcon(m_matchIcon);
         match.setText(i18n("Run %1", term));
@@ -85,8 +87,11 @@ bool ShellRunner::parseShellCommand(const QString &query, QStringList &envs, QSt
     const static QRegularExpression envRegex = QRegularExpression(QStringLiteral("^.+=.+$"));
     const QStringList split = KShell::splitArgs(query);
     for (const auto &entry : split) {
-        if (!QStandardPaths::findExecutable(KShell::tildeExpand(entry)).isEmpty()) {
-            command = KShell::joinArgs(split.mid(split.indexOf(entry)));
+        const QString executablePath = QStandardPaths::findExecutable(KShell::tildeExpand(entry));
+        if (!executablePath.isEmpty()) {
+            QStringList executableParts{executablePath};
+            executableParts << split.mid(split.indexOf(entry) + 1);
+            command = KShell::joinArgs(executableParts);
             return true;
         } else if (envRegex.match(entry).hasMatch()) {
             envs.append(entry);

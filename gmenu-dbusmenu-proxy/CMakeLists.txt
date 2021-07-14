@@ -3,7 +3,6 @@ set_package_properties(AppMenuGtkModule PROPERTIES TYPE RUNTIME)
 
 add_definitions(-DQT_NO_CAST_TO_ASCII
 -DQT_NO_CAST_FROM_ASCII
--DQT_NO_URL_CAST_FROM_STRING
 -DQT_NO_CAST_FROM_BYTEARRAY)
 
 find_package(XCB
@@ -35,9 +34,9 @@ add_executable(gmenudbusmenuproxy ${GMENU_DBUSMENU_PROXY_SRCS})
 set_package_properties(XCB PROPERTIES TYPE REQUIRED)
 
 target_link_libraries(gmenudbusmenuproxy
-    Qt5::Core
-    Qt5::X11Extras
-    Qt5::DBus
+    Qt::Core
+    Qt::X11Extras
+    Qt::DBus
     KF5::CoreAddons
     KF5::ConfigCore
     KF5::WindowSystem

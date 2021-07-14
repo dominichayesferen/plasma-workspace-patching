@@ -42,6 +42,9 @@ JobPrivate::JobPrivate(uint id, QObject *parent)
     : QObject(parent)
     , m_id(id)
 {
+    m_showTimer.setSingleShot(true);
+    connect(&m_showTimer, &QTimer::timeout, this, &JobPrivate::requestShow);
+
     m_objectPath.setPath(QStringLiteral("/org/kde/notificationmanager/jobs/JobView_%1").arg(id));
 
     // TODO also v1? it's identical to V2 except it doesn't have setError method so supporting it should be easy
@@ -52,6 +55,14 @@ JobPrivate::JobPrivate(uint id, QObject *parent)
 }
 
 JobPrivate::~JobPrivate() = default;
+
+void JobPrivate::requestShow()
+{
+    if (!m_showRequested) {
+        m_showRequested = true;
+        Q_EMIT showRequested();
+    }
+}
 
 QDBusObjectPath JobPrivate::objectPath() const
 {
@@ -78,14 +89,19 @@ QUrl JobPrivate::localFileOrUrl(const QString &urlString)
     return url;
 }
 
-// Tries to return a more user-friendly displayed destination
-QString JobPrivate::prettyDestUrl() const
+QUrl JobPrivate::destUrl() const
 {
     QUrl url = m_destUrl;
     // In case of a single file and no destUrl, try using the second label (most likely "Destination")...
     if (!url.isValid() && m_totalFiles == 1) {
-        url = localFileOrUrl(m_descriptionValue2).adjusted(QUrl::RemoveFilename);
+        url = localFileOrUrl(m_descriptionValue2).adjusted(QUrl::RemoveFilename | QUrl::StripTrailingSlash);
     }
+    return url;
+}
+
+QString JobPrivate::prettyUrl(const QUrl &_url) const
+{
+    QUrl url(_url);
 
     if (!url.isValid()) {
         return QString();
@@ -159,8 +175,14 @@ QString JobPrivate::text() const
         return m_infoMessage;
     }
 
-    const QString currentFileName = descriptionUrl().fileName().toHtmlEscaped();
-    const QString destUrlString = prettyDestUrl().toHtmlEscaped();
+    const QUrl destUrl = this->destUrl();
+    const QString prettyDestUrl = prettyUrl(destUrl);
+
+    QString destUrlString;
+    if (!prettyDestUrl.isEmpty()) {
+        // Turn destination into a clickable hyperlink
+        destUrlString = QStringLiteral("<a href=\"%1\">%2</a>").arg(destUrl.toString(QUrl::PrettyDecoded), prettyDestUrl.toHtmlEscaped());
+    }
 
     if (m_totalFiles == 0) {
         if (!destUrlString.isEmpty()) {
@@ -172,6 +194,7 @@ QString JobPrivate::text() const
             return i18ncp("Copying n files", "%1 file", "%1 files", m_processedFiles);
         }
     } else if (m_totalFiles == 1) {
+        const QString currentFileName = descriptionUrl().fileName().toHtmlEscaped();
         if (!destUrlString.isEmpty()) {
             if (!currentFileName.isEmpty()) {
                 return i18nc("Copying file to location", "%1 to %2", currentFileName, destUrlString);
@@ -203,12 +226,21 @@ QString JobPrivate::text() const
     }
 
     qCInfo(NOTIFICATIONMANAGER) << "Failed to generate job text for job with following properties:";
-    qCInfo(NOTIFICATIONMANAGER) << "  processedFiles =" << m_processedFiles << ", totalFiles =" << m_totalFiles << ", current file name =" << currentFileName
-                                << ", destination url string =" << destUrlString;
+    qCInfo(NOTIFICATIONMANAGER) << "  processedFiles =" << m_processedFiles << ", totalFiles =" << m_totalFiles
+                                << ", current file name =" << descriptionUrl().fileName() << ", destination url string =" << this->destUrl();
     qCInfo(NOTIFICATIONMANAGER) << "label1 =" << m_descriptionLabel1 << ", value1 =" << m_descriptionValue1 << ", label2 =" << m_descriptionLabel2
                                 << ", value2 =" << m_descriptionValue2;
 
     return QString();
+}
+
+void JobPrivate::delayedShow(std::chrono::milliseconds delay, ShowConditions showConditions)
+{
+    m_showConditions = showConditions;
+
+    if (showConditions.testFlag(ShowCondition::OnTimeout)) {
+        m_showTimer.start(delay);
+    }
 }
 
 void JobPrivate::kill()
@@ -358,7 +390,13 @@ void JobPrivate::clearDescriptionField(uint number)
 
 void JobPrivate::setDestUrl(const QDBusVariant &urlVariant)
 {
-    const QUrl destUrl = QUrl(urlVariant.variant().toUrl().adjusted(QUrl::StripTrailingSlash)); // urgh
+    QUrl destUrl = QUrl(urlVariant.variant().toUrl().adjusted(QUrl::StripTrailingSlash)); // urgh
+    if (destUrl.scheme().isEmpty()) {
+        qCInfo(NOTIFICATIONMANAGER) << "Job from" << m_applicationName << "set a destUrl" << destUrl
+                                    << "without a scheme (assuming 'file'), this is an application bug!";
+        destUrl.setScheme(QStringLiteral("file"));
+    }
+
     updateField(destUrl, m_destUrl, &Job::destUrlChanged);
 }
 
@@ -375,6 +413,12 @@ void JobPrivate::terminate(uint errorCode, const QString &errorMessage, const QV
     Job *job = static_cast<Job *>(parent());
     job->setError(errorCode);
     job->setErrorText(errorMessage);
+
+    // Request show just before changing state to stopped, so we're not discarded
+    if (m_showConditions.testFlag(ShowCondition::OnTermination)) {
+        requestShow();
+    }
+
     job->setState(Notifications::JobStateStopped);
     finish();
 }
@@ -435,4 +479,8 @@ void JobPrivate::update(const QVariantMap &properties)
     }
 
     updateHasDetails();
+
+    if (!m_summary.isEmpty() && m_showConditions.testFlag(ShowCondition::OnSummary)) {
+        requestShow();
+    }
 }

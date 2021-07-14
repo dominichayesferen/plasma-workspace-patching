@@ -46,7 +46,7 @@ Item {
     }
 
     property string lastSelectedTimezone: plasmoid.configuration.lastSelectedTimezone
-    property bool displayTimezoneAsCode: plasmoid.configuration.displayTimezoneAsCode
+    property int displayTimezoneFormat: plasmoid.configuration.displayTimezoneFormat
     property int use24hFormat: plasmoid.configuration.use24hFormat
 
     property string lastDate: ""
@@ -55,16 +55,18 @@ Item {
     // This is the index in the list of user selected timezones
     property int tzIndex: 0
 
+    // if showing the date and the time in one line or
     // if the date/timezone cannot be fit with the smallest font to its designated space
-    readonly property bool oneLineMode: plasmoid.formFactor === PlasmaCore.Types.Horizontal &&
-                                        main.height <= 2 * theme.smallestFont.pixelSize &&
+    property bool oneLineMode: plasmoid.configuration.dateDisplayFormat === 1 ||
+                                        plasmoid.formFactor === PlasmaCore.Types.Horizontal &&
+                                        main.height <= 2 * PlasmaCore.Theme.smallestFont.pixelSize &&
                                         (main.showDate || timezoneLabel.visible)
 
     onDateFormatChanged: {
         setupLabels();
     }
 
-    onDisplayTimezoneAsCodeChanged: { setupLabels(); }
+    onDisplayTimezoneFormatChanged: { setupLabels(); }
     onStateChanged: { setupLabels(); }
 
     onLastSelectedTimezoneChanged: { timeFormatCorrection(Qt.locale().timeFormat(Locale.ShortFormat)) }
@@ -114,7 +116,7 @@ Item {
 
                 height: timeLabel.height + (main.showDate || timezoneLabel.visible ? 0.8 * timeLabel.height : 0)
                 width: Math.max(timeLabel.paintedWidth + (main.showDate ? timezoneLabel.paintedWidth : 0), 
-                                timezoneLabel.paintedWidth, dateLabel.paintedWidth) + units.smallSpacing * 2
+                                timezoneLabel.paintedWidth, dateLabel.paintedWidth) + PlasmaCore.Units.smallSpacing * 2
             }
 
             PropertyChanges {
@@ -175,15 +177,16 @@ Item {
                  * and still fits well into the panel with all the applied margins.
                  */
                 height: Math.min(main.showDate || timezoneLabel.visible ? main.height * 0.56 : main.height * 0.71,
-                                 3 * theme.defaultFont.pixelSize)
+                                 3 * PlasmaCore.Theme.defaultFont.pixelSize)
 
                 font.pixelSize: sizehelper.height
             }
         },
 
         State {
-            name: "horizontalPanelSmall"
-            when: plasmoid.formFactor === PlasmaCore.Types.Horizontal && main.oneLineMode
+            name: "oneLineDate"
+            // the one-line mode has no effect on a vertical panel because it would never fit
+            when: plasmoid.formFactor !== PlasmaCore.Types.Vertical && main.oneLineMode
 
             PropertyChanges {
                 target: main
@@ -211,7 +214,7 @@ Item {
                 target: dateLabel
 
                 height: timeLabel.height
-                width: dateLabel.paintedWidth
+                width: dateLabel.paintedWidth + PlasmaCore.Units.smallSpacing
 
                 font.pixelSize: 1024
                 verticalAlignment: Text.AlignVCenter
@@ -249,10 +252,10 @@ Item {
             PropertyChanges {
                 target: sizehelper
 
-                height: Math.min(main.height, 3 * theme.defaultFont.pixelSize)
+                height: Math.min(main.height, 3 * PlasmaCore.Theme.defaultFont.pixelSize)
 
                 fontSizeMode: Text.VerticalFit
-                font.pixelSize: 3 * theme.defaultFont.pixelSize
+                font.pixelSize: 3 * PlasmaCore.Theme.defaultFont.pixelSize
             }
         },
 
@@ -287,7 +290,7 @@ Item {
                 height: sizehelper.contentHeight
                 width: main.width
 
-                font.pixelSize: Math.min(timeLabel.height, 3 * theme.defaultFont.pixelSize)
+                font.pixelSize: Math.min(timeLabel.height, 3 * PlasmaCore.Theme.defaultFont.pixelSize)
                 fontSizeMode: Text.HorizontalFit
             }
 
@@ -314,7 +317,6 @@ Item {
                 // Those magic numbers are purely what looks nice as maximum size, here we have it the smallest
                 // between slightly bigger than the default font (1.4 times) and a bit smaller than the time font
                 font.pixelSize: Math.min(0.7 * timeLabel.height, PlasmaCore.Theme.defaultFont.pixelSize * 1.4)
-                font.minimumPixelSize: theme.smallestFont.pixelSize
                 elide: Text.ElideRight
                 wrapMode: Text.WordWrap
             }
@@ -332,7 +334,7 @@ Item {
                 width: main.width
 
                 fontSizeMode: Text.HorizontalFit
-                font.pixelSize: 3 * theme.defaultFont.pixelSize
+                font.pixelSize: 3 * PlasmaCore.Theme.defaultFont.pixelSize
             }
         },
 
@@ -344,8 +346,8 @@ Item {
                 target: main
                 Layout.fillHeight: false
                 Layout.fillWidth: false
-                Layout.minimumWidth: units.gridUnit * 3
-                Layout.minimumHeight: units.gridUnit * 3
+                Layout.minimumWidth: PlasmaCore.Units.gridUnit * 3
+                Layout.minimumHeight: PlasmaCore.Units.gridUnit * 3
             }
 
             PropertyChanges {
@@ -385,7 +387,7 @@ Item {
 
                 height: 0.7 * timeLabel.height
                 font.pixelSize: 1024
-                width: Math.max(timeLabel.contentWidth, units.gridUnit * 3)
+                width: Math.max(timeLabel.contentWidth, PlasmaCore.Units.gridUnit * 3)
                 verticalAlignment: Text.AlignVCenter
 
                 fontSizeMode: Text.Fit
@@ -479,27 +481,18 @@ Item {
             verticalItemAlignment: Grid.AlignVCenter
 
             flow: Grid.TopToBottom
-            columnSpacing: units.smallSpacing
-
-            Rectangle {
-                height: 0.8 * sizehelper.height
-                width: 1
-                visible: main.showDate && main.oneLineMode
-
-                color: theme.textColor
-                opacity: 0.4
-            }
+            columnSpacing: PlasmaCore.Units.smallSpacing
 
             Components.Label  {
                 id: timeLabel
 
                 font {
-                    family: plasmoid.configuration.fontFamily || theme.defaultFont.family
-                    weight: plasmoid.configuration.boldText ? Font.Bold : theme.defaultFont.weight
+                    family: plasmoid.configuration.fontFamily || PlasmaCore.Theme.defaultFont.family
+                    weight: plasmoid.configuration.boldText ? Font.Bold : PlasmaCore.Theme.defaultFont.weight
                     italic: plasmoid.configuration.italicText
                     pixelSize: 1024
-                    pointSize: undefined // Because we're setting the pixel size instead
-                                         // TODO: remove once this label is ported to PC3
+                    pointSize: -1 // Because we're setting the pixel size instead
+                                  // TODO: remove once this label is ported to PC3
                 }
                 minimumPixelSize: 1
 
@@ -525,8 +518,8 @@ Item {
                 font.weight: timeLabel.font.weight
                 font.italic: timeLabel.font.italic
                 font.pixelSize: 1024
-                font.pointSize: undefined // Because we're setting the pixel size instead
-                                          // TODO: remove once this label is ported to PC3
+                font.pointSize: -1 // Because we're setting the pixel size instead
+                                   // TODO: remove once this label is ported to PC3
                 minimumPixelSize: 1
 
                 visible: text.length > 0
@@ -544,8 +537,8 @@ Item {
             font.weight: timeLabel.font.weight
             font.italic: timeLabel.font.italic
             font.pixelSize: 1024
-            font.pointSize: undefined // Because we're setting the pixel size instead
-                                      // TODO: remove once this label is ported to PC3
+            font.pointSize: -1 // Because we're setting the pixel size instead
+                               // TODO: remove once this label is ported to PC3
             minimumPixelSize: 1
 
             horizontalAlignment: Text.AlignHCenter
@@ -618,8 +611,20 @@ Item {
         var timezoneString = "";
 
         if (showTimezone) {
-            timezoneString = plasmoid.configuration.displayTimezoneAsCode ? dataSource.data[plasmoid.configuration.lastSelectedTimezone]["Timezone Abbreviation"]
-                                                                          : TimezonesI18n.i18nCity(dataSource.data[plasmoid.configuration.lastSelectedTimezone]["Timezone City"]);
+            // format timezone as tz code, city or UTC offset
+            if (displayTimezoneFormat === 0) {
+                timezoneString = dataSource.data[lastSelectedTimezone]["Timezone Abbreviation"]
+            } else if (displayTimezoneFormat === 1) {
+                timezoneString = TimezonesI18n.i18nCity(dataSource.data[lastSelectedTimezone]["Timezone City"]);
+            } else if (displayTimezoneFormat === 2) {
+                var lastOffset = dataSource.data[lastSelectedTimezone]["Offset"];
+                var symbol = lastOffset > 0 ? '+' : '';
+                var hours = Math.floor(lastOffset / 3600);
+                var minutes = Math.floor(lastOffset % 3600 / 60);
+
+                timezoneString = "UTC" + symbol + hours.toString().padStart(2, '0') + ":" + minutes.toString().padStart(2, '0');
+            }
+
             timezoneLabel.text = (main.showDate || main.oneLineMode) && plasmoid.formFactor === PlasmaCore.Types.Horizontal ? "(" + timezoneString + ")" : timezoneString;
         } else {
             // this clears the label and that makes it hidden

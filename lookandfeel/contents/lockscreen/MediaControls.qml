@@ -103,7 +103,7 @@ Item {
         }
 
         Item { // spacer
-            width: units.smallSpacing
+            width: PlasmaCore.Units.smallSpacing
             height: 1
         }
 
@@ -117,7 +117,7 @@ Item {
                 elide: Text.ElideRight
                 text: mpris2Source.track || i18nd("plasma_lookandfeel_org.kde.lookandfeel", "No media playing")
                 textFormat: Text.PlainText
-                font.pointSize: theme.defaultFont.pointSize + 1
+                font.pointSize: PlasmaCore.Theme.defaultFont.pointSize + 1
                 maximumLineCount: 1
             }
 
@@ -128,12 +128,13 @@ Item {
                 // if no artist is given, show player name instead
                 text: mpris2Source.artist || mpris2Source.identity || ""
                 textFormat: Text.PlainText
-                font.pointSize: theme.smallestFont.pointSize + 1
+                font.pointSize: PlasmaCore.Theme.smallestFont.pointSize + 1
                 maximumLineCount: 1
             }
         }
 
         PlasmaComponents3.ToolButton {
+            focusPolicy: Qt.TabFocus
             enabled: mpris2Source.canGoBack
             Layout.preferredHeight: PlasmaCore.Units.gridUnit*2
             Layout.preferredWidth: Layout.preferredHeight
@@ -147,6 +148,7 @@ Item {
         }
 
         PlasmaComponents3.ToolButton {
+            focusPolicy: Qt.TabFocus
             Layout.fillHeight: true
             Layout.preferredWidth: height // make this button bigger
             icon.name: mpris2Source.playing ? "media-playback-pause" : "media-playback-start"
@@ -158,6 +160,7 @@ Item {
         }
 
         PlasmaComponents3.ToolButton {
+            focusPolicy: Qt.TabFocus
             enabled: mpris2Source.canGoNext
             Layout.preferredHeight: PlasmaCore.Units.gridUnit*2
             Layout.preferredWidth: Layout.preferredHeight

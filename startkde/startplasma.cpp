@@ -34,6 +34,7 @@
 
 #include <unistd.h>
 
+#include <autostartscriptdesktopfile.h>
 #include <updatelaunchenvjob.h>
 
 #include "startplasma.h"
@@ -88,6 +89,27 @@ int runSync(const QString &program, const QStringList &args, const QStringList &
     return p.exitCode();
 }
 
+bool isShellVariable(const QByteArray &name)
+{
+    return name == "_" || name.startsWith("SHLVL");
+}
+
+bool isSessionVariable(const QByteArray &name)
+{
+    // Check is variable is specific to session.
+    return name == "DISPLAY" || name == "XAUTHORITY" || //
+        name == "WAYLAND_DISPLAY" || name == "WAYLAND_SOCKET" || //
+        name.startsWith("XDG_");
+}
+
+void setEnvironmentVariable(const QByteArray &name, const QByteArray &value)
+{
+    if (qgetenv(name) != value) {
+        //        qCDebug(PLASMA_STARTUP) << "setting..." << env.left(idx) << env.mid(idx+1) << "was" << qgetenv(env.left(idx));
+        qputenv(name, value);
+    }
+}
+
 void sourceFiles(const QStringList &files)
 {
     QStringList filteredFiles;
@@ -108,17 +130,16 @@ void sourceFiles(const QStringList &files)
     auto envs = fullEnv.split('\0');
 
     for (auto &env : envs) {
-        if (env.startsWith("_=") || env.startsWith("SHLVL"))
-            continue;
-
         const int idx = env.indexOf('=');
-        if (Q_UNLIKELY(idx <= 0))
+        if (Q_UNLIKELY(idx <= 0)) {
             continue;
-
-        if (qgetenv(env.left(idx)) != env.mid(idx + 1)) {
-            //             qCDebug(PLASMA_STARTUP) << "setting..." << env.left(idx) << env.mid(idx+1) << "was" << qgetenv(env.left(idx));
-            qputenv(env.left(idx), env.mid(idx + 1));
         }
+
+        const auto name = env.left(idx);
+        if (isShellVariable(name)) {
+            continue;
+        }
+        setEnvironmentVariable(name, env.mid(idx + 1));
     }
 }
 
@@ -180,6 +201,58 @@ void setupCursor(bool wayland)
         qputenv("XCURSOR_THEME", kcminputrc_mouse_cursortheme.toUtf8());
     }
     qputenv("XCURSOR_SIZE", QByteArray::number(kcminputrc_mouse_cursorsize));
+}
+
+std::optional<QStringList> getSystemdEnvironment()
+{
+    QStringList list;
+    auto msg = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
+                                              QStringLiteral("/org/freedesktop/systemd1"),
+                                              QStringLiteral("org.freedesktop.DBus.Properties"),
+                                              QStringLiteral("Get"));
+    msg << QStringLiteral("org.freedesktop.systemd1.Manager") << QStringLiteral("Environment");
+    auto reply = QDBusConnection::sessionBus().call(msg);
+    if (reply.type() == QDBusMessage::ErrorMessage) {
+        return std::nullopt;
+    }
+
+    // Make sure the returned type is correct.
+    auto arguments = reply.arguments();
+    if (arguments.isEmpty() || arguments[0].userType() != qMetaTypeId<QDBusVariant>()) {
+        return std::nullopt;
+    }
+    auto variant = qdbus_cast<QVariant>(arguments[0]);
+    if (variant.type() != QVariant::StringList) {
+        return std::nullopt;
+    }
+
+    return variant.toStringList();
+}
+
+// Import systemd user environment.
+//
+// Systemd read ~/.config/environment.d which applies to all systemd user unit.
+// But it won't work if plasma is not started by systemd.
+void importSystemdEnvrionment()
+{
+    auto environment = getSystemdEnvironment();
+    if (!environment) {
+        return;
+    }
+
+    for (auto &envString : environment.value()) {
+        const auto env = envString.toLocal8Bit();
+        const int idx = env.indexOf('=');
+        if (Q_UNLIKELY(idx <= 0)) {
+            continue;
+        }
+
+        const auto name = env.left(idx);
+        if (isShellVariable(name) || isSessionVariable(name)) {
+            continue;
+        }
+        setEnvironmentVariable(name, env.mid(idx + 1));
+    }
 }
 
 // Source scripts found in <config locations>/plasma-workspace/env/*.sh
@@ -255,6 +328,14 @@ void setupPlasmaEnvironment()
     qputenv("XDG_CURRENT_DESKTOP", "KDE");
 
     qputenv("KDE_APPLICATIONS_AS_SCOPE", "1");
+
+    // Add kdedefaults dir to allow config defaults overriding from a writable location
+    QByteArray currentConfigDirs = qgetenv("XDG_CONFIG_DIRS");
+    if (currentConfigDirs.isEmpty()) {
+        currentConfigDirs = "/etc/xdg";
+    }
+    const auto extraConfigDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation).toUtf8() + "/kdedefaults";
+    qputenv("XDG_CONFIG_DIRS", extraConfigDir + ":" + currentConfigDirs);
 }
 
 void setupX11()
@@ -292,12 +373,43 @@ void cleanupX11()
     runSync(QStringLiteral("xprop"), {QStringLiteral("-root"), QStringLiteral("-remove"), QStringLiteral("KDE_SESSION_VERSION")});
 }
 
-// TODO: Check if Necessary
-void cleanupPlasmaEnvironment()
+void cleanupPlasmaEnvironment(const std::optional<QStringList> &oldSystemdEnvironment)
 {
     qunsetenv("KDE_FULL_SESSION");
     qunsetenv("KDE_SESSION_VERSION");
     qunsetenv("KDE_SESSION_UID");
+
+    if (!oldSystemdEnvironment) {
+        return;
+    }
+
+    auto currentEnv = getSystemdEnvironment();
+    if (!currentEnv) {
+        return;
+    }
+
+    QStringList vars;
+    for (auto &env : currentEnv.value()) {
+        const int idx = env.indexOf(QLatin1Char('='));
+        if (Q_UNLIKELY(idx <= 0)) {
+            continue;
+        }
+
+        vars.append(env.left(idx));
+    }
+
+    // According to systemd documentation:
+    // If a variable is listed in both, the variable is set after this method returns, i.e. the set list overrides the unset list.
+    // So this will effectively restore the state to the values in oldSystemdEnvironment.
+    QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
+                                                          QStringLiteral("/org/freedesktop/systemd1"),
+                                                          QStringLiteral("org.freedesktop.systemd1.Manager"),
+                                                          QStringLiteral("UnsetAndSetEnvironment"));
+    message.setArguments({vars, oldSystemdEnvironment.value()});
+
+    // The session program gonna quit soon, ensure the message is flushed.
+    auto reply = QDBusConnection::sessionBus().asyncCall(message);
+    reply.waitForFinished();
 }
 
 // kwin_wayland can possibly also start dbus-activated services which need env variables.
@@ -349,6 +461,17 @@ QProcess *setupKSplash()
     return p;
 }
 
+// If something went on an endless restart crash loop it will get blacklisted, as this is a clean login we will want to reset those counters
+// This is independent of whether we use the Plasma systemd boot
+void resetSystemdFailedUnits()
+{
+    QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
+                                                          QStringLiteral("/org/freedesktop/systemd1"),
+                                                          QStringLiteral("org.freedesktop.systemd1.Manager"),
+                                                          QStringLiteral("ResetFailed"));
+    QDBusConnection::sessionBus().call(message);
+}
+
 bool hasSystemdService(const QString &serviceName)
 {
     auto msg = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
@@ -379,6 +502,7 @@ bool useSystemdBoot()
     }
 
     if (configValue == QLatin1String("force")) {
+        qInfo() << "Systemd boot forced";
         return true;
     }
 
@@ -390,6 +514,7 @@ bool useSystemdBoot()
 
 bool startPlasmaSession(bool wayland)
 {
+    resetSystemdFailedUnits();
     OrgKdeKSplashInterface iface(QStringLiteral("org.kde.KSplash"), QStringLiteral("/KSplash"), QDBusConnection::sessionBus());
     iface.setStage(QStringLiteral("kinit"));
     // finally, give the session control to the session manager
@@ -427,6 +552,9 @@ bool startPlasmaSession(bool wayland)
         }
     });
 
+    // Create .desktop files for the scripts in .config/autostart-scripts
+    migrateUserScriptsAutostart();
+
     if (!useSystemdBoot()) {
         qCDebug(PLASMA_STARTUP) << "Using classic boot";
         QProcess startPlasmaSession;
@@ -462,8 +590,9 @@ bool startPlasmaSession(bool wayland)
                                                   QStringLiteral("org.freedesktop.systemd1.Manager"),
                                                   QStringLiteral("StartUnit"));
         msg << QStringLiteral("plasma-workspace@%1.target").arg(platform) << QStringLiteral("fail");
-        auto reply = QDBusConnection::sessionBus().call(msg);
-        if (reply.type() == QDBusMessage::ErrorMessage) {
+        QDBusReply<QDBusObjectPath> reply = QDBusConnection::sessionBus().call(msg);
+        if (!reply.isValid()) {
+            qWarning() << "Could not start systemd managed Plasma session:" << reply.error().name() << reply.error().message();
             messageBox(QStringLiteral("startkde: Could not start Plasma session.\n"));
             rc = false;
         }
@@ -498,4 +627,48 @@ void waitForKonqi()
             }
         }
     }
+}
+
+static void migrateUserScriptsAutostart()
+{
+    QDir configLocation(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation));
+    QDir autostartScriptsLocation(configLocation.filePath(QStringLiteral("autostart-scripts")));
+    if (!autostartScriptsLocation.exists()) {
+        return;
+    }
+    const QDir autostartScriptsMovedLocation(configLocation.filePath(QStringLiteral("old-autostart-scripts")));
+    const auto entries = autostartScriptsLocation.entryInfoList(QDir::Files);
+    for (const auto &info : entries) {
+        const auto scriptName = info.fileName();
+        const auto scriptPath = info.absoluteFilePath();
+        const auto scriptMovedPath = autostartScriptsMovedLocation.filePath(scriptName);
+
+        // Don't migrate backup files
+        if (scriptName.endsWith(QLatin1Char('~')) || scriptName.endsWith(QLatin1String(".bak"))
+            || (scriptName[0] == QLatin1Char('%') && scriptName.endsWith(QLatin1Char('%')))
+            || (scriptName[0] == QLatin1Char('#') && scriptName.endsWith(QLatin1Char('#')))) {
+            qCDebug(PLASMA_STARTUP) << "Not migrating backup autostart script" << scriptName;
+            continue;
+        }
+
+        // Migrate autostart script to a standard .desktop autostart file
+        AutostartScriptDesktopFile desktopFile(scriptName, info.isSymLink() ? info.symLinkTarget() : scriptMovedPath);
+        qCInfo(PLASMA_STARTUP) << "Migrated legacy autostart script" << scriptPath << "to" << desktopFile.fileName();
+
+        if (info.isSymLink() && QFile::remove(scriptPath)) {
+            qCInfo(PLASMA_STARTUP) << "Removed legacy autostart script" << scriptPath << "that pointed to" << info.symLinkTarget();
+        }
+    }
+    // Delete or rename autostart-scripts to old-autostart-scripts to avoid running the migration again
+    if (autostartScriptsLocation.entryInfoList(QDir::Files).empty()) {
+        autostartScriptsLocation.removeRecursively();
+    } else {
+        configLocation.rename(autostartScriptsLocation.dirName(), autostartScriptsMovedLocation.dirName());
+    }
+    // Reload systemd so that the XDG autostart generator is run again to pick up the new .desktop files
+    QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
+                                                          QStringLiteral("/org/freedesktop/systemd1"),
+                                                          QStringLiteral("org.freedesktop.systemd1.Manager"),
+                                                          QStringLiteral("Reload"));
+    QDBusConnection::sessionBus().call(message);
 }

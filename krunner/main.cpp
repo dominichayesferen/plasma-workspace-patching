@@ -107,7 +107,7 @@ int main(int argc, char **argv)
         } else if (!query.isEmpty()) {
             view.query(query);
         } else {
-            view.display();
+            view.toggleDisplay();
         }
     };
 
@@ -117,6 +117,11 @@ int main(int argc, char **argv)
         Q_UNUSED(workingDirectory)
         parser.parse(arguments);
         updateVisibility();
+    });
+    QObject::connect(&service, &KDBusService::activateActionRequested, &view, [&view](const QString &action) {
+        if (action == QLatin1String("RunClipboard")) {
+            view.displayWithClipboardContents();
+        }
     });
 
     return app.exec();

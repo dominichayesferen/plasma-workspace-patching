@@ -29,6 +29,7 @@
 #include <QIcon>
 #include <QStandardPaths>
 #include <QUrl>
+#include <QUrlQuery>
 
 #include <KActivities/ResourceInstance>
 #include <KLocalizedString>
@@ -39,6 +40,7 @@
 #include <KSycoca>
 
 #include <KIO/ApplicationLauncherJob>
+#include <KIO/DesktopExecParser>
 
 #include "debug.h"
 
@@ -176,7 +178,14 @@ private:
         QUrl url(service->storageId());
         url.setScheme(QStringLiteral("applications"));
         match.setData(url);
-
+        QString exec = service->exec();
+        // We have a snap, remove the ENV variable
+        if (exec.contains(QLatin1String("BAMF_DESKTOP_FILE_HINT"))) {
+            const static QRegularExpression snapCleanupRegex(QStringLiteral("env BAMF_DESKTOP_FILE_HINT=.+ "));
+            exec.remove(snapCleanupRegex);
+        }
+        const QStringList resultingArgs = KIO::DesktopExecParser(KService(QString(), exec, QString()), {}).resultingArguments();
+        match.setId(QStringLiteral("exec://") + resultingArgs.join(QLatin1Char(' ')));
         if (!service->genericName().isEmpty() && service->genericName() != name) {
             match.setSubtext(service->genericName());
         } else if (!service->comment().isEmpty()) {

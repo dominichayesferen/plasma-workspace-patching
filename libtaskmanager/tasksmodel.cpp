@@ -303,6 +303,7 @@ void TasksModel::Private::initModels()
     QObject::connect(filterProxyModel, &TaskFilterProxyModel::filterByActivityChanged, q, &TasksModel::filterByActivityChanged);
     QObject::connect(filterProxyModel, &TaskFilterProxyModel::filterNotMinimizedChanged, q, &TasksModel::filterNotMinimizedChanged);
     QObject::connect(filterProxyModel, &TaskFilterProxyModel::filterNotMaximizedChanged, q, &TasksModel::filterNotMaximizedChanged);
+    QObject::connect(filterProxyModel, &TaskFilterProxyModel::filterHiddenChanged, q, &TasksModel::filterHiddenChanged);
 
     groupingProxyModel = new TaskGroupingProxyModel(q);
     groupingProxyModel->setSourceModel(filterProxyModel);
@@ -343,7 +344,7 @@ void TasksModel::Private::initModels()
 
                     if ((!appId.isEmpty() && appId == filterIndex.data(AbstractTasksModel::AppId).toString())
                         || (!appName.isEmpty() && appName == filterIndex.data(AbstractTasksModel::AppName).toString())) {
-                        filterProxyModel->dataChanged(filterIndex, filterIndex);
+                        Q_EMIT filterProxyModel->dataChanged(filterIndex, filterIndex);
                     }
                 }
             }
@@ -481,7 +482,7 @@ void TasksModel::Private::updateAnyTaskDemandsAttention()
 
     if (taskFound != anyTaskDemandsAttention) {
         anyTaskDemandsAttention = taskFound;
-        q->anyTaskDemandsAttentionChanged();
+        Q_EMIT q->anyTaskDemandsAttentionChanged();
     }
 }
 
@@ -1161,6 +1162,16 @@ bool TasksModel::filterNotMaximized() const
 void TasksModel::setFilterNotMaximized(bool filter)
 {
     d->filterProxyModel->setFilterNotMaximized(filter);
+}
+
+bool TasksModel::filterHidden() const
+{
+    return d->filterProxyModel->filterHidden();
+}
+
+void TasksModel::setFilterHidden(bool filter)
+{
+    d->filterProxyModel->setFilterHidden(filter);
 }
 
 TasksModel::SortMode TasksModel::sortMode() const

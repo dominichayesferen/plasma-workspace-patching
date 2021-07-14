@@ -253,7 +253,7 @@ void CKioFonts::put(const QUrl &url, int /*permissions*/, KIO::JobFlags /*flags*
 void CKioFonts::get(const QUrl &url)
 {
     KFI_DBUG << url;
-    QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), QString::SkipEmptyParts));
+    QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), Qt::SkipEmptyParts));
     EFolder folder(getFolder(pathList));
     Family family(getFont(url, folder));
 
@@ -434,7 +434,7 @@ void CKioFonts::rename(const QUrl &, const QUrl &, KIO::JobFlags)
 void CKioFonts::del(const QUrl &url, bool isFile)
 {
     KFI_DBUG << url;
-    QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), QString::SkipEmptyParts));
+    QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), Qt::SkipEmptyParts));
     EFolder folder(getFolder(pathList));
     QString name(removeKnownExtension(url));
 
@@ -559,7 +559,9 @@ void CKioFonts::createUDSEntry(KIO::UDSEntry &entry, EFolder folder)
     KFI_DBUG << QString(FOLDER_SYS == folder ? i18n(KFI_KIO_FONTS_SYS) : i18n(KFI_KIO_FONTS_USER));
     entry.clear();
     entry.fastInsert(KIO::UDSEntry::UDS_NAME,
-                     FOLDER_ROOT == folder || Misc::root() ? i18n("Fonts") : FOLDER_SYS == folder ? i18n(KFI_KIO_FONTS_SYS) : i18n(KFI_KIO_FONTS_USER));
+                     FOLDER_ROOT == folder || Misc::root() ? i18n("Fonts")
+                         : FOLDER_SYS == folder            ? i18n(KFI_KIO_FONTS_SYS)
+                                                           : i18n(KFI_KIO_FONTS_USER));
     entry.fastInsert(KIO::UDSEntry::UDS_ACCESS, !Misc::root() && FOLDER_SYS == folder ? 0444 : 0744);
     entry.fastInsert(KIO::UDSEntry::UDS_USER, Misc::root() || FOLDER_SYS == folder ? QString::fromLatin1("root") : getUserName(getuid()));
     entry.fastInsert(KIO::UDSEntry::UDS_GROUP, Misc::root() || FOLDER_SYS == folder ? QString::fromLatin1("root") : getGroupName(getgid()));

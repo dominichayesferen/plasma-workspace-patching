@@ -80,7 +80,7 @@ PlasmaCore.Dialog {
     signal actionInvoked(string actionName)
     signal replied(string text)
     signal openUrl(string url)
-    signal fileActionInvoked
+    signal fileActionInvoked(QtObject action)
 
     signal expired
     signal hoverEntered
@@ -141,8 +141,25 @@ PlasmaCore.Dialog {
             Timer {
                 id: timer
                 interval: notificationPopup.effectiveTimeout
-                running: notificationPopup.visible && !area.containsMouse && interval > 0
-                    && !notificationItem.dragging && !notificationItem.menuOpen && !notificationItem.replying
+                running: {
+                    if (!notificationPopup.visible) {
+                        return false;
+                    }
+                    if (area.containsMouse) {
+                        return false;
+                    }
+                    if (interval <= 0) {
+                        return false;
+                    }
+                    if (notificationItem.dragging || notificationItem.menuOpen) {
+                        return false;
+                    }
+                    if (notificationItem.replying
+                            && (notificationPopup.active || notificationItem.hasPendingReply)) {
+                        return false;
+                    }
+                    return true;
+                }
                 onTriggered: {
                     if (notificationPopup.dismissTimeout) {
                         notificationPopup.dismissClicked();
@@ -151,33 +168,14 @@ PlasmaCore.Dialog {
                     }
                 }
             }
-            
-            Rectangle {
-                id: timeoutIndicatorRect
-                anchors {
-                    bottom: parent.bottom
-                    bottomMargin: -notificationPopup.margins.bottom
-                    left: parent.left
-                    leftMargin: -notificationPopup.margins.left
-                }
-                height: units.devicePixelRatio * 2.4
-                color: theme.highlightColor
-                opacity: timeoutIndicatorAnimation.running ? 0.6 : 0
-                visible: units.longDuration > 1
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: units.longDuration
-                    }
-                }
-            }
 
             NumberAnimation {
-                target: timeoutIndicatorRect
-                property: "width"
-                from: area.width + notificationPopup.margins.left + notificationPopup.margins.right
+                target: notificationItem
+                property: "remainingTime"
+                from: timer.interval
                 to: 0
                 duration: timer.interval
-                running: timer.running && units.longDuration > 1
+                running: timer.running && PlasmaCore.Units.longDuration > 1
             }
 
             NotificationItem {
@@ -198,8 +196,9 @@ PlasmaCore.Dialog {
                 timeout: timer.running ? timer.interval : 0
 
                 closable: true
+
                 onBodyClicked: {
-                    if (area.acceptedButtons & mouse.button) {
+                    if (area.acceptedButtons & Qt.LeftButton) {
                         area.clicked(null /*mouse*/);
                     }
                 }
@@ -209,7 +208,7 @@ PlasmaCore.Dialog {
                 onActionInvoked: notificationPopup.actionInvoked(actionName)
                 onReplied: notificationPopup.replied(text)
                 onOpenUrl: notificationPopup.openUrl(url)
-                onFileActionInvoked: notificationPopup.fileActionInvoked()
+                onFileActionInvoked: notificationPopup.fileActionInvoked(action)
 
                 onSuspendJobClicked: notificationPopup.suspendJobClicked()
                 onResumeJobClicked: notificationPopup.resumeJobClicked()

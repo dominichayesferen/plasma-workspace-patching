@@ -108,7 +108,10 @@ ShellCorona::ShellCorona(QObject *parent)
     if (!packageName.isEmpty()) {
         m_lookAndFeelPackage.setPath(packageName);
     }
+}
 
+void ShellCorona::init()
+{
     connect(this, &Plasma::Corona::containmentCreated, this, [this](Plasma::Containment *c) {
         executeSetupPlasmoidScript(c, c);
     });
@@ -433,10 +436,10 @@ QByteArray ShellCorona::dumpCurrentLayoutJS() const
         const auto location = cont->location();
 
         panelJson.insert("location",
-                         location == Plasma::Types::TopEdge
-                             ? "top"
-                             : location == Plasma::Types::LeftEdge ? "left"
-                                                                   : location == Plasma::Types::RightEdge ? "right" : /* Plasma::Types::BottomEdge */ "bottom");
+                         location == Plasma::Types::TopEdge         ? "top"
+                             : location == Plasma::Types::LeftEdge  ? "left"
+                             : location == Plasma::Types::RightEdge ? "right"
+                                                                    : /* Plasma::Types::BottomEdge */ "bottom");
 
         const qreal height =
             // If we do not have a panel, fallback to 4 units
@@ -881,7 +884,7 @@ void ShellCorona::requestApplicationConfigSync()
 void ShellCorona::loadDefaultLayout()
 {
     // pre-startup scripts
-    QString script = m_lookAndFeelPackage.filePath("layouts", QString(shell() + "-prelayout.js").toLatin1());
+    QString script = m_lookAndFeelPackage.filePath("layouts", shell() + "-prelayout.js");
     if (!script.isEmpty()) {
         QFile file(script);
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -913,7 +916,7 @@ void ShellCorona::loadDefaultLayout()
     script = m_testModeLayout;
 
     if (script.isEmpty()) {
-        script = m_lookAndFeelPackage.filePath("layouts", QString(shell() + "-layout.js").toLatin1());
+        script = m_lookAndFeelPackage.filePath("layouts", shell() + "-layout.js");
     }
     if (script.isEmpty()) {
         script = kPackage().filePath("defaultlayout");
@@ -1737,7 +1740,7 @@ void ShellCorona::checkAddPanelAction(const QStringList &sycocaChanges)
 
     m_addPanelsMenu.reset(nullptr);
 
-    KPluginInfo::List panelContainmentPlugins = Plasma::PluginLoader::listContainmentsOfType(QStringLiteral("Panel"));
+    const QList<KPluginMetaData> panelContainmentPlugins = Plasma::PluginLoader::listContainmentsMetaDataOfType(QStringLiteral("Panel"));
 
     auto filter = [](const KPluginMetaData &md) -> bool {
         return md.value(QStringLiteral("NoDisplay")) != QLatin1String("true")
@@ -1767,12 +1770,12 @@ void ShellCorona::checkAddPanelAction(const QStringList &sycocaChanges)
 void ShellCorona::populateAddPanelsMenu()
 {
     m_addPanelsMenu->clear();
-    const KPluginInfo emptyInfo;
+    const KPluginMetaData emptyInfo;
 
-    const KPluginInfo::List panelContainmentPlugins = Plasma::PluginLoader::listContainmentsOfType(QStringLiteral("Panel"));
-    QMap<QString, QPair<KPluginInfo, KPluginMetaData>> sorted;
-    for (const KPluginInfo &plugin : panelContainmentPlugins) {
-        if (plugin.property(QStringLiteral("NoDisplay")).toString() == QLatin1String("true")) {
+    const QList<KPluginMetaData> panelContainmentPlugins = Plasma::PluginLoader::listContainmentsMetaDataOfType(QStringLiteral("Panel"));
+    QMap<QString, QPair<KPluginMetaData, KPluginMetaData>> sorted;
+    for (const KPluginMetaData &plugin : panelContainmentPlugins) {
+        if (plugin.value(QStringLiteral("NoDisplay")) == QLatin1String("true")) {
             continue;
         }
         sorted.insert(plugin.name(), qMakePair(plugin, KPluginMetaData()));
@@ -1787,26 +1790,26 @@ void ShellCorona::populateAddPanelsMenu()
         sorted.insert(tpl.name(), qMakePair(emptyInfo, tpl));
     }
 
-    QMapIterator<QString, QPair<KPluginInfo, KPluginMetaData>> it(sorted);
+    QMapIterator<QString, QPair<KPluginMetaData, KPluginMetaData>> it(sorted);
     KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LayoutTemplate"));
     while (it.hasNext()) {
         it.next();
-        QPair<KPluginInfo, KPluginMetaData> pair = it.value();
+        QPair<KPluginMetaData, KPluginMetaData> pair = it.value();
         if (pair.first.isValid()) {
-            KPluginInfo plugin = pair.first;
+            KPluginMetaData plugin = pair.first;
             QAction *action = m_addPanelsMenu->addAction(i18n("Empty %1", plugin.name()));
-            if (!plugin.icon().isEmpty()) {
-                action->setIcon(QIcon::fromTheme(plugin.icon()));
+            if (!plugin.iconName().isEmpty()) {
+                action->setIcon(QIcon::fromTheme(plugin.iconName()));
             }
 
-            action->setData(plugin.pluginName());
+            action->setData(plugin.pluginId());
         } else {
-            KPluginInfo info(pair.second);
-            package.setPath(info.pluginName());
+            KPluginMetaData plugin(pair.second);
+            package.setPath(plugin.pluginId());
             const QString scriptFile = package.filePath("mainscript");
             if (!scriptFile.isEmpty()) {
-                QAction *action = m_addPanelsMenu->addAction(info.name());
-                action->setData(QStringLiteral("plasma-desktop-template:%1").arg(info.pluginName()));
+                QAction *action = m_addPanelsMenu->addAction(plugin.name());
+                action->setData(QStringLiteral("plasma-desktop-template:%1").arg(plugin.pluginId()));
             }
         }
     }
@@ -1814,10 +1817,10 @@ void ShellCorona::populateAddPanelsMenu()
 
 void ShellCorona::addPanel()
 {
-    KPluginInfo::List panelPlugins = Plasma::PluginLoader::listContainmentsOfType(QStringLiteral("Panel"));
+    const QList<KPluginMetaData> panelPlugins = Plasma::PluginLoader::listContainmentsMetaDataOfType(QStringLiteral("Panel"));
 
     if (!panelPlugins.isEmpty()) {
-        addPanel(panelPlugins.first().pluginName());
+        addPanel(panelPlugins.first().pluginId());
     }
 }
 

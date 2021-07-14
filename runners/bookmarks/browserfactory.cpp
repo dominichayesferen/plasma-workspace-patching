@@ -24,7 +24,7 @@
 #include "browsers/chromefindprofile.h"
 #include "browsers/falkon.h"
 #include "browsers/firefox.h"
-#include "browsers/kdebrowser.h"
+#include "browsers/konqueror.h"
 #include "browsers/opera.h"
 
 Browser *BrowserFactory::find(const QString &browserName, QObject *parent)
@@ -35,7 +35,7 @@ Browser *BrowserFactory::find(const QString &browserName, QObject *parent)
     delete m_previousBrowser;
     m_previousBrowserName = browserName;
     if (browserName.contains(QLatin1String("firefox"), Qt::CaseInsensitive) || browserName.contains(QLatin1String("iceweasel"), Qt::CaseInsensitive)) {
-        m_previousBrowser = new Firefox(parent);
+        m_previousBrowser = new Firefox(QDir::homePath() + QStringLiteral("/.mozilla/firefox"), parent);
     } else if (browserName.contains(QLatin1String("opera"), Qt::CaseInsensitive)) {
         m_previousBrowser = new Opera(parent);
     } else if (browserName.contains(QLatin1String("chrome"), Qt::CaseInsensitive)) {
@@ -45,7 +45,7 @@ Browser *BrowserFactory::find(const QString &browserName, QObject *parent)
     } else if (browserName.contains(QLatin1String("falkon"), Qt::CaseInsensitive)) {
         m_previousBrowser = new Falkon(parent);
     } else {
-        m_previousBrowser = new KDEBrowser(parent);
+        m_previousBrowser = new Konqueror(parent);
     }
 
     return m_previousBrowser;

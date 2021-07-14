@@ -136,10 +136,15 @@ PlasmaCore.ColorScope {
             radius: 6
             samples: 14
             spread: 0.3
-            color: root.lightBackground ? PlasmaCore.ColorScope.backgroundColor : "black" // black matches Breeze window decoration and desktopcontainment
+                                          // Soften the color a bit so it doesn't look so stark against light backgrounds
+            color: root.lightBackground ? Qt.rgba(PlasmaCore.ColorScope.backgroundColor.r,
+                                                  PlasmaCore.ColorScope.backgroundColor.g,
+                                                  PlasmaCore.ColorScope.backgroundColor.b,
+                                                  0.6)
+                                        : "black" // black matches Breeze window decoration and desktopcontainment
             Behavior on opacity {
                 OpacityAnimator {
-                    duration: 1000
+                    duration: PlasmaCore.Units.veryLongDuration * 2
                     easing.type: Easing.InOutQuad
                 }
             }
@@ -159,7 +164,7 @@ PlasmaCore.ColorScope {
                 left: parent.left
                 right: parent.right
             }
-            height: root.height + units.gridUnit * 3
+            height: root.height + PlasmaCore.Units.gridUnit * 3
 
             focus: true //StackView is an implicit focus scope, so we need to give this focus so the item inside will have it
 
@@ -246,7 +251,7 @@ PlasmaCore.ColorScope {
 
             Behavior on opacity {
                 OpacityAnimator {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                 }
             }
         }
@@ -316,18 +321,18 @@ PlasmaCore.ColorScope {
                             NumberAnimation {
                                 target: mainStack
                                 property: "y"
-                                duration: units.longDuration
+                                duration: PlasmaCore.Units.longDuration
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: inputPanel
                                 property: "y"
-                                duration: units.longDuration
+                                duration: PlasmaCore.Units.longDuration
                                 easing.type: Easing.OutQuad
                             }
                             OpacityAnimator {
                                 target: inputPanel
-                                duration: units.longDuration
+                                duration: PlasmaCore.Units.longDuration
                                 easing.type: Easing.OutQuad
                             }
                         }
@@ -341,18 +346,18 @@ PlasmaCore.ColorScope {
                             NumberAnimation {
                                 target: mainStack
                                 property: "y"
-                                duration: units.longDuration
+                                duration: PlasmaCore.Units.longDuration
                                 easing.type: Easing.InOutQuad
                             }
                             NumberAnimation {
                                 target: inputPanel
                                 property: "y"
-                                duration: units.longDuration
+                                duration: PlasmaCore.Units.longDuration
                                 easing.type: Easing.InQuad
                             }
                             OpacityAnimator {
                                 target: inputPanel
-                                duration: units.longDuration
+                                duration: PlasmaCore.Units.longDuration
                                 easing.type: Easing.InQuad
                             }
                         }
@@ -438,12 +443,17 @@ PlasmaCore.ColorScope {
             radius: 6
             samples: 14
             spread: 0.3
-            color: "black" // matches Breeze window decoration and desktopcontainment
+                                          // Soften the color a bit so it doesn't look so stark against light backgrounds
+            color: root.lightBackground ? Qt.rgba(PlasmaCore.ColorScope.backgroundColor.r,
+                                                  PlasmaCore.ColorScope.backgroundColor.g,
+                                                  PlasmaCore.ColorScope.backgroundColor.b,
+                                                  0.6)
+                                        : "black" // black matches Breeze window decoration and desktopcontainment
             opacity: loginScreenRoot.uiVisible ? 0 : 1
             Behavior on opacity {
                 //OpacityAnimator when starting from 0 is buggy (it shows one frame with opacity 1)"
                 NumberAnimation {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                     easing.type: Easing.InOutQuad
                 }
             }
@@ -455,16 +465,16 @@ PlasmaCore.ColorScope {
             source: config.logo
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: footer.top
-            anchors.bottomMargin: units.largeSpacing
+            anchors.bottomMargin: PlasmaCore.Units.largeSpacing
             asynchronous: true
             sourceSize.height: height
             opacity: loginScreenRoot.uiVisible ? 0 : 1
             fillMode: Image.PreserveAspectFit
-            height: Math.round(units.gridUnit * 3.5)
+            height: Math.round(PlasmaCore.Units.gridUnit * 3.5)
             Behavior on opacity {
                 // OpacityAnimator when starting from 0 is buggy (it shows one frame with opacity 1)"
                 NumberAnimation {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                     easing.type: Easing.InOutQuad
                 }
             }
@@ -482,7 +492,7 @@ PlasmaCore.ColorScope {
 
             Behavior on opacity {
                 OpacityAnimator {
-                    duration: units.longDuration
+                    duration: PlasmaCore.Units.longDuration
                 }
             }
 

@@ -2,7 +2,7 @@
    Copyright (c) 2014 Marco Martin <mart@kde.org>
    Copyright (c) 2014 Vishesh Handa <me@vhanda.in>
    Copyright (c) 2019 Cyril Rossi <cyril.rossi@enioka.com>
-   Copyright (c) 2020 Dominic Hayes <ferenosdev@outlook.com>
+   Copyright (c) 2021 Benjamin Port <benjamin.port@enioka.com>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -20,16 +20,17 @@
 */
 
 #include "kcm.h"
-#include "../krdb/krdb.h"
+#include "../kcms-common_p.h"
 #include "config-kcm.h"
 #include "config-workspace.h"
+#include "krdb.h"
 
 #include <KAboutData>
 #include <KAutostart>
 #include <KDialogJobUiDelegate>
-#include <KGlobalSettings>
 #include <KIO/ApplicationLauncherJob>
 #include <KIconLoader>
+#include <KMessageBox>
 #include <KService>
 #include <KSharedConfig>
 
@@ -76,6 +77,7 @@ KCMLookandFeel::KCMLookandFeel(QObject *parent, const QVariantList &args)
     , m_applyCursors(true)
     , m_applyWindowSwitcher(true)
     , m_applyDesktopSwitcher(true)
+    , m_resetDefaultLayout(false)
     , m_applyWindowDecoration(true)
 {
     qmlRegisterType<LookAndFeelSettings>();
@@ -173,13 +175,17 @@ void KCMLookandFeel::loadModel()
 {
     m_model->clear();
 
-    const QList<KPackage::Package> pkgs = availablePackages({"defaults", "layouts"});
+    QList<KPackage::Package> pkgs = availablePackages({"defaults", "layouts"});
+
+    // Sort case-insensitively
+    QCollator collator;
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::sort(pkgs.begin(), pkgs.end(), [&collator](const KPackage::Package &a, const KPackage::Package &b) {
+        return collator.compare(a.metadata().name(), b.metadata().name()) < 0;
+    });
+
     for (const KPackage::Package &pkg : pkgs) {
         if (!pkg.metadata().isValid()) {
-            continue;
-        }
-        QFileInfo check_file(pkg.filePath("layouts") + "/layout-only");
-        if (check_file.isFile()) {
             continue;
         }
         QStandardItem *row = new QStandardItem(pkg.metadata().name());
@@ -228,10 +234,14 @@ void KCMLookandFeel::loadModel()
 
         m_model->appendRow(row);
     }
-    m_model->sort(0 /*column*/);
 
     // Model has been cleared so pretend the selected look and fell changed to force view update
-    emit lookAndFeelSettings()->globalThemePackageChanged();
+    emit lookAndFeelSettings()->lookAndFeelPackageChanged();
+}
+
+bool KCMLookandFeel::isSaveNeeded() const
+{
+    return m_resetDefaultLayout || lookAndFeelSettings()->isSaveNeeded();
 }
 
 void KCMLookandFeel::load()
@@ -239,19 +249,34 @@ void KCMLookandFeel::load()
     ManagedConfigModule::load();
 
     m_package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LookAndFeel"));
-    m_package.setPath(lookAndFeelSettings()->globalThemePackage());
+    m_package.setPath(lookAndFeelSettings()->lookAndFeelPackage());
+
+    setResetDefaultLayout(false);
 }
 
 void KCMLookandFeel::save()
 {
     KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LookAndFeel"));
-    package.setPath(lookAndFeelSettings()->globalThemePackage());
+    package.setPath(lookAndFeelSettings()->lookAndFeelPackage());
 
     if (!package.isValid()) {
         return;
     }
 
     ManagedConfigModule::save();
+
+    if (m_resetDefaultLayout) {
+        QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.kde.plasmashell"),
+                                                              QStringLiteral("/PlasmaShell"),
+                                                              QStringLiteral("org.kde.PlasmaShell"),
+                                                              QStringLiteral("loadLookAndFeelDefaultLayout"));
+
+        QList<QVariant> args;
+        args << lookAndFeelSettings()->lookAndFeelPackage();
+        message.setArguments(args);
+
+        QDBusConnection::sessionBus().call(message, QDBus::NoBlock);
+    }
 
     if (!package.filePath("defaults").isEmpty()) {
         KSharedConfigPtr conf = KSharedConfig::openConfig(package.filePath("defaults"));
@@ -262,12 +287,8 @@ void KCMLookandFeel::save()
             // Some global themes refer to breeze's widgetStyle with a lowercase b.
             if (widgetStyle == QStringLiteral("breeze")) {
                 widgetStyle = QStringLiteral("Breeze");
-            } else if (widgetStyle == QStringLiteral("kvantum") || widgetStyle == QStringLiteral("kvantum-dark")) {
-                // If the widget style is set to Kvantum or Kvantum Dark, we'll override this with a Widget Style change to Feren to prevent readability issues
-                setWidgetStyle(QString("Feren"));
-            } else {
-                setWidgetStyle(widgetStyle);
             }
+            setWidgetStyle(widgetStyle);
         }
 
         if (m_applyColors) {
@@ -362,36 +383,63 @@ void KCMLookandFeel::save()
             QDBusConnection::sessionBus().send(message);
         }
 
-        cg = KConfigGroup(conf, "GTK");
-        cg = KConfigGroup(&cg, "Settings");
-        setGTK(cg.readEntry("ThemeName", QString()));
-        
-        // TODO: option to enable/disable apply? they don't seem required by UI design
-        cg = KConfigGroup(conf, "ksplashrc");
-        cg = KConfigGroup(&cg, "KSplash");
-        QString splashScreen = (cg.readEntry("Theme", QString()));
-        
-        const auto *item = m_model->item(pluginIndex(lookAndFeelSettings()->globalThemePackage()));
-        if (item->data(HasSplashRole).toBool()) {
-            if (!splashScreen.isEmpty()) {
-                setSplashScreen(splashScreen);
-            } else {
-                setSplashScreen(lookAndFeelSettings()->globalThemePackage());
+        // autostart
+        if (m_resetDefaultLayout) {
+            // remove all the old package to autostart
+            {
+                KSharedConfigPtr oldConf = KSharedConfig::openConfig(m_package.filePath("defaults"));
+                cg = KConfigGroup(oldConf, QStringLiteral("Autostart"));
+                const QStringList autostartServices = cg.readEntry("Services", QStringList());
+
+                if (qEnvironmentVariableIsSet("KDE_FULL_SESSION")) {
+                    for (const QString &serviceFile : autostartServices) {
+                        KService service(serviceFile + QStringLiteral(".desktop"));
+                        KAutostart as(serviceFile);
+                        as.setAutostarts(false);
+                        // FIXME: quite ugly way to stop things, and what about non KDE things?
+                        QProcess::startDetached(QStringLiteral("kquitapp5"),
+                                                {QStringLiteral("--service"), service.property(QStringLiteral("X-DBUS-ServiceName")).toString()});
+                    }
+                }
             }
-        }
-    } else {
-        // The old behaviour was to set the Splash Screen regardless of whether there was a defaults file or not, therefore we'll use the old behaviour still if there's NO defaults file found
-        const auto *item = m_model->item(pluginIndex(lookAndFeelSettings()->globalThemePackage()));
-        if (item->data(HasSplashRole).toBool()) {
-            setSplashScreen(lookAndFeelSettings()->globalThemePackage());
+            // Set all the stuff in the new lnf to autostart
+            {
+                cg = KConfigGroup(conf, QStringLiteral("Autostart"));
+                const QStringList autostartServices = cg.readEntry("Services", QStringList());
+
+                for (const QString &serviceFile : autostartServices) {
+                    KService::Ptr service{new KService(serviceFile + QStringLiteral(".desktop"))};
+                    KAutostart as(serviceFile);
+                    as.setCommand(service->exec());
+                    as.setAutostarts(true);
+                    if (qEnvironmentVariableIsSet("KDE_FULL_SESSION")) {
+                        auto *job = new KIO::ApplicationLauncherJob(service);
+                        job->setUiDelegate(new KDialogJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled, nullptr));
+                        job->start();
+                    }
+                }
+            }
         }
     }
 
-    setLockScreen(lookAndFeelSettings()->globalThemePackage());
+    // TODO: option to enable/disable apply? they don't seem required by UI design
+    const auto *item = m_model->item(pluginIndex(lookAndFeelSettings()->lookAndFeelPackage()));
+    if (item->data(HasSplashRole).toBool()) {
+        setSplashScreen(lookAndFeelSettings()->lookAndFeelPackage());
+    }
+    setLockScreen(lookAndFeelSettings()->lookAndFeelPackage());
 
     m_configGroup.sync();
-    m_package.setPath(lookAndFeelSettings()->globalThemePackage());
+    m_package.setPath(lookAndFeelSettings()->lookAndFeelPackage());
     runRdb(KRdbExportQtColors | KRdbExportGtkTheme | KRdbExportColors | KRdbExportQtSettings | KRdbExportXftSettings);
+
+    setResetDefaultLayout(false);
+}
+
+void KCMLookandFeel::defaults()
+{
+    setResetDefaultLayout(false);
+    ManagedConfigModule::defaults();
 }
 
 void KCMLookandFeel::setWidgetStyle(const QString &style)
@@ -404,10 +452,26 @@ void KCMLookandFeel::setWidgetStyle(const QString &style)
     // Test if style can be installed before updating the config.
     QScopedPointer<QStyle> newStyle(QStyleFactory::create(style));
     if (newStyle) {
-        m_configGroup.writeEntry("widgetStyle", style, KConfig::Notify);
-        m_configGroup.sync();
+        writeNewDefaults(QStringLiteral("kdeglobals"), QStringLiteral("KDE"), QStringLiteral("widgetStyle"), style, KConfig::Notify);
+
         // FIXME: changing style on the fly breaks QQuickWidgets
-        KGlobalSettings::self()->emitChange(KGlobalSettings::StyleChanged);
+        notifyKcmChange(GlobalChangeType::StyleChanged);
+    }
+}
+
+void KCMLookandFeel::revertKeyIfNeeded(KConfigGroup &group, KConfigGroup &home, KConfigGroup &defaults)
+{
+    for (const QString &key : group.keyList()) {
+        home.revertToDefault(key);
+        if (m_data->isDefaults()) {
+            defaults.revertToDefault(key);
+        }
+    }
+    for (const QString &subgroupname : group.groupList()) {
+        KConfigGroup subgroup(group.group(subgroupname));
+        KConfigGroup subgroupHome(home.group(subgroupname));
+        KConfigGroup subgroupDefaults(defaults.group(subgroupname));
+        revertKeyIfNeeded(subgroup, subgroupHome, subgroupDefaults);
     }
 }
 
@@ -416,23 +480,19 @@ void KCMLookandFeel::setColors(const QString &scheme, const QString &colorFile)
     if (scheme.isEmpty() && colorFile.isEmpty()) {
         return;
     }
-    
-    //Delete 'Header' colours in case
-    KConfigGroup headerGroup(&m_config, "Colors:Header");
-    headerGroup.deleteGroup();
 
     KSharedConfigPtr conf = KSharedConfig::openConfig(colorFile, KSharedConfig::CascadeConfig);
-    foreach (const QString &grp, conf->groupList()) {
+    for (const QString &grp : conf->groupList()) {
         KConfigGroup cg(conf, grp);
         KConfigGroup cg2(&m_config, grp);
         cg.copyTo(&cg2, KConfig::Notify);
     }
 
-    KConfigGroup configGroup(&m_config, "General");
-    configGroup.writeEntry("ColorScheme", scheme, KConfig::Notify);
-
-    configGroup.sync();
-    KGlobalSettings::self()->emitChange(KGlobalSettings::PaletteChanged);
+    KConfig configDefault(configDefaults("kdeglobals"));
+    writeNewDefaults(m_config, configDefault, QStringLiteral("General"), QStringLiteral("ColorScheme"), scheme, KConfig::Notify);
+    m_config.sync();
+    configDefault.sync();
+    notifyKcmChange(GlobalChangeType::PaletteChanged);
 }
 
 void KCMLookandFeel::setIcons(const QString &theme)
@@ -441,27 +501,11 @@ void KCMLookandFeel::setIcons(const QString &theme)
         return;
     }
 
-    KConfigGroup cg(&m_config, "Icons");
-    cg.writeEntry("Theme", theme, KConfig::Notify);
-    cg.sync();
+    writeNewDefaults(QStringLiteral("kdeglobals"), QStringLiteral("Icons"), QStringLiteral("Theme"), theme, KConfig::Notify);
 
     for (int i = 0; i < KIconLoader::LastGroup; i++) {
         KIconLoader::emitChange(KIconLoader::Group(i));
     }
-}
-
-void KCMLookandFeel::setGTK(const QString &theme)
-{
-    if (theme.isEmpty()) {
-        return;
-    }
-
-    QDBusMessage gtktheme = QDBusMessage::createMethodCall(QStringLiteral("org.kde.GtkConfig"),
-                                                      QStringLiteral("/GtkConfig"),
-                                                      "",
-                                                      QStringLiteral("setGtkTheme"));
-    gtktheme << theme;
-    QDBusConnection::sessionBus().send(gtktheme);
 }
 
 void KCMLookandFeel::setPlasmaTheme(const QString &theme)
@@ -470,21 +514,7 @@ void KCMLookandFeel::setPlasmaTheme(const QString &theme)
         return;
     }
 
-    KConfig config(QStringLiteral("plasmarc"));
-    KConfigGroup cg(&config, "Theme");
-    cg.writeEntry("name", theme);
-    
-    // If the Desktop Layout is not org.feren.default and the Plasma Theme specified is 'feren', set it to 'feren-alt' instead - same for 'feren-light' -> 'feren-light-alt'
-    KConfig config2(QStringLiteral("kdeglobals"));
-    KConfigGroup cg2(&config2, "KDE");
-    if ((cg2.readEntry("LookAndFeelPackage", QString()) != "org.feren.default") && (theme == "feren")) {
-        cg.writeEntry("name", QString("feren-alt"));
-    } else if ((cg2.readEntry("LookAndFeelPackage", QString()) != "org.feren.default") && (theme == "feren-light")) {
-        cg.writeEntry("name", QString("feren-light-alt"));
-    } else {
-        cg.writeEntry("name", theme);
-    }
-    cg.sync();
+    writeNewDefaults(QStringLiteral("plasmarc"), QStringLiteral("Theme"), QStringLiteral("name"), theme);
 }
 
 void KCMLookandFeel::setCursorTheme(const QString themeName)
@@ -494,16 +524,15 @@ void KCMLookandFeel::setCursorTheme(const QString themeName)
         return;
     }
 
-    KConfig config(QStringLiteral("kcminputrc"));
-    KConfigGroup cg(&config, "Mouse");
-    cg.writeEntry("cursorTheme", themeName, KConfig::Notify);
-    cg.sync();
+    writeNewDefaults(QStringLiteral("kcminputrc"), QStringLiteral("Mouse"), QStringLiteral("cursorTheme"), themeName, KConfig::Notify);
 
 #ifdef HAVE_XCURSOR
     // Require the Xcursor version that shipped with X11R6.9 or greater, since
     // in previous versions the Xfixes code wasn't enabled due to a bug in the
     // build system (freedesktop bug #975).
 #if defined(HAVE_XFIXES) && XFIXES_MAJOR >= 2 && XCURSOR_LIB_VERSION >= 10105
+    KConfig config(QStringLiteral("kcminputrc"));
+    KConfigGroup cg(&config, QStringLiteral("Mouse"));
     const int cursorSize = cg.readEntry("cursorSize", 24);
 
     QDir themeDir = cursorThemeDir(themeName, 0);
@@ -524,7 +553,7 @@ void KCMLookandFeel::setCursorTheme(const QString themeName)
     runRdb(0);
 
     // Notify all applications that the cursor theme has changed
-    KGlobalSettings::self()->emitChange(KGlobalSettings::CursorChanged);
+    notifyKcmChange(GlobalChangeType::CursorChanged);
 
     // Reload the standard cursors
     QStringList names;
@@ -650,11 +679,13 @@ void KCMLookandFeel::setSplashScreen(const QString &theme)
     }
 
     KConfig config(QStringLiteral("ksplashrc"));
-    KConfigGroup cg(&config, "KSplash");
-    cg.writeEntry("Theme", theme);
+    KConfigGroup cg(&config, QStringLiteral("KSplash"));
+
+    KConfig configDefault(configDefaults(QStringLiteral("ksplashrc")));
+    KConfigGroup cgd(&configDefault, QStringLiteral("KSplash"));
+    writeNewDefaults(cg, cgd, QStringLiteral("Theme"), theme);
     // TODO: a way to set none as spash in the l&f
-    cg.writeEntry("Engine", "KSplashQML");
-    cg.sync();
+    writeNewDefaults(cg, cgd, QStringLiteral("Engine"), QStringLiteral("KSplashQML"));
 }
 
 void KCMLookandFeel::setLockScreen(const QString &theme)
@@ -663,10 +694,7 @@ void KCMLookandFeel::setLockScreen(const QString &theme)
         return;
     }
 
-    KConfig config(QStringLiteral("kscreenlockerrc"));
-    KConfigGroup cg(&config, "Greeter");
-    cg.writeEntry("Theme", theme);
-    cg.sync();
+    writeNewDefaults(QStringLiteral("kscreenlockerrc"), QStringLiteral("Greeter"), QStringLiteral("Theme"), theme);
 }
 
 void KCMLookandFeel::setWindowSwitcher(const QString &theme)
@@ -675,10 +703,7 @@ void KCMLookandFeel::setWindowSwitcher(const QString &theme)
         return;
     }
 
-    KConfig config(QStringLiteral("kwinrc"));
-    KConfigGroup cg(&config, "TabBox");
-    cg.writeEntry("LayoutName", theme);
-    cg.sync();
+    writeNewDefaults(QStringLiteral("kwinrc"), QStringLiteral("TabBox"), QStringLiteral("LayoutName"), theme);
 }
 
 void KCMLookandFeel::setDesktopSwitcher(const QString &theme)
@@ -688,10 +713,12 @@ void KCMLookandFeel::setDesktopSwitcher(const QString &theme)
     }
 
     KConfig config(QStringLiteral("kwinrc"));
-    KConfigGroup cg(&config, "TabBox");
-    cg.writeEntry("DesktopLayout", theme);
-    cg.writeEntry("DesktopListLayout", theme);
-    cg.sync();
+    KConfigGroup cg(&config, QStringLiteral("TabBox"));
+
+    KConfig configDefault(configDefaults(QStringLiteral("kwinrc")));
+    KConfigGroup cgd(&configDefault, QStringLiteral("TabBox"));
+    writeNewDefaults(cg, cgd, QStringLiteral("DesktopLayout"), theme);
+    writeNewDefaults(cg, cgd, QStringLiteral("DesktopListLayout"), theme);
 }
 
 void KCMLookandFeel::setWindowDecoration(const QString &library, const QString &theme)
@@ -701,17 +728,75 @@ void KCMLookandFeel::setWindowDecoration(const QString &library, const QString &
     }
 
     KConfig config(QStringLiteral("kwinrc"));
-    KConfigGroup cg(&config, "org.kde.kdecoration2");
-    cg.writeEntry("library", library);
-    if (QString(library) == "org.kde.kwin.aurorae") {
-        std::system("/usr/bin/feren-theme-tool-plasma disableshadowfix");
-    } else {
-        std::system("/usr/bin/feren-theme-tool-plasma shadowfix");
-    }
-    cg.writeEntry("theme", theme, KConfig::Notify);
+    KConfigGroup cg(&config, QStringLiteral("org.kde.kdecoration2"));
 
-    cg.sync();
+    KConfig configDefault(configDefaults(QStringLiteral("kwinrc")));
+    KConfigGroup cgd(&configDefault, QStringLiteral("org.kde.kdecoration2"));
+    writeNewDefaults(cg, cgd, QStringLiteral("library"), library);
+    writeNewDefaults(cg, cgd, QStringLiteral("theme"), theme, KConfig::Notify);
+
     // Reload KWin.
     QDBusMessage message = QDBusMessage::createSignal(QStringLiteral("/KWin"), QStringLiteral("org.kde.KWin"), QStringLiteral("reloadConfig"));
     QDBusConnection::sessionBus().send(message);
+}
+
+void KCMLookandFeel::setResetDefaultLayout(bool reset)
+{
+    if (m_resetDefaultLayout == reset) {
+        return;
+    }
+    m_resetDefaultLayout = reset;
+    emit resetDefaultLayoutChanged();
+    settingsChanged();
+}
+
+bool KCMLookandFeel::resetDefaultLayout() const
+{
+    return m_resetDefaultLayout;
+}
+
+void KCMLookandFeel::writeNewDefaults(const QString &filename,
+                                      const QString &group,
+                                      const QString &key,
+                                      const QString &value,
+                                      KConfig::WriteConfigFlags writeFlags)
+{
+    KConfig config(filename);
+    KConfigGroup cg(&config, group);
+
+    KConfig configDefault(configDefaults(filename));
+    KConfigGroup cgd(&configDefault, group);
+
+    writeNewDefaults(cg, cgd, key, value, writeFlags);
+}
+
+void KCMLookandFeel::writeNewDefaults(KConfig &config,
+                                      KConfig &configDefault,
+                                      const QString &group,
+                                      const QString &key,
+                                      const QString &value,
+                                      KConfig::WriteConfigFlags writeFlags)
+{
+    KConfigGroup cg(&config, group);
+    KConfigGroup cgd(&configDefault, group);
+
+    writeNewDefaults(cg, cgd, key, value, writeFlags);
+}
+
+void KCMLookandFeel::writeNewDefaults(KConfigGroup &cg, KConfigGroup &cgd, const QString &key, const QString &value, KConfig::WriteConfigFlags writeFlags)
+{
+    if (m_data->isDefaults()) {
+        cgd.revertToDefault(key);
+    } else {
+        cgd.writeEntry(key, value, writeFlags);
+    }
+    cgd.sync();
+
+    cg.revertToDefault(key, writeFlags);
+    cg.sync();
+}
+
+KConfig KCMLookandFeel::configDefaults(const QString &filename)
+{
+    return KConfig(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/kdedefaults/" + filename, KConfig::SimpleConfig);
 }

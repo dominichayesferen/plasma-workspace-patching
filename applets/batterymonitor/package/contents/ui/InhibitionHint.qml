@@ -26,19 +26,19 @@ RowLayout {
     property alias iconSource: iconItem.source
     property alias text: label.text
 
-    spacing: units.smallSpacing
+    spacing: PlasmaCore.Units.smallSpacing
 
     PlasmaCore.IconItem {
         id: iconItem
-        Layout.preferredWidth: units.iconSizes.small
-        Layout.preferredHeight: units.iconSizes.small
+        Layout.preferredWidth: PlasmaCore.Units.iconSizes.small
+        Layout.preferredHeight: PlasmaCore.Units.iconSizes.small
         visible: valid
     }
 
     PlasmaComponents3.Label {
         id: label
         Layout.fillWidth: true
-        font: theme.smallestFont
+        font: PlasmaCore.Theme.smallestFont
         wrapMode: Text.WordWrap
         elide: Text.ElideRight
         maximumLineCount: 4

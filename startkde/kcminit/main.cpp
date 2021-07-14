@@ -18,14 +18,9 @@
 */
 
 #include <config-workspace.h>
-#include <config-xcb.h>
 
 #include "klauncher_iface.h"
 #include "main.h"
-
-#ifdef XCB_FOUND
-#include <xcb/xcb.h>
-#endif
 
 #include <unistd.h>
 
@@ -36,11 +31,11 @@
 #include <QLibrary>
 #include <QTimer>
 
-#include <kaboutdata.h>
-#include <kconfig.h>
-#include <kconfiggroup.h>
-#include <klocalizedstring.h>
-#include <kservicetypetrader.h>
+#include <KAboutData>
+#include <KConfig>
+#include <KConfigGroup>
+#include <KLocalizedString>
+#include <KServiceTypeTrader>
 #include <kworkspace.h>
 
 static int ready[2];

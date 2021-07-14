@@ -34,12 +34,12 @@ RowLayout {
     property alias showPercentage: brightnessPercent.visible
     signal moved()
 
-    spacing: units.gridUnit
+    spacing: PlasmaCore.Units.gridUnit
 
     PlasmaCore.IconItem {
         id: brightnessIcon
         Layout.alignment: Qt.AlignTop
-        Layout.preferredWidth: units.iconSizes.medium
+        Layout.preferredWidth: PlasmaCore.Units.iconSizes.medium
         Layout.preferredHeight: width
     }
 
@@ -52,10 +52,10 @@ RowLayout {
         RowLayout {
             id: infoRow
             width: parent.width
-            spacing: units.smallSpacing
+            spacing: PlasmaCore.Units.smallSpacing
 
             function percentage(from, to, value) {
-                return Math.floor(100 * (value - from) / (to - from));
+                return Math.round(100 * (value - from) / (to - from));
             }
 
             PlasmaComponents3.Label {

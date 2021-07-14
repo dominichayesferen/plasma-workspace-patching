@@ -3,6 +3,7 @@
  *   Copyright (C) 2006 David Faure <faure@kde.org>
  *   Copyright (C) 2007 Richard Moore <rich@kde.org>
  *   Copyright (C) 2010 Matteo Agostinelli <agostinelli@gmail.com>
+ *   Copyright (C) 2021 Alexander Lohnau <alexander.lohnau@gmx.de>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU Library General Public License version 2 as
@@ -43,7 +44,6 @@ CalculatorRunner::CalculatorRunner(QObject *parent, const KPluginMetaData &metaD
 {
 #ifdef ENABLE_QALCULATE
     m_engine = new QalculateEngine;
-    setSpeed(SlowSpeed);
 #endif
 
     setObjectName(QStringLiteral("Calculator"));
@@ -55,7 +55,7 @@ CalculatorRunner::CalculatorRunner(QObject *parent, const KPluginMetaData &metaD
     addSyntax(Plasma::RunnerSyntax(QStringLiteral("=:q:"), description));
     addSyntax(Plasma::RunnerSyntax(QStringLiteral(":q:="), description));
 
-    addAction(QStringLiteral("copyToClipboard"), QIcon::fromTheme(QStringLiteral("edit-copy")), i18n("Copy to Clipboard"));
+    m_actions = {new QAction(QIcon::fromTheme(QStringLiteral("edit-copy")), i18n("Copy to Clipboard"), this)};
     setMinLetterCount(2);
 }
 
@@ -66,6 +66,7 @@ CalculatorRunner::~CalculatorRunner()
 #endif
 }
 
+#ifndef ENABLE_QALCULATE
 void CalculatorRunner::powSubstitutions(QString &cmd)
 {
     if (cmd.contains(QLatin1String("e+"), Qt::CaseInsensitive)) {
@@ -178,6 +179,7 @@ void CalculatorRunner::hexSubstitutions(QString &cmd)
         }
     }
 }
+#endif
 
 void CalculatorRunner::userFriendlySubstitutions(QString &cmd)
 {
@@ -284,7 +286,7 @@ void CalculatorRunner::match(Plasma::RunnerContext &context)
         }
         match.setData(result);
         match.setId(term);
-        match.setActions(actions().values());
+        match.setActions(m_actions);
         context.addMatch(match);
     }
 }

@@ -27,11 +27,13 @@
 #include "KfiConstants.h"
 #include "Misc.h"
 #include "config-fontinst.h"
+
 #include <KConfigGroup>
 #include <KIO/FileCopyJob>
 #include <KIO/StatJob>
 #include <KJobWidgets>
 #include <KSharedConfig>
+
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QDBusServiceWatcher>
@@ -47,9 +49,12 @@
 #include <QStyleOption>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QUrlQuery>
 #include <QVBoxLayout>
+
 #include <QX11Info>
 #include <X11/Xlib.h>
+
 #include <fontconfig/fontconfig.h>
 #include <kio/global.h>
 #include <sys/resource.h>
@@ -721,9 +726,10 @@ CJobRunner::Item::Item(const QUrl &u, const QString &n, bool dis)
     , fileName(Misc::getFile(u.path()))
     , isDisabled(dis)
 {
-    type = Misc::checkExt(fileName, "pfa") || Misc::checkExt(fileName, "pfb")
-        ? TYPE1_FONT
-        : Misc::checkExt(fileName, "afm") ? TYPE1_AFM : Misc::checkExt(fileName, "pfm") ? TYPE1_PFM : OTHER_FONT;
+    type = Misc::checkExt(fileName, "pfa") || Misc::checkExt(fileName, "pfb") ? TYPE1_FONT
+        : Misc::checkExt(fileName, "afm")                                     ? TYPE1_AFM
+        : Misc::checkExt(fileName, "pfm")                                     ? TYPE1_PFM
+                                                                              : OTHER_FONT;
 
     if (OTHER_FONT != type) {
         int pos(fileName.lastIndexOf('.'));

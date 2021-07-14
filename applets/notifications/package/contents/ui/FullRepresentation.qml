@@ -66,10 +66,9 @@ PlasmaComponents3.Page {
         ColumnLayout {
             anchors {
                 fill: parent
-                leftMargin: units.smallSpacing
+                leftMargin: PlasmaCore.Units.smallSpacing
             }
             id: header
-            visible: !Kirigami.Settings.isMobile
             spacing: 0
 
             RowLayout {
@@ -187,8 +186,8 @@ PlasmaComponents3.Page {
             }
 
             PlasmaExtras.DescriptiveLabel {
-                Layout.leftMargin: dndCheck.mirrored ? 0 : dndCheck.indicator.width + 2 * dndCheck.spacing + units.iconSizes.smallMedium
-                Layout.rightMargin: dndCheck.mirrored ? dndCheck.indicator.width + 2 * dndCheck.spacing + units.iconSizes.smallMedium : 0
+                Layout.leftMargin: dndCheck.mirrored ? 0 : dndCheck.indicator.width + 2 * dndCheck.spacing + PlasmaCore.Units.iconSizes.smallMedium
+                Layout.rightMargin: dndCheck.mirrored ? dndCheck.indicator.width + 2 * dndCheck.spacing + PlasmaCore.Units.iconSizes.smallMedium : 0
                 Layout.fillWidth: true
                 wrapMode: Text.WordWrap
                 textFormat: Text.PlainText
@@ -239,21 +238,21 @@ PlasmaComponents3.Page {
 
     ColumnLayout{
         // FIXME fix popup size when resizing panel smaller (so it collapses)
-        //Layout.preferredWidth: units.gridUnit * 18
-        //Layout.preferredHeight: units.gridUnit * 24
-        //Layout.minimumWidth: units.gridUnit * 10
-        //Layout.minimumHeight: units.gridUnit * 15
+        //Layout.preferredWidth: PlasmaCore.Units.gridUnit * 18
+        //Layout.preferredHeight: PlasmaCore.Units.gridUnit * 24
+        //Layout.minimumWidth: PlasmaCore.Units.gridUnit * 10
+        //Layout.minimumHeight: PlasmaCore.Units.gridUnit * 15
         anchors.fill: parent
 
-        spacing: units.smallSpacing
+        spacing: PlasmaCore.Units.smallSpacing
 
         // actual notifications
         PlasmaExtras.ScrollArea {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.preferredWidth: units.gridUnit * 18
-            Layout.preferredHeight: units.gridUnit * 24
-            Layout.leftMargin: units.smallSpacing
+            Layout.preferredWidth: PlasmaCore.Units.gridUnit * 18
+            Layout.preferredHeight: PlasmaCore.Units.gridUnit * 24
+            Layout.leftMargin: PlasmaCore.Units.smallSpacing
             frameVisible: false
 
             ListView {
@@ -281,7 +280,6 @@ PlasmaComponents3.Page {
                     var urls = historyModel.data(idx, NotificationManager.Notifications.UrlsRole);
                     if (urls && urls.length === 1) {
                         Qt.openUrlExternally(urls[0]);
-                        historyModel.expire(idx);
                         return;
                     }
 
@@ -336,33 +334,33 @@ PlasmaComponents3.Page {
                 add: Transition {
                     SequentialAnimation {
                         PropertyAction { property: "opacity"; value: 0 }
-                        PauseAnimation { duration: units.longDuration }
+                        PauseAnimation { duration: PlasmaCore.Units.longDuration }
                         ParallelAnimation {
-                            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: units.longDuration }
-                            NumberAnimation { property: "height"; from: 0; duration: units.longDuration }
+                            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: PlasmaCore.Units.longDuration }
+                            NumberAnimation { property: "height"; from: 0; duration: PlasmaCore.Units.longDuration }
                         }
                     }
                 }
                 addDisplaced: Transition {
-                    NumberAnimation { properties: "y"; duration:  units.longDuration }
+                    NumberAnimation { properties: "y"; duration:  PlasmaCore.Units.longDuration }
                 }
 
                 remove: Transition {
                     id: removeTransition
                     ParallelAnimation {
-                        NumberAnimation { property: "opacity"; to: 0; duration: units.longDuration }
+                        NumberAnimation { property: "opacity"; to: 0; duration: PlasmaCore.Units.longDuration }
                         NumberAnimation {
                             id: removeXAnimation
                             property: "x"
                             to: list.width
-                            duration: units.longDuration
+                            duration: PlasmaCore.Units.longDuration
                         }
                     }
                 }
                 removeDisplaced: Transition {
                     SequentialAnimation {
-                        PauseAnimation { duration: units.longDuration }
-                        NumberAnimation { properties: "y"; duration:  units.longDuration }
+                        PauseAnimation { duration: PlasmaCore.Units.longDuration }
+                        NumberAnimation { properties: "y"; duration:  PlasmaCore.Units.longDuration }
                     }
                 }
 
@@ -408,13 +406,7 @@ PlasmaComponents3.Page {
                                 closable: model.closable
                                 closeButtonTooltip: i18n("Close Group")
 
-                                onCloseClicked: {
-                                    historyModel.close(historyModel.index(index, 0))
-                                    if (list.count === 0) {
-                                        root.closePassivePlasmoid();
-                                    }
-                                }
-
+                                onCloseClicked: historyModel.close(historyModel.index(index, 0))
                                 onConfigureClicked: historyModel.configure(historyModel.index(index, 0))
                             }
                         }
@@ -422,21 +414,21 @@ PlasmaComponents3.Page {
                         Component {
                             id: notificationDelegate
                             ColumnLayout {
-                                spacing: units.smallSpacing
+                                spacing: PlasmaCore.Units.smallSpacing
 
                                 RowLayout {
                                     Item {
                                         id: groupLineContainer
                                         Layout.fillHeight: true
-                                        Layout.topMargin: units.smallSpacing
-                                        width: units.iconSizes.small
+                                        Layout.topMargin: PlasmaCore.Units.smallSpacing
+                                        width: PlasmaCore.Units.iconSizes.small
                                         visible: model.isInGroup
 
                                         PlasmaCore.SvgItem {
                                             elementId: "vertical-line"
                                             svg: lineSvg
                                             anchors.horizontalCenter: parent.horizontalCenter
-                                            width: units.iconSizes.small
+                                            width: PlasmaCore.Units.iconSizes.small
                                             height: parent.height
                                         }
                                     }
@@ -502,15 +494,11 @@ PlasmaComponents3.Page {
                                             return labels;
                                         }
 
-                                        onCloseClicked: {
-                                            historyModel.close(historyModel.index(index, 0));
-                                            if (list.count === 0) {
-                                                root.closePassivePlasmoid();
-                                            }
-                                        }
+                                        onCloseClicked: close()
+
                                         onDismissClicked: {
                                             model.dismissed = false;
-                                            root.closePassivePlasmoid();
+                                            root.closePlasmoid();
                                         }
                                         onConfigureClicked: historyModel.configure(historyModel.index(index, 0))
 
@@ -520,18 +508,36 @@ PlasmaComponents3.Page {
                                             } else {
                                                 historyModel.invokeAction(historyModel.index(index, 0), actionName);
                                             }
-                                            // Keep it in the history
-                                            historyModel.expire(historyModel.index(index, 0));
+
+                                            expire();
                                         }
                                         onOpenUrl: {
                                             Qt.openUrlExternally(url);
-                                            historyModel.expire(historyModel.index(index, 0));
+                                            expire();
                                         }
-                                        onFileActionInvoked: historyModel.expire(historyModel.index(index, 0))
+                                        onFileActionInvoked: {
+                                            if (action.objectName === "movetotrash" || action.objectName === "deletefile") {
+                                                close();
+                                            } else {
+                                                expire();
+                                            }
+                                        }
 
                                         onSuspendJobClicked: historyModel.suspendJob(historyModel.index(index, 0))
                                         onResumeJobClicked: historyModel.resumeJob(historyModel.index(index, 0))
                                         onKillJobClicked: historyModel.killJob(historyModel.index(index, 0))
+
+                                        function expire() {
+                                            if (model.resident) {
+                                                model.expired = true;
+                                            } else {
+                                                historyModel.expire(historyModel.index(index, 0));
+                                            }
+                                        }
+
+                                        function close() {
+                                            historyModel.close(historyModel.index(index, 0));
+                                        }
                                     }
                                 }
 
@@ -547,7 +553,7 @@ PlasmaComponents3.Page {
 
                                 PlasmaCore.SvgItem {
                                     Layout.fillWidth: true
-                                    Layout.bottomMargin: units.smallSpacing
+                                    Layout.bottomMargin: PlasmaCore.Units.smallSpacing
                                     elementId: "horizontal-line"
                                     svg: lineSvg
 
@@ -562,31 +568,27 @@ PlasmaComponents3.Page {
 
                 PlasmaExtras.PlaceholderMessage {
                     anchors.centerIn: parent
-                    width: parent.width - (units.largeSpacing * 4)
+                    width: parent.width - (PlasmaCore.Units.largeSpacing * 4)
 
                     text: i18n("No unread notifications")
                     visible: list.count === 0 && NotificationManager.Server.valid
                 }
 
-                ColumnLayout {
-                    id: serverUnavailableColumn
+                PlasmaExtras.PlaceholderMessage {
+                    anchors.centerIn: parent
+                    width: parent.width - (PlasmaCore.Units.largeSpacing * 4)
 
-                    width: list.width
+                    text: i18n("Notification service not available")
                     visible: list.count === 0 && !NotificationManager.Server.valid
 
-                    PlasmaExtras.Heading {
-                        Layout.fillWidth: true
-                        level: 3
-                        opacity: 0.6
-                        text: i18n("Notification service not available")
-                        wrapMode: Text.WordWrap
-                    }
-
+                    // TODO: port to using the subtitle property once it exists
                     PlasmaComponents3.Label {
                         // Checking valid to avoid creating ServerInfo object if everything is alright
                         readonly property NotificationManager.ServerInfo currentOwner: !NotificationManager.Server.valid ? NotificationManager.Server.currentOwner
                                                                                                                         : null
 
+                        // PlasmaExtras.PlaceholderMessage is internally a ColumnLayout,
+                        // so we can use Layout.whatever properties here
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
                         text: currentOwner ? i18nc("Vendor and product name",

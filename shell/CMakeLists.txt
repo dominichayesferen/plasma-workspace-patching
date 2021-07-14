@@ -33,7 +33,7 @@ set (plasma_shell_SRCS
     panelconfigview.cpp
     panelshadows.cpp
     shellcorona.cpp
-    standaloneappcorona
+    standaloneappcorona.cpp
     osd.cpp
     coronatesthelper.cpp
     strutmanager.cpp
@@ -59,8 +59,8 @@ add_executable(plasmashell
 )
 
 target_link_libraries(plasmashell
- Qt5::Quick
- Qt5::DBus
+ Qt::Quick
+ Qt::DBus
  KF5::KIOCore
  KF5::WindowSystem
  KF5::Crash
@@ -89,8 +89,8 @@ target_include_directories(plasmashell PRIVATE "${CMAKE_BINARY_DIR}")
 target_compile_definitions(plasmashell PRIVATE -DPROJECT_VERSION="${PROJECT_VERSION}")
 
 if(HAVE_X11)
-  target_link_libraries(plasmashell ${X11_LIBRARIES} ${XCB_LIBRARIES} )
-  target_link_libraries(plasmashell Qt5::X11Extras)
+  target_link_libraries(plasmashell XCB::XCB XCB::RANDR)
+  target_link_libraries(plasmashell Qt::X11Extras)
 endif()
 
 configure_file(org.kde.plasmashell.desktop.cmake ${CMAKE_CURRENT_BINARY_DIR}/org.kde.plasmashell.desktop @ONLY)

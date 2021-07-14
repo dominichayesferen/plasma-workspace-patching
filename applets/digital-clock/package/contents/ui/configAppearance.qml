@@ -23,6 +23,7 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.3 as QtControls
 import QtQuick.Layouts 1.0 as QtLayouts
+import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.calendar 2.0 as PlasmaCalendar
 import org.kde.kquickcontrolsaddons 2.0 // For KCMShell
 import org.kde.kirigami 2.5 as Kirigami
@@ -38,13 +39,14 @@ QtLayouts.ColumnLayout {
     property alias cfg_italicText: italicCheckBox.checked
 
     property alias cfg_showLocalTimezone: showLocalTimezone.checked
-    property alias cfg_displayTimezoneAsCode: timezoneCodeRadio.checked
+    property alias cfg_displayTimezoneFormat: displayTimezoneFormat.currentIndex
     property alias cfg_showSeconds: showSeconds.checked
 
     property alias cfg_showDate: showDate.checked
     property string cfg_dateFormat: "shortDate"
     property alias cfg_customDateFormat: customDateFormat.text
     property alias cfg_use24hFormat: use24hFormat.currentIndex
+    property alias cfg_dateDisplayFormat: dateDisplayFormat.currentIndex
 
     onCfg_fontFamilyChanged: {
         // HACK by the time we populate our model and/or the ComboBox is finished the value is still undefined
@@ -75,11 +77,25 @@ QtLayouts.ColumnLayout {
 
     Kirigami.FormLayout {
         QtLayouts.Layout.fillWidth: true
-
-        QtControls.CheckBox {
-            id: showDate
+        
+        QtLayouts.RowLayout {
             Kirigami.FormData.label: i18n("Information:")
-            text: i18n("Show date")
+
+            QtControls.CheckBox {
+                id: showDate
+                text: i18n("Show date")
+            }
+            
+            QtControls.ComboBox {
+                id: dateDisplayFormat
+                enabled: showDate.checked
+                visible: plasmoid.formFactor !== PlasmaCore.Types.Vertical
+                model: [
+                    i18n("Adaptive location"),
+                    i18n("Always beside time"),
+                ]
+                onActivated: cfg_dateDisplayFormat = currentIndex
+            }
         }
 
         QtControls.CheckBox {
@@ -87,27 +103,40 @@ QtLayouts.ColumnLayout {
             text: i18n("Show seconds")
         }
 
-        QtControls.CheckBox {
-            id: showLocalTimezone
-            text: i18n("Show local time zone")
+        Item {
+            Kirigami.FormData.isSection: true
+        }
+
+        QtLayouts.ColumnLayout {
+            Kirigami.FormData.label: i18n("Show time zone:")
+            Kirigami.FormData.buddyFor: showLocalTimeZoneWhenDifferent
+
+            QtControls.RadioButton {
+                id: showLocalTimeZoneWhenDifferent
+                text: i18n("Only when different from local time zone")
+            }
+
+            QtControls.RadioButton {
+                id: showLocalTimezone
+                text: i18n("Always")
+            }
         }
 
         Item {
             Kirigami.FormData.isSection: true
         }
 
-        QtLayouts.ColumnLayout {
+        QtLayouts.RowLayout {
             Kirigami.FormData.label: i18n("Display time zone as:")
-            Kirigami.FormData.buddyFor: timezoneCityRadio
 
-            QtControls.RadioButton {
-                id: timezoneCityRadio
-                text: i18n("Time zone city")
-            }
-
-            QtControls.RadioButton {
-                id: timezoneCodeRadio
-                text: i18n("Time zone code")
+            QtControls.ComboBox {
+                id: displayTimezoneFormat
+                model: [
+                    i18n("Code"),
+                    i18n("City"),
+                    i18n("Offset from UTC time"),
+                ]
+                onActivated: cfg_displayTimezoneFormat = currentIndex
             }
         }
 
@@ -265,10 +294,8 @@ QtLayouts.ColumnLayout {
     }
 
     Component.onCompleted: {
-        if (plasmoid.configuration.displayTimezoneAsCode) {
-            timezoneCodeRadio.checked = true;
-        } else {
-            timezoneCityRadio.checked = true;
+        if (!plasmoid.configuration.showLocalTimezone) {
+            showLocalTimeZoneWhenDifferent.checked = true;
         }
     }
 }

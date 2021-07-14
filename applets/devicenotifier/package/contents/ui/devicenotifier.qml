@@ -54,8 +54,8 @@ Item {
     // causing our "No devices" heading to overlap with the remaining device
     property int pendingDelegateRemoval: 0
 
-    Plasmoid.switchWidth: units.gridUnit * 10
-    Plasmoid.switchHeight: units.gridUnit * 10
+    Plasmoid.switchWidth: PlasmaCore.Units.gridUnit * 10
+    Plasmoid.switchHeight: PlasmaCore.Units.gridUnit * 10
 
     Plasmoid.toolTipMainText: filterModel.count > 0 && filterModel.get(0) ? i18n("Most Recent Device") : i18n("No Devices Available")
     Plasmoid.toolTipSubText: {
@@ -96,8 +96,8 @@ Item {
 
     Plasmoid.compactRepresentation: PlasmaCore.IconItem {
         source: devicenotifier.popupIcon
-        width: units.iconSizes.medium;
-        height: units.iconSizes.medium;
+        width: PlasmaCore.Units.iconSizes.medium;
+        height: PlasmaCore.Units.iconSizes.medium;
         active: compactMouse.containsMouse
         MouseArea {
             id: compactMouse
@@ -263,11 +263,12 @@ Item {
         plasmoid.setActionSeparator("sep2");
 
         if (devicenotifier.openAutomounterKcmAuthorized) {
-            plasmoid.setAction("openAutomounterKcm", i18nc("Open auto mounter kcm", "Configure Removable Devices..."), "configure")
+            plasmoid.removeAction("configure");
+            plasmoid.setAction("configure", i18nc("Open auto mounter kcm", "Configure Removable Devices..."), "configure")
         }
     }
 
-    function action_openAutomounterKcm() {
+    function action_configure() {
         KCMShell.openSystemSettings("device_automounter_kcm")
     }
 
