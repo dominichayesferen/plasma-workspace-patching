@@ -45,7 +45,7 @@ Name[ta]=எழுத்துரு மேலாண்மை
 Name[tg]=Мудири ҳарфҳо
 Name[tr]=Yazı Tipi Yönetimi
 Name[uk]=Керування шрифтами
-Name[vi]=Bộ quản lí phông chữ
+Name[vi]=Quản lí phông chữ
 Name[x-test]=xxFont Managementxx
 Name[zh_CN]=字体管理
 
@@ -98,6 +98,7 @@ X-KDE-Keywords[et]=font,fondid,paigaldaja,truetype,type1,bitmap,bittraster
 X-KDE-Keywords[eu]=letra-tipoa,letra-tipoak,instalatzailea,truetype,type1,bit-mapa
 X-KDE-Keywords[fi]=fontti,fontit,asentaja,truetype,type1,bittikartta
 X-KDE-Keywords[fr]=police, polices, installateur, TrueType, type1, bitmap
+X-KDE-Keywords[hi]=फ़ॉन्ट,फ़ॉन्ट,इंस्टॉलर,ट्रू टाइप,टाइप1,बिटमैप
 X-KDE-Keywords[hu]=betűtípus,betűtípusok,telepítő,truetype,type1,bitmap
 X-KDE-Keywords[ia]=font,fonts,installator,truetype,type1,bitmap
 X-KDE-Keywords[id]=font,font-font,penginstal,truetype,type1,bitmap

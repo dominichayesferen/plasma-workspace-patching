@@ -63,7 +63,7 @@ Name[pl]=Powiadomienia
 Name[pt]=Notificações
 Name[pt_BR]=Notificações
 Name[ro]=Notificări
-Name[ru]=Системные уведомления
+Name[ru]=Уведомления
 Name[se]=Dieđáhusat
 Name[si]=දැනුම් දීම්
 Name[sk]=Upozornenia
@@ -166,7 +166,7 @@ X-KDE-PluginInfo-Website=https://kde.org/plasma-desktop/
 X-KDE-ServiceTypes=Plasma/Applet
 X-Plasma-API=declarativeappletscript
 X-Plasma-Provides=org.kde.plasma.notifications
-X-KDE-PluginInfo-EnabledByDefault=false
+X-KDE-PluginInfo-EnabledByDefault=true
 X-KDE-Library=plasma_applet_notifications
 
 X-Plasma-MainScript=ui/main.qml

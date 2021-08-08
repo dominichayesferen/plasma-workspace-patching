@@ -75,7 +75,6 @@ endif()
 
 kpackage_install_package(package kcm_lookandfeel kcms)
 
-
 ###### Command line tool
 
 kconfig_add_kcfg_files(plasma-apply-lookandfeel_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
@@ -88,17 +87,3 @@ ADD_CUSTOM_TARGET(plasma-apply-lookandfeel_link ALL
                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${KDE_INSTALL_FULL_BINDIR}/plasma-apply-lookandfeel ${CMAKE_CURRENT_BINARY_DIR}/lookandfeeltool)
 install( FILES ${CMAKE_CURRENT_BINARY_DIR}/lookandfeeltool DESTINATION ${KDE_INSTALL_FULL_BINDIR}/ )
 install( TARGETS plasma-apply-lookandfeel ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )
-
-
-###### Qt Style command line tool
-
-kconfig_add_kcfg_files(plasma-apply-appstyle_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
-
-add_executable(plasma-apply-appstyle qtstyletool.cpp)
-
-target_link_libraries(plasma-apply-appstyle kcm_lookandfeel_static)
-
-ADD_CUSTOM_TARGET(plasma-apply-appstyle_link ALL
-                  COMMAND ${CMAKE_COMMAND} -E create_symlink ${KDE_INSTALL_FULL_BINDIR}/plasma-apply-appstyle ${CMAKE_CURRENT_BINARY_DIR}/qtstyletool)
-install( FILES ${CMAKE_CURRENT_BINARY_DIR}/qtstyletool DESTINATION ${KDE_INSTALL_FULL_BINDIR}/ )
-install( TARGETS plasma-apply-appstyle ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )
