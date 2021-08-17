@@ -30,11 +30,11 @@ KCM.GridViewKCM {
     KCM.ConfigModule.quickHelp: i18n("This module lets you choose the global look and feel.")
 
     view.model: kcm.lookAndFeelModel
-    view.currentIndex: kcm.pluginIndex(kcm.lookAndFeelSettings.lookAndFeelPackage)
+    view.currentIndex: kcm.pluginIndex(kcm.lookAndFeelSettings.globalThemePackage)
 
     KCM.SettingStateBinding {
         configObject: kcm.lookAndFeelSettings
-        settingName: "lookAndFeelPackage"
+        settingName: "globalThemePackage"
     }
 
     view.delegate: KCM.GridDelegate {
@@ -62,7 +62,7 @@ KCM.GridViewKCM {
             }
         ]
         onClicked: {
-            kcm.lookAndFeelSettings.lookAndFeelPackage = model.pluginName;
+            kcm.lookAndFeelSettings.globalThemePackage = model.pluginName;
             view.forceActiveFocus();
             kcm.resetDefaultLayout = false;
         }
@@ -71,36 +71,16 @@ KCM.GridViewKCM {
         }
     }
 
-    footer: ColumnLayout {
-        Kirigami.InlineMessage {
-            Layout.fillWidth: true
-            type: Kirigami.MessageType.Warning
-            text: i18n("Your current layout and configuration of panels, desktop widgets, and wallpapers will be lost and reset to the default layout provided by the selected theme.")
-            visible: resetCheckbox.checked
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-
-            QtControls.CheckBox {
-                id: resetCheckbox
-                checked: kcm.resetDefaultLayout
-                text: i18n("Use desktop layout from theme")
-                onCheckedChanged: kcm.resetDefaultLayout = checked;
+    footer: Kirigami.ActionToolBar {
+        flat: false
+        alignment: Qt.AlignRight
+        actions: [
+            Kirigami.Action {
+                text: i18n("Get New Global Themes...")
+                icon.name: "get-hot-new-stuff"
+                onTriggered: { newStuffPage.open(); }
             }
-
-            Kirigami.ActionToolBar {
-                flat: false
-                alignment: Qt.AlignRight
-                actions: [
-                    Kirigami.Action {
-                        text: i18n("Get New Global Themes...")
-                        icon.name: "get-hot-new-stuff"
-                        onTriggered: { newStuffPage.open(); }
-                    }
-                ]
-            }
-        }
+        ]
     }
 
     Loader {

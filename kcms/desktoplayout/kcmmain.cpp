@@ -17,10 +17,10 @@
 */
 
 #include "kcm.h"
-#include "lookandfeeldata.h"
+#include "desktoplayoutdata.h"
 
 #include <KPluginFactory>
 
-K_PLUGIN_FACTORY_WITH_JSON(KCMLookandFeelFactory, "kcm_lookandfeel.json", registerPlugin<KCMLookandFeel>(); registerPlugin<LookAndFeelData>();)
+K_PLUGIN_FACTORY_WITH_JSON(KCMLookandFeelFactory, "kcm_desktoplayout.json", registerPlugin<KCMDesktopLayout>(); registerPlugin<DesktopLayoutData>();)
 
 #include "kcmmain.moc"
