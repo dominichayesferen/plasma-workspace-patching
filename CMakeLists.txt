@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(plasma-workspace)
-set(PROJECT_VERSION "5.22.4")
+set(PROJECT_VERSION "5.22.5")
 set(PROJECT_VERSION_MAJOR 5)
 
 set(QT_MIN_VERSION "5.15.0")
@@ -236,9 +236,6 @@ add_subdirectory(statusnotifierwatcher)
 add_subdirectory(startkde)
 add_subdirectory(themes)
 
-find_package(KF5I18n CONFIG REQUIRED)
-ki18n_install(po)
-
 add_subdirectory(kcms)
 
 add_subdirectory(containmentactions)
@@ -271,7 +268,7 @@ endif()
 
 add_subdirectory(templates)
 
-#ki18n_install(po)
+ki18n_install(po)
 
 install(FILES plasma-workspace.categories   DESTINATION  ${KDE_INSTALL_LOGGINGCATEGORIESDIR})
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
