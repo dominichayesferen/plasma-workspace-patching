@@ -10,6 +10,7 @@ endif()
 
 add_subdirectory(style)
 add_subdirectory(lookandfeel)
+add_subdirectory(desktoplayout)
 add_subdirectory(colors)
 if(X11_Xcursor_FOUND)
     add_subdirectory(cursortheme)

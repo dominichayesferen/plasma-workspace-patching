@@ -2,6 +2,7 @@
    Copyright (c) 2014 Marco Martin <mart@kde.org>
    Copyright (c) 2014 Vishesh Handa <me@vhanda.in>
    Copyright (c) 2019 Cyril Rossi <cyril.rossi@enioka.com>
+   Copyright (c) 2020-2021 Dominic Hayes <ferenosdev@outlook.com>
    Copyright (c) 2021 Benjamin Port <benjamin.port@enioka.com>
 
    This library is free software; you can redistribute it and/or
@@ -77,7 +78,6 @@ KCMLookandFeel::KCMLookandFeel(QObject *parent, const QVariantList &args)
     , m_applyCursors(true)
     , m_applyWindowSwitcher(true)
     , m_applyDesktopSwitcher(true)
-    , m_resetDefaultLayout(false)
     , m_applyWindowDecoration(true)
 {
     qmlRegisterType<LookAndFeelSettings>();
@@ -188,6 +188,10 @@ void KCMLookandFeel::loadModel()
         if (!pkg.metadata().isValid()) {
             continue;
         }
+        QFileInfo check_file(pkg.filePath("layouts") + "/layout-only");
+        if (check_file.isFile()) {
+            continue;
+        }
         QStandardItem *row = new QStandardItem(pkg.metadata().name());
         row->setData(pkg.metadata().pluginId(), PluginNameRole);
         row->setData(pkg.metadata().description(), DescriptionRole);
@@ -236,12 +240,12 @@ void KCMLookandFeel::loadModel()
     }
 
     // Model has been cleared so pretend the selected look and fell changed to force view update
-    emit lookAndFeelSettings()->lookAndFeelPackageChanged();
+    emit lookAndFeelSettings()->globalThemePackageChanged();
 }
 
 bool KCMLookandFeel::isSaveNeeded() const
 {
-    return m_resetDefaultLayout || lookAndFeelSettings()->isSaveNeeded();
+    return lookAndFeelSettings()->isSaveNeeded();
 }
 
 void KCMLookandFeel::load()
@@ -249,34 +253,19 @@ void KCMLookandFeel::load()
     ManagedConfigModule::load();
 
     m_package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LookAndFeel"));
-    m_package.setPath(lookAndFeelSettings()->lookAndFeelPackage());
-
-    setResetDefaultLayout(false);
+    m_package.setPath(lookAndFeelSettings()->globalThemePackage());
 }
 
 void KCMLookandFeel::save()
 {
     KPackage::Package package = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LookAndFeel"));
-    package.setPath(lookAndFeelSettings()->lookAndFeelPackage());
+    package.setPath(lookAndFeelSettings()->globalThemePackage());
 
     if (!package.isValid()) {
         return;
     }
 
     ManagedConfigModule::save();
-
-    if (m_resetDefaultLayout) {
-        QDBusMessage message = QDBusMessage::createMethodCall(QStringLiteral("org.kde.plasmashell"),
-                                                              QStringLiteral("/PlasmaShell"),
-                                                              QStringLiteral("org.kde.PlasmaShell"),
-                                                              QStringLiteral("loadLookAndFeelDefaultLayout"));
-
-        QList<QVariant> args;
-        args << lookAndFeelSettings()->lookAndFeelPackage();
-        message.setArguments(args);
-
-        QDBusConnection::sessionBus().call(message, QDBus::NoBlock);
-    }
 
     if (!package.filePath("defaults").isEmpty()) {
         KSharedConfigPtr conf = KSharedConfig::openConfig(package.filePath("defaults"));
@@ -287,6 +276,9 @@ void KCMLookandFeel::save()
             // Some global themes refer to breeze's widgetStyle with a lowercase b.
             if (widgetStyle == QStringLiteral("breeze")) {
                 widgetStyle = QStringLiteral("Breeze");
+            } else if (widgetStyle == QStringLiteral("kvantum") || widgetStyle == QStringLiteral("kvantum-dark")) {
+                // If the widget style is set to Kvantum or Kvantum Dark, we'll override this with a Widget Style change to Feren to prevent readability issues
+                widgetStyle = QStringLiteral("Feren");
             }
             setWidgetStyle(widgetStyle);
         }
@@ -383,62 +375,40 @@ void KCMLookandFeel::save()
             QDBusConnection::sessionBus().send(message);
         }
 
-        // autostart
-        if (m_resetDefaultLayout) {
-            // remove all the old package to autostart
-            {
-                KSharedConfigPtr oldConf = KSharedConfig::openConfig(m_package.filePath("defaults"));
-                cg = KConfigGroup(oldConf, QStringLiteral("Autostart"));
-                const QStringList autostartServices = cg.readEntry("Services", QStringList());
+        cg = KConfigGroup(conf, "GTK");
+        cg = KConfigGroup(&cg, "Settings");
+        setGTK(cg.readEntry("ThemeName", QString()));
 
-                if (qEnvironmentVariableIsSet("KDE_FULL_SESSION")) {
-                    for (const QString &serviceFile : autostartServices) {
-                        KService service(serviceFile + QStringLiteral(".desktop"));
-                        KAutostart as(serviceFile);
-                        as.setAutostarts(false);
-                        // FIXME: quite ugly way to stop things, and what about non KDE things?
-                        QProcess::startDetached(QStringLiteral("kquitapp5"),
-                                                {QStringLiteral("--service"), service.property(QStringLiteral("X-DBUS-ServiceName")).toString()});
-                    }
-                }
-            }
-            // Set all the stuff in the new lnf to autostart
-            {
-                cg = KConfigGroup(conf, QStringLiteral("Autostart"));
-                const QStringList autostartServices = cg.readEntry("Services", QStringList());
+        // TODO: option to enable/disable apply? they don't seem required by UI design
+        cg = KConfigGroup(conf, "ksplashrc");
+        cg = KConfigGroup(&cg, "KSplash");
+        QString splashScreen = (cg.readEntry("Theme", QString()));
 
-                for (const QString &serviceFile : autostartServices) {
-                    KService::Ptr service{new KService(serviceFile + QStringLiteral(".desktop"))};
-                    KAutostart as(serviceFile);
-                    as.setCommand(service->exec());
-                    as.setAutostarts(true);
-                    if (qEnvironmentVariableIsSet("KDE_FULL_SESSION")) {
-                        auto *job = new KIO::ApplicationLauncherJob(service);
-                        job->setUiDelegate(new KDialogJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled, nullptr));
-                        job->start();
-                    }
-                }
+        const auto *item = m_model->item(pluginIndex(lookAndFeelSettings()->globalThemePackage()));
+        if (item->data(HasSplashRole).toBool()) {
+            if (!splashScreen.isEmpty()) {
+                setSplashScreen(splashScreen);
+            } else {
+                setSplashScreen(lookAndFeelSettings()->globalThemePackage());
             }
         }
+    } else {
+        // The old behaviour was to set the Splash Screen regardless of whether there was a defaults file or not, therefore we'll use the old behaviour still if there's NO defaults file found
+        const auto *item = m_model->item(pluginIndex(lookAndFeelSettings()->globalThemePackage()));
+        if (item->data(HasSplashRole).toBool()) {
+            setSplashScreen(lookAndFeelSettings()->globalThemePackage());
+        }
     }
-
-    // TODO: option to enable/disable apply? they don't seem required by UI design
-    const auto *item = m_model->item(pluginIndex(lookAndFeelSettings()->lookAndFeelPackage()));
-    if (item->data(HasSplashRole).toBool()) {
-        setSplashScreen(lookAndFeelSettings()->lookAndFeelPackage());
-    }
-    setLockScreen(lookAndFeelSettings()->lookAndFeelPackage());
+    
+    setLockScreen(lookAndFeelSettings()->globalThemePackage());
 
     m_configGroup.sync();
-    m_package.setPath(lookAndFeelSettings()->lookAndFeelPackage());
+    m_package.setPath(lookAndFeelSettings()->globalThemePackage());
     runRdb(KRdbExportQtColors | KRdbExportGtkTheme | KRdbExportColors | KRdbExportQtSettings | KRdbExportXftSettings);
-
-    setResetDefaultLayout(false);
 }
 
 void KCMLookandFeel::defaults()
 {
-    setResetDefaultLayout(false);
     ManagedConfigModule::defaults();
 }
 
@@ -480,6 +450,10 @@ void KCMLookandFeel::setColors(const QString &scheme, const QString &colorFile)
     if (scheme.isEmpty() && colorFile.isEmpty()) {
         return;
     }
+    
+    //Delete 'Header' colours in case
+    KConfigGroup headerGroup(&m_config, "Colors:Header");
+    headerGroup.deleteGroup();
 
     KSharedConfigPtr conf = KSharedConfig::openConfig(colorFile, KSharedConfig::CascadeConfig);
     for (const QString &grp : conf->groupList()) {
@@ -508,13 +482,39 @@ void KCMLookandFeel::setIcons(const QString &theme)
     }
 }
 
+void KCMLookandFeel::setGTK(const QString &theme)
+{
+    if (theme.isEmpty()) {
+        return;
+    }
+    
+    QDBusMessage gtktheme = QDBusMessage::createMethodCall(QStringLiteral("org.kde.GtkConfig"),
+                                                      QStringLiteral("/GtkConfig"),
+                                                      "",
+                                                      QStringLiteral("setGtkTheme"));
+    gtktheme << theme;
+    QDBusConnection::sessionBus().send(gtktheme);
+}
+
 void KCMLookandFeel::setPlasmaTheme(const QString &theme)
 {
     if (theme.isEmpty()) {
         return;
     }
 
-    writeNewDefaults(QStringLiteral("plasmarc"), QStringLiteral("Theme"), QStringLiteral("name"), theme);
+    // If the Desktop Layout is not org.feren.default and the Plasma Theme specified is 'feren', set it to 'feren-alt' instead - same for 'feren-light' -> 'feren-light-alt'
+    KConfig config2(QStringLiteral("kdeglobals"));
+    KConfigGroup cg2(&config2, "KDE");
+    if ((cg2.readEntry("LookAndFeelPackage", QString()) != "org.feren.default") && (theme == "feren")) {
+        writeNewDefaults(QStringLiteral("plasmarc"), QStringLiteral("Theme"), QStringLiteral("name"), QString("feren-alt"));
+
+    } else if ((cg2.readEntry("LookAndFeelPackage", QString()) != "org.feren.default") && (theme == "feren-light")) {
+        writeNewDefaults(QStringLiteral("plasmarc"), QStringLiteral("Theme"), QStringLiteral("name"), QString("feren-light-alt"));
+
+    } else {
+        writeNewDefaults(QStringLiteral("plasmarc"), QStringLiteral("Theme"), QStringLiteral("name"), theme);
+
+    }
 }
 
 void KCMLookandFeel::setCursorTheme(const QString themeName)
@@ -733,26 +733,18 @@ void KCMLookandFeel::setWindowDecoration(const QString &library, const QString &
     KConfig configDefault(configDefaults(QStringLiteral("kwinrc")));
     KConfigGroup cgd(&configDefault, QStringLiteral("org.kde.kdecoration2"));
     writeNewDefaults(cg, cgd, QStringLiteral("library"), library);
+    
+    if (QString(library) == "org.kde.kwin.aurorae") {
+        std::system("/usr/bin/feren-theme-tool-plasma disableshadowfix");
+    } else {
+        std::system("/usr/bin/feren-theme-tool-plasma shadowfix");
+    }
+    
     writeNewDefaults(cg, cgd, QStringLiteral("theme"), theme, KConfig::Notify);
 
     // Reload KWin.
     QDBusMessage message = QDBusMessage::createSignal(QStringLiteral("/KWin"), QStringLiteral("org.kde.KWin"), QStringLiteral("reloadConfig"));
     QDBusConnection::sessionBus().send(message);
-}
-
-void KCMLookandFeel::setResetDefaultLayout(bool reset)
-{
-    if (m_resetDefaultLayout == reset) {
-        return;
-    }
-    m_resetDefaultLayout = reset;
-    emit resetDefaultLayoutChanged();
-    settingsChanged();
-}
-
-bool KCMLookandFeel::resetDefaultLayout() const
-{
-    return m_resetDefaultLayout;
 }
 
 void KCMLookandFeel::writeNewDefaults(const QString &filename,
