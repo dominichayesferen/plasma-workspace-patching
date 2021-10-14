@@ -1,20 +1,8 @@
 /*
- *   Copyright © 2008 Rob Scheepmaker <r.scheepmaker@student.utwente.nl>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2008 Rob Scheepmaker <r.scheepmaker@student.utwente.nl>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "kuiserverengine.h"
 #include "jobcontrol.h"
@@ -269,6 +257,6 @@ void KuiserverEngine::updateEta(Job *job)
     setData(source, QStringLiteral("eta"), remaining / job->speed());
 }
 
-K_EXPORT_PLASMA_DATAENGINE_WITH_JSON(kuiserver, KuiserverEngine, "plasma-dataengine-applicationjobs.json")
+K_PLUGIN_CLASS_WITH_JSON(KuiserverEngine, "plasma-dataengine-applicationjobs.json")
 
 #include "kuiserverengine.moc"

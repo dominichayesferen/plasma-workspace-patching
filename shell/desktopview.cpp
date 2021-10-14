@@ -1,20 +1,8 @@
 /*
- *  Copyright 2013 Marco Martin <mart@kde.org>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2013 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "desktopview.h"
 #include "containmentconfigview.h"
@@ -313,9 +301,9 @@ void DesktopView::showConfigurationInterface(Plasma::Applet *applet)
     } else {
         m_configView = new PlasmaQuick::ConfigView(applet);
     }
-    m_configView.data()->init();
-    m_configView.data()->setTransientParent(this);
-    m_configView.data()->show();
+    m_configView->init();
+    m_configView->setTransientParent(this);
+    m_configView->show();
     m_configView->requestActivate();
 
     auto window = qobject_cast<QWindow *>(m_configView);

@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2007 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "Printer.h"
 #include "ActionLabel.h"
@@ -73,8 +55,9 @@ static bool sufficientSpace(int y, QPainter *painter, QFont font, const int *siz
     for (unsigned int s = 0; sizes[s]; ++s) {
         font.setPointSize(sizes[s]);
         required += QFontMetrics(font, painter->device()).height();
-        if (sizes[s + 1])
+        if (sizes[s + 1]) {
             required += constMarginFont;
+        }
     }
 
     if (0 == size) {
@@ -143,8 +126,9 @@ void CPrintThread::run()
     const int *sizes = oneSize;
     bool firstFont(true);
 
-    if (0 == itsSize)
+    if (0 == itsSize) {
         sizes = CFcEngine::constScalableSizes;
+    }
 
     painter.setClipping(true);
     painter.setClipRect(0, 0, pageWidth, pageHeight);
@@ -194,8 +178,9 @@ void CPrintThread::run()
 
             onlyDrawChars = !lc && !uc;
 
-            if (lc || uc)
+            if (lc || uc) {
                 y += CFcEngine::constDefaultAlphaSize;
+            }
 
             if (lc) {
                 painter.drawText(0, y, fm.elidedText(CFcEngine::getLowercaseLetters(), em, pageWidth));
@@ -227,10 +212,12 @@ void CPrintThread::run()
 
             if (sufficientSpace(y, pageHeight, fm)) {
                 painter.drawText(0, y, fm.elidedText(previewString(font, str, onlyDrawChars), em, pageWidth));
-                if (sizes[s + 1])
+                if (sizes[s + 1]) {
                     y += constMarginFont;
-            } else
+                }
+            } else {
                 break;
+            }
         }
         y += (s < 1 || sizes[s - 1] < 25 ? 14 : 28);
         firstFont = false;
@@ -240,8 +227,9 @@ void CPrintThread::run()
 
     //
     // Did we change the users font settings? If so, reset to their previous values...
-    if (changedFontEmbeddingSetting)
+    if (changedFontEmbeddingSetting) {
         itsPrinter->setFontEmbeddingEnabled(false);
+    }
 }
 
 CPrinter::CPrinter(QWidget *parent)
@@ -301,21 +289,23 @@ void CPrinter::print(const QList<Misc::TFont> &items, int size)
     delete dialog;
 
 #ifdef HAVE_LOCALE_H
-    if (oldLocale)
+    if (oldLocale) {
         setlocale(LC_NUMERIC, oldLocale);
+    }
 #endif
 }
 
 void CPrinter::progress(int p, const QString &label)
 {
-    if (!label.isEmpty())
+    if (!label.isEmpty()) {
         itsStatusLabel->setText(label);
+    }
     itsProgress->setValue(p);
 }
 
 void CPrinter::slotCancelClicked()
 {
-    itsStatusLabel->setText(i18n("Canceling..."));
+    itsStatusLabel->setText(i18n("Canceling…"));
     emit cancelled();
 }
 
@@ -375,16 +365,18 @@ int main(int argc, char **argv)
                 while (!str.atEnd()) {
                     QString family(str.readLine()), style(str.readLine());
 
-                    if (!family.isEmpty() && !style.isEmpty())
+                    if (!family.isEmpty() && !style.isEmpty()) {
                         fonts.append(Misc::TFont(family, style.toUInt()));
-                    else
+                    } else {
                         break;
+                    }
                 }
                 f.close();
             }
 
-            if (parser.isSet(deletefileOption))
+            if (parser.isSet(deletefileOption)) {
                 ::unlink(listFile.toLocal8Bit().constData());
+            }
         } else {
             QStringList fl(parser.values(pfontOption));
             QStringList::ConstIterator it(fl.begin()), end(fl.end());
@@ -394,8 +386,9 @@ int main(int argc, char **argv)
 
                 int commaPos = f.lastIndexOf(',');
 
-                if (-1 != commaPos)
+                if (-1 != commaPos) {
                     fonts.append(Misc::TFont(f.left(commaPos), f.mid(commaPos + 1).toUInt()));
+                }
             }
         }
 

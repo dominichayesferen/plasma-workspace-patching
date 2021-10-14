@@ -1,24 +1,11 @@
 /*
- *   Copyright 2011 Viranch Mehta <viranch.mehta@gmail.com>
- *   Copyright 2012 Jacopo De Simoi <wilderkde@gmail.com>
- *   Copyright 2014 David Edmundson <davidedmundson@kde.org>
- *   Copyright 2016 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2 or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2011 Viranch Mehta <viranch.mehta@gmail.com>
+    SPDX-FileCopyrightText: 2012 Jacopo De Simoi <wilderkde@gmail.com>
+    SPDX-FileCopyrightText: 2014 David Edmundson <davidedmundson@kde.org>
+    SPDX-FileCopyrightText: 2016 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
@@ -88,6 +75,7 @@ Item {
         onSourceAdded: {
             disconnectSource(source);
             connectSource(source);
+            sdSource.connectedSources = sources
         }
         onSourceRemoved: {
             disconnectSource(source);
@@ -111,7 +99,6 @@ Item {
     PlasmaCore.DataSource {
         id: sdSource
         engine: "soliddevice"
-        connectedSources: hpSource.sources
         interval: 0
         property string last
         onSourceAdded: {
@@ -235,6 +222,13 @@ Item {
             Plasmoid.status = PlasmaCore.Types.PassiveStatus;
         }
 
+        plasmoid.setAction("unmountAllDevices", i18n("Remove All"), "media-eject");
+        plasmoid.action("unmountAllDevices").visible = Qt.binding(() => {
+            return devicenotifier.mountedRemovables > 1;
+        });
+ 
+        plasmoid.setActionSeparator("sep0");
+
         plasmoid.setAction("showRemovableDevices", i18n("Removable Devices"), "drive-removable-media");
         devicenotifier.showRemovableDevicesAction = plasmoid.action("showRemovableDevices");
         devicenotifier.showRemovableDevicesAction.checkable = true;
@@ -264,7 +258,7 @@ Item {
 
         if (devicenotifier.openAutomounterKcmAuthorized) {
             plasmoid.removeAction("configure");
-            plasmoid.setAction("configure", i18nc("Open auto mounter kcm", "Configure Removable Devices..."), "configure")
+            plasmoid.setAction("configure", i18nc("Open auto mounter kcm", "Configure Removable Devices…"), "configure")
         }
     }
 

@@ -1,20 +1,7 @@
-/* This file is part of the KDE project
-   Copyright (C) 2019 Aleix Pol Gonzalez <aleixpol@kde.org>
+/*
+    SPDX-FileCopyrightText: 2019 Aleix Pol Gonzalez <aleixpol@kde.org>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
 #include <config-startplasma.h>
@@ -349,28 +336,6 @@ void setupX11()
     //     so don't move this up.
 
     runSync(QStringLiteral("xsetroot"), {QStringLiteral("-cursor_name"), QStringLiteral("left_ptr")});
-    runSync(QStringLiteral("xprop"),
-            {QStringLiteral("-root"),
-             QStringLiteral("-f"),
-             QStringLiteral("KDE_FULL_SESSION"),
-             QStringLiteral("8t"),
-             QStringLiteral("-set"),
-             QStringLiteral("KDE_FULL_SESSION"),
-             QStringLiteral("true")});
-    runSync(QStringLiteral("xprop"),
-            {QStringLiteral("-root"),
-             QStringLiteral("-f"),
-             QStringLiteral("KDE_SESSION_VERSION"),
-             QStringLiteral("32c"),
-             QStringLiteral("-set"),
-             QStringLiteral("KDE_SESSION_VERSION"),
-             QStringLiteral("5")});
-}
-
-void cleanupX11()
-{
-    runSync(QStringLiteral("xprop"), {QStringLiteral("-root"), QStringLiteral("-remove"), QStringLiteral("KDE_FULL_SESSION")});
-    runSync(QStringLiteral("xprop"), {QStringLiteral("-root"), QStringLiteral("-remove"), QStringLiteral("KDE_SESSION_VERSION")});
 }
 
 void cleanupPlasmaEnvironment(const std::optional<QStringList> &oldSystemdEnvironment)
@@ -474,17 +439,19 @@ void resetSystemdFailedUnits()
 
 bool hasSystemdService(const QString &serviceName)
 {
+    qDBusRegisterMetaType<QPair<QString, QString>>();
+    qDBusRegisterMetaType<QList<QPair<QString, QString>>>();
     auto msg = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.systemd1"),
                                               QStringLiteral("/org/freedesktop/systemd1"),
                                               QStringLiteral("org.freedesktop.systemd1.Manager"),
                                               QStringLiteral("ListUnitFilesByPatterns"));
     msg << QStringList({QStringLiteral("enabled"), QStringLiteral("static")}) << QStringList({serviceName});
-    auto reply = QDBusConnection::sessionBus().call(msg);
-    if (reply.type() == QDBusMessage::ErrorMessage) {
+    QDBusReply<QList<QPair<QString, QString>>> reply = QDBusConnection::sessionBus().call(msg);
+    if (!reply.isValid()) {
         return false;
     }
     // if we have a service returned then it must have found it
-    return !reply.arguments().isEmpty();
+    return !reply.value().isEmpty();
 }
 
 bool useSystemdBoot()
@@ -516,7 +483,7 @@ bool startPlasmaSession(bool wayland)
 {
     resetSystemdFailedUnits();
     OrgKdeKSplashInterface iface(QStringLiteral("org.kde.KSplash"), QStringLiteral("/KSplash"), QDBusConnection::sessionBus());
-    iface.setStage(QStringLiteral("kinit"));
+    iface.setStage(QStringLiteral("startPlasma"));
     // finally, give the session control to the session manager
     // see kdebase/ksmserver for the description of the rest of the startup sequence
     // if the KDEWM environment variable has been set, then it will be used as KDE's

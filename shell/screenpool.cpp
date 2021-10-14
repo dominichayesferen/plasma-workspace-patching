@@ -1,21 +1,8 @@
 /*
- *  Copyright 2016 Marco Martin <mart@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2016 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 #include "screenpool.h"
 #include <config-plasma.h>
@@ -68,10 +55,11 @@ void ScreenPool::load()
     const auto keys = m_configGroup.keyList();
     for (const QString &key : keys) {
         QString connector = m_configGroup.readEntry(key, QString());
-        if (!key.isEmpty() && !connector.isEmpty() && !m_connectorForId.contains(key.toInt()) && !m_idForConnector.contains(connector)) {
-            m_connectorForId[key.toInt()] = connector;
-            m_idForConnector[connector] = key.toInt();
-        } else if (m_idForConnector.value(connector) != key.toInt()) {
+        const int currentId = key.toInt();
+        if (!key.isEmpty() && !connector.isEmpty() && !m_connectorForId.contains(currentId) && !m_idForConnector.contains(connector)) {
+            m_connectorForId[currentId] = connector;
+            m_idForConnector[connector] = currentId;
+        } else if (m_idForConnector.value(connector) != currentId) {
             m_configGroup.deleteEntry(key);
         }
     }
@@ -104,11 +92,7 @@ void ScreenPool::setPrimaryConnector(const QString &primary)
         return;
     }
 
-    int oldIdForPrimary = -1;
-    if (m_idForConnector.contains(primary)) {
-        oldIdForPrimary = m_idForConnector.value(primary);
-    }
-
+    int oldIdForPrimary = m_idForConnector.value(primary, -1);
     if (oldIdForPrimary == -1) {
         // move old primary to new free id
         oldIdForPrimary = firstAvailableId();
@@ -149,11 +133,7 @@ void ScreenPool::insertScreenMapping(int id, const QString &connector)
 
 int ScreenPool::id(const QString &connector) const
 {
-    if (!m_idForConnector.contains(connector)) {
-        return -1;
-    }
-
-    return m_idForConnector.value(connector);
+    return m_idForConnector.value(connector, -1);
 }
 
 QString ScreenPool::connector(int id) const

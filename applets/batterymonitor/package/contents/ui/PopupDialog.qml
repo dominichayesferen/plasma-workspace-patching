@@ -1,22 +1,9 @@
 /*
- *   Copyright 2011 Viranch Mehta <viranch.mehta@gmail.com>
- *   Copyright 2013-2016 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2 or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2011 Viranch Mehta <viranch.mehta@gmail.com>
+    SPDX-FileCopyrightText: 2013-2016 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.0
 import org.kde.plasma.core 2.0 as PlasmaCore
@@ -35,7 +22,14 @@ PlasmaComponents3.Page {
     property bool isBrightnessAvailable
     property bool isKeyboardBrightnessAvailable
 
+    property string activeProfile
+    property var profiles
+    property string inhibitionReason
+    property string degradationReason
+    property var profileHolds
+
     signal powermanagementChanged(bool disabled)
+    signal activateProfileRequested(string profile)
 
     header: PlasmaExtras.PlasmoidHeading {
         PowerManagementItem {
@@ -106,6 +100,17 @@ PlasmaComponents3.Page {
                         keyboardBrightnessSlider.value = batterymonitor.keyboardBrightness
                     }
                 }
+            }
+
+            PowerProfileItem {
+                width: parent.width
+                activeProfile: dialog.activeProfile
+                profiles: dialog.profiles
+                inhibitionReason: dialog.inhibitionReason
+                visible: profiles.length > 0
+                degradationReason: dialog.degradationReason
+                profileHolds: dialog.profileHolds
+                onActivateProfileRequested: dialog.activateProfileRequested(profile)
             }
         }
 

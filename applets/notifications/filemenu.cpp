@@ -1,19 +1,7 @@
 /*
-    Copyright (C) 2016,2019 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2016, 2019 Kai Uwe Broulik <kde@privat.broulik.de>
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-2.1-or-later
 */
 
 #include "filemenu.h"
@@ -135,7 +123,7 @@ void FileMenu::open(int x, int y)
     actions->setItemListProperties(itemProperties);
     actions->setParentWidget(menu);
 
-    actions->addOpenWithActionsTo(menu);
+    actions->insertOpenWithActionsTo(nullptr, menu, QStringList());
 
     // KStandardAction? But then the Ctrl+C shortcut makes no sense in this context
     QAction *copyAction = menu->addAction(QIcon::fromTheme(QStringLiteral("edit-copy")), i18n("&Copy"));
@@ -194,8 +182,7 @@ void FileMenu::open(int x, int y)
 
     menu->addSeparator();
 
-    actions->addServiceActionsTo(menu);
-    actions->addPluginActionsTo(menu);
+    actions->addActionsTo(menu);
 
     menu->addSeparator();
 
@@ -236,6 +223,7 @@ void FileMenu::open(int x, int y)
         pos = m_visualParent->mapToGlobal(QPointF(x, y)).toPoint();
     }
 
+    menu->setAttribute(Qt::WA_TranslucentBackground);
     menu->winId();
     menu->windowHandle()->setTransientParent(m_visualParent->window());
     menu->popup(pos);

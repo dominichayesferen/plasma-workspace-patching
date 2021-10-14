@@ -1,20 +1,8 @@
 /*
- *   Copyright (C) 2007 Teemu Rytilahti <tpr@iki.fi>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2007 Teemu Rytilahti <tpr@iki.fi>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "locationrunner.h"
 
@@ -34,7 +22,7 @@
 #include <KUriFilter>
 #include <QDebug>
 
-K_EXPORT_PLASMA_RUNNER_WITH_JSON(LocationsRunner, "plasma-runner-locations.json")
+K_PLUGIN_CLASS_WITH_JSON(LocationsRunner, "plasma-runner-locations.json")
 
 LocationsRunner::LocationsRunner(QObject *parent, const KPluginMetaData &metaData, const QVariantList &args)
     : Plasma::AbstractRunner(parent, metaData, args)
@@ -98,6 +86,10 @@ void LocationsRunner::match(Plasma::RunnerContext &context)
         } else {
             match.setIconName(KProtocolInfo::icon(protocol));
             match.setText(i18n("Go to %1", url.toDisplayString(QUrl::PreferLocalFile)));
+            // in case of https://phabricator.kde.org we add a slash at the end to make it comparable to results of other runners
+            if (url.scheme() == QLatin1String("https") && url.toString().endsWith(url.host())) {
+                match.setId(url.toString() + QLatin1Char('/'));
+            }
         }
 
         if (url.scheme() == QLatin1String("mailto")) {

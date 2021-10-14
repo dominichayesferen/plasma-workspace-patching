@@ -1,20 +1,8 @@
 /*
- *  Copyright 2013 Marco Martin <mart@kde.org>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2013 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include <config-plasma.h>
 
@@ -96,8 +84,8 @@ PanelView::PanelView(ShellCorona *corona, QScreen *targetScreen, QWindow *parent
     connect(&m_unhideTimer, &QTimer::timeout, this, &PanelView::restoreAutoHide);
 
     m_lastScreen = targetScreen;
-    connect(this, SIGNAL(locationChanged(Plasma::Types::Location)), &m_positionPaneltimer, SLOT(start()));
-    connect(this, SIGNAL(containmentChanged()), this, SLOT(containmentChanged()));
+    connect(this, &PanelView::locationChanged, &m_positionPaneltimer, qOverload<>(&QTimer::start));
+    connect(this, &PanelView::containmentChanged, this, &PanelView::refreshContainment);
 
     if (!m_corona->kPackage().isValid()) {
         qWarning() << "Invalid home screen package";
@@ -106,7 +94,7 @@ PanelView::PanelView(ShellCorona *corona, QScreen *targetScreen, QWindow *parent
     m_strutsTimer.setSingleShot(true);
     connect(&m_strutsTimer, &QTimer::timeout, this, &PanelView::updateStruts);
 
-    qmlRegisterType<QScreen>();
+    qmlRegisterAnonymousType<QScreen>("", 1);
     rootContext()->setContextProperty(QStringLiteral("panel"), this);
     setSource(m_corona->kPackage().fileUrl("views", QStringLiteral("Panel.qml")));
     updatePadding();
@@ -685,12 +673,12 @@ void PanelView::showConfigurationInterface(Plasma::Applet *applet)
         m_panelConfigView = new PlasmaQuick::ConfigView(applet);
     }
 
-    m_panelConfigView.data()->init();
-    m_panelConfigView.data()->show();
-    m_panelConfigView.data()->requestActivate();
+    m_panelConfigView->init();
+    m_panelConfigView->show();
+    m_panelConfigView->requestActivate();
 
     if (isPanelConfig) {
-        KWindowSystem::setState(m_panelConfigView.data()->winId(), NET::SkipTaskbar | NET::SkipPager);
+        KWindowSystem::setState(m_panelConfigView->winId(), NET::SkipTaskbar | NET::SkipPager);
     }
 }
 
@@ -937,16 +925,15 @@ bool PanelView::event(QEvent *e)
     case QEvent::Wheel: {
         QWheelEvent *we = static_cast<QWheelEvent *>(e);
 
-        if (!containmentContainsPosition(we->pos()) && !m_fakeEventPending) {
-            QWheelEvent we2(positionAdjustedForContainment(we->pos()),
-                            positionAdjustedForContainment(we->pos()) + position(),
+        if (!containmentContainsPosition(we->position()) && !m_fakeEventPending) {
+            QWheelEvent we2(positionAdjustedForContainment(we->position()),
+                            positionAdjustedForContainment(we->position()) + position(),
                             we->pixelDelta(),
                             we->angleDelta(),
-                            we->angleDelta().y(),
-                            we->orientation(),
                             we->buttons(),
                             we->modifiers(),
-                            we->phase());
+                            we->phase(),
+                            we->inverted());
 
             m_fakeEventPending = true;
             QCoreApplication::sendEvent(this, &we2);
@@ -1009,8 +996,8 @@ bool PanelView::event(QEvent *e)
     }
 
     case QEvent::Hide: {
-        if (m_panelConfigView && m_panelConfigView.data()->isVisible()) {
-            m_panelConfigView.data()->hide();
+        if (m_panelConfigView && m_panelConfigView->isVisible()) {
+            m_panelConfigView->hide();
         }
         m_containsMouse = false;
         break;
@@ -1236,7 +1223,7 @@ void PanelView::updateStruts()
                                     strut.bottom_end);
 }
 
-void PanelView::containmentChanged()
+void PanelView::refreshContainment()
 {
     restore();
     connect(containment(), &Plasma::Containment::userConfiguringChanged, this, [this](bool configuring) {
@@ -1248,7 +1235,7 @@ void PanelView::containmentChanged()
         }
     });
 
-    connect(containment(), SIGNAL(statusChanged(Plasma::Types::ItemStatus)), SLOT(statusChanged(Plasma::Types::ItemStatus)));
+    connect(containment(), &Plasma::Applet::statusChanged, this, &PanelView::refreshStatus);
     connect(containment(), &Plasma::Applet::appletDeleted, this, [this] {
         // containment()->destroyed() is true only when the user deleted it
         // so the config is to be thrown away, not during shutdown
@@ -1292,7 +1279,7 @@ void PanelView::handleQmlStatusChange(QQmlComponent::Status status)
     }
 }
 
-void PanelView::statusChanged(Plasma::Types::ItemStatus status)
+void PanelView::refreshStatus(Plasma::Types::ItemStatus status)
 {
     if (status == Plasma::Types::NeedsAttentionStatus) {
         showTemporarily();

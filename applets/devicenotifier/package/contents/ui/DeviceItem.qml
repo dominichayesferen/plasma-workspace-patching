@@ -1,24 +1,11 @@
 /*
- *   Copyright 2011 Viranch Mehta <viranch.mehta@gmail.com>
- *   Copyright 2012 Jacopo De Simoi <wilderkde@gmail.com>
- *   Copyright 2016 Kai Uwe Broulik <kde@privat.broulik.de>
- *   Copyright 2020 Nate Graham <nate@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2 or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2011 Viranch Mehta <viranch.mehta@gmail.com>
+    SPDX-FileCopyrightText: 2012 Jacopo De Simoi <wilderkde@gmail.com>
+    SPDX-FileCopyrightText: 2016 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2020 Nate Graham <nate@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.0
 import QtQuick.Controls 2.12 as QQC2
@@ -44,7 +31,8 @@ PlasmaExtras.ExpandableListItem {
     readonly property double totalSpace: sdSource.data[udi] && sdSource.data[udi]["Size"] ? sdSource.data[udi]["Size"] : -1.0
     property bool freeSpaceKnown: freeSpace > 0 && totalSpace > 0
 
-    readonly property bool isRootVolume: sdSource.data[udi]["File Path"] ? sdSource.data[udi]["File Path"] == "/" : false
+    readonly property bool isRootVolume: sdSource.data[udi] && sdSource.data[udi]["File Path"] ? sdSource.data[udi]["File Path"] == "/" : false
+    readonly property bool isRemovable: sdSource.data[udi] && sdSource.data[udi]["Removable"] ? sdSource.data[udi]["Removable"] : false
 
     onOperationResultChanged: {
         if (!popupIconTimer.running) {
@@ -72,6 +60,15 @@ PlasmaExtras.ExpandableListItem {
             }
         }
     }
+
+    Connections {
+         target: plasmoid.action("unmountAllDevices")
+         function onTriggered() {
+             if (model["Removable"] && isMounted) {
+                 actionTriggered();
+             }
+         }
+     }
 
     // this keeps the delegate around for 5 seconds after the device has been
     // removed in case there was a message, such as "you can now safely remove this"
@@ -123,7 +120,7 @@ PlasmaExtras.ExpandableListItem {
         var operationName
         var operation
         var wasMounted = isMounted;
-        if (!sdSource.data[udi].Removable || !isMounted) {
+        if (!isRemovable || !isMounted) {
             service = hpSource.serviceForSource(udi);
             operation = service.operationDescription('invokeAction');
             operation.predicate = "test-predicate-openinwindow.desktop";
@@ -140,26 +137,23 @@ PlasmaExtras.ExpandableListItem {
 
     // When there's no better icon available, show a placeholder icon instead
     // of nothing
-    icon: sdSource.data[udi] == undefined ? "device-notifier" : sdSource.data[udi].Icon
+    icon: sdSource.data[udi] ? sdSource.data[udi].Icon : "device-notifier"
 
     iconEmblem: {
-        if (sdSource.data[udi] != undefined) {
-            if (deviceItem.hasMessage) {
-                if (deviceItem.message.solidError === 0) {
-                    return "emblem-information"
-                } else {
-                    return "emblem-error"
-                }
-            } else if (deviceItem.state == 0 && Emblems && Emblems[0]) {
-                return Emblems[0]
+        if (deviceItem.hasMessage) {
+            if (deviceItem.message.solidError === 0) {
+                return "emblem-information"
             } else {
-                return ""
+                return "emblem-error"
             }
+        } else if (deviceItem.state == 0 && Emblems && Emblems[0]) {
+            return Emblems[0]
+        } else {
+            return ""
         }
-        return ""
     }
 
-    title: sdSource.data[udi] == undefined ? "" : sdSource.data[udi].Description
+    title: sdSource.data[udi] ? sdSource.data[udi].Description : ""
 
     subtitle: {
         if (deviceItem.hasMessage) {
@@ -176,9 +170,9 @@ PlasmaExtras.ExpandableListItem {
             }
             return ""
         } else if (deviceItem.state == 1) {
-            return i18nc("Accessing is a less technical word for Mounting; translation should be short and mean \'Currently mounting this device\'", "Accessing...")
+            return i18nc("Accessing is a less technical word for Mounting; translation should be short and mean \'Currently mounting this device\'", "Accessing…")
         } else {
-            return i18nc("Removing is a less technical word for Unmounting; translation should be short and mean \'Currently unmounting this device\'", "Removing...")
+            return i18nc("Removing is a less technical word for Unmounting; translation should be short and mean \'Currently unmounting this device\'", "Removing…")
         }
     }
 
@@ -196,15 +190,15 @@ PlasmaExtras.ExpandableListItem {
 
     defaultActionButtonAction: QQC2.Action {
         icon.name: {
-            if (!sdSource.data[udi].Removable) {
-                return "document-open-folder"
-            } else {
+            if (isRemovable) {
                 return isMounted ? "media-eject" : "document-open-folder"
+            } else {
+                return "document-open-folder"
             }
         }
         text: {
             // It's possible for the root volume to be on a removable disk
-            if (!sdSource.data[udi].Removable || deviceItem.isRootVolume) {
+            if (!isRemovable || isRootVolume) {
                 return i18n("Open in File Manager")
             } else {
                 var types = model["Device Types"];
@@ -236,7 +230,7 @@ PlasmaExtras.ExpandableListItem {
                 if (modelData.predicate != "test-predicate-openinwindow.desktop") {
                     return true;
                 }
-                return sdSource.data[udi].Removable && deviceItem.isMounted;
+                return deviceItem.isRemovable && deviceItem.isMounted;
             }
             onTriggered: {
                 var service = hpSource.serviceForSource(udi);
@@ -257,7 +251,7 @@ PlasmaExtras.ExpandableListItem {
         icon.name: "media-mount"
 
         // Only show for unmounted removable devices
-        enabled: sdSource.data[udi].Removable && !deviceItem.isMounted
+        enabled: deviceItem.isRemovable && !deviceItem.isMounted
 
         onTriggered: {
             var service = sdSource.serviceForSource(udi);

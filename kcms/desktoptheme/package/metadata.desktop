@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Plasma Style
+Name[ar]=نمط بلازما
 Name[ast]=Estilu de Plasma
 Name[az]=Plasma Üslubu
 Name[ca]=Estil del Plasma
@@ -37,8 +38,9 @@ Name[tr]=Plazma Stili
 Name[uk]=Стиль Плазми
 Name[vi]=Kiểu cách Plasma
 Name[x-test]=xxPlasma Stylexx
-Name[zh_CN]=Plasma 样式
+Name[zh_CN]=Plasma 视觉风格
 Comment=Choose Plasma theme
+Comment[ar]=اختر سمة بلازما
 Comment[az]=Plasma mövzusunu seçin
 Comment[ca]=Trieu el tema del Plasma
 Comment[cs]=Zvolte motiv Plasma
@@ -69,6 +71,8 @@ Comment[ru]=Выбор оформления рабочего стола
 Comment[sk]=Vybrať Plasma tému
 Comment[sl]=Izberite temo Plasme
 Comment[sv]=Välj Plasmatema
+Comment[ta]=பிளாஸ்மா தோற்றத்திட்டத்தை தேர்ந்தெடுங்கள்
+Comment[tg]=Мавзӯи плазмаро интихоб намоед
 Comment[tr]=Plazma temasını seçin
 Comment[uk]=Вибір теми Плазми
 Comment[vi]=Chọn chủ đề của Plasma

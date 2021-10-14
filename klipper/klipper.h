@@ -1,25 +1,11 @@
-/* This file is part of the KDE project
-   Copyright (C) by Andrew Stanley-Jones <asj@cban.com>
-   Copyright (C) 2004  Esben Mose Hansen <kde@mosehansen.dk>
-   Copyright (C) 2008 by Dmitry Suzdalev <dimsuz@gmail.com>
+/*
+    SPDX-FileCopyrightText: Andrew Stanley-Jones <asj@cban.com>
+    SPDX-FileCopyrightText: 2004 Esben Mose Hansen <kde@mosehansen.dk>
+    SPDX-FileCopyrightText: 2008 Dmitry Suzdalev <dimsuz@gmail.com>
 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; see the file COPYING.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: GPL-2.0-or-later
 */
-#ifndef KLIPPER_H
-#define KLIPPER_H
+#pragma once
 
 #include "config-klipper.h"
 
@@ -27,6 +13,8 @@
 #include <QElapsedTimer>
 #include <QPointer>
 #include <QTimer>
+
+#include <KTextEdit>
 
 #include "urlgrabber.h"
 
@@ -46,6 +34,15 @@ class SystemClipboard;
 enum class KlipperMode {
     Standalone,
     DataEngine,
+};
+
+class ClipboardContentTextEdit : public KTextEdit
+{
+    Q_OBJECT
+public:
+    ClipboardContentTextEdit(QWidget *parent);
+    void keyPressEvent(QKeyEvent *event) override;
+    Q_SIGNAL void done();
 };
 
 class Klipper : public QObject
@@ -226,5 +223,3 @@ private:
     QTimer *m_saveFileTimer = nullptr;
     QPointer<KNotification> m_notification;
 };
-
-#endif

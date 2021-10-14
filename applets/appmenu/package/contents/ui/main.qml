@@ -1,21 +1,10 @@
 /*
- * Copyright 2013  Heena Mahour <heena393@gmail.com>
- * Copyright 2013 Sebastian Kügler <sebas@kde.org>
- * Copyright 2016 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2013 Heena Mahour <heena393@gmail.com>
+    SPDX-FileCopyrightText: 2013 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2016 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.8
@@ -25,6 +14,7 @@ import org.kde.kquickcontrolsaddons 2.0 // For KCMShell
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.plasma.private.appmenu 1.0 as AppMenuPrivate
+import org.kde.kirigami 2.5 as Kirigami
 
 Item {
     id: root
@@ -71,8 +61,8 @@ Item {
         Layout.minimumHeight: implicitHeight
 
         flow: root.vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        rowSpacing: PlasmaCore.Units.smallSpacing
-        columnSpacing: PlasmaCore.Units.smallSpacing
+        rowSpacing: 0
+        columnSpacing: 0
 
         Component.onCompleted: {
             plasmoid.nativeInterface.buttonGrid = buttonGrid
@@ -113,27 +103,22 @@ Item {
             id: buttonRepeater
             model: appMenuModel.visible ? appMenuModel : null
 
-            PlasmaComponents3.ToolButton {
+            MenuDelegate {
                 readonly property int buttonIndex: index
 
                 Layout.fillWidth: root.vertical
                 Layout.fillHeight: !root.vertical
-                text: {
-                    var text = activeMenu;
-
-                    var alt = keystateSource.data.Alt;
-                    if (!alt || !alt.Pressed) {
-                        // StyleHelpers.removeMnemonics
-                        text = text.replace(/([^&]*)&(.)([^&]*)/g, function (match, p1, p2, p3) {
-                            return p1.concat(p2, p3);
-                        });
+                text: activeMenu
+                Kirigami.MnemonicData.active: {
+                    try {
+                        return keystateSource.data.Alt && keystateSource.data.Alt.Pressed
+                    } catch (error) {
+                        return false
                     }
-
-                    return text;
                 }
-                // fake highlighted
-                checkable: plasmoid.nativeInterface.currentIndex === index
-                checked: checkable
+
+                down: pressed || plasmoid.nativeInterface.currentIndex === index
+
                 visible: text !== ""
                 onClicked: {
                     plasmoid.nativeInterface.trigger(this, index)

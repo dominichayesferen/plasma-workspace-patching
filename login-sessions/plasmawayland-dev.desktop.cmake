@@ -2,6 +2,7 @@
 Exec=@CMAKE_INSTALL_FULL_LIBEXECDIR@/plasma-dbus-run-session-if-needed @CMAKE_INSTALL_FULL_LIBEXECDIR@/startplasma-dev.sh -wayland
 DesktopNames=KDE
 Name=Plasma (Development, Wayland ${CMAKE_INSTALL_FULL_BINDIR})
+Name[ar]=بلازما (تطوير, ويلاند ${CMAKE_INSTALL_FULL_BINDIR})
 Name[ast]=Plasma (Desendolcu, Wayland ${CMAKE_INSTALL_FULL_BINDIR})
 Name[az]=Plasma (Tərtib mərhələsində olan Wayland ${CMAKE_INSTALL_FULL_BINDIR})
 Name[ca]=Plasma (Desenvolupament, Wayland ${CMAKE_INSTALL_FULL_BINDIR})
@@ -85,6 +86,7 @@ Comment[sr@ijekavian]=Плазма од КДЕ‑а
 Comment[sr@ijekavianlatin]=Plasma od KDE‑a
 Comment[sr@latin]=Plasma od KDE‑a
 Comment[sv]=Plasma av KDE
+Comment[ta]=கே.டீ.யீ. வழங்கும் பிளாஸ்மா
 Comment[tg]=Plasma аз ҷониби KDE
 Comment[tr]=KDE Plasma
 Comment[uk]=Плазма KDE

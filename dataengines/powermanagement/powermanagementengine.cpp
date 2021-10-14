@@ -1,23 +1,11 @@
 /*
- *   Copyright 2007 Aaron Seigo <aseigo@kde.org>
- *   Copyright 2007-2008 Sebastian Kuegler <sebas@kde.org>
- *   CopyRight 2007 Maor Vanmak <mvanmak1@gmail.com>
- *   Copyright 2008 Dario Freddi <drf54321@gmail.com>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2007 Aaron Seigo <aseigo@kde.org>
+    SPDX-FileCopyrightText: 2007-2008 Sebastian Kuegler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2007 Maor Vanmak <mvanmak1@gmail.com>
+    SPDX-FileCopyrightText: 2008 Dario Freddi <drf54321@gmail.com>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "powermanagementengine.h"
 
@@ -58,6 +46,8 @@ PowermanagementEngine::PowermanagementEngine(QObject *parent, const QVariantList
     Q_UNUSED(args)
     qDBusRegisterMetaType<QList<InhibitionInfo>>();
     qDBusRegisterMetaType<InhibitionInfo>();
+    qDBusRegisterMetaType<QList<QVariant>>();
+    qDBusRegisterMetaType<QList<QVariantMap>>();
     init();
 }
 
@@ -142,6 +132,51 @@ void PowermanagementEngine::init()
                                                    SLOT(chargeStopThresholdChanged(int)))) {
             qDebug() << "error connecting to charge stop threshold changes via dbus";
         }
+
+        if (!QDBusConnection::sessionBus().connect(SOLID_POWERMANAGEMENT_SERVICE,
+                                                   QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                   QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                   QStringLiteral("currentProfileChanged"),
+                                                   this,
+                                                   SLOT(updatePowerProfileCurrentProfile(QString)))) {
+            qDebug() << "error connecting to current profile changes via dbus";
+        }
+
+        if (!QDBusConnection::sessionBus().connect(SOLID_POWERMANAGEMENT_SERVICE,
+                                                   QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                   QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                   QStringLiteral("profileChoicesChanged"),
+                                                   this,
+                                                   SLOT(updatePowerProfileChoices(QStringList)))) {
+            qDebug() << "error connecting to profile choices changes via dbus";
+        }
+
+        if (!QDBusConnection::sessionBus().connect(SOLID_POWERMANAGEMENT_SERVICE,
+                                                   QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                   QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                   QStringLiteral("performanceInhibitedReasonChanged"),
+                                                   this,
+                                                   SLOT(updatePowerProfilePerformanceInhibitedReason(QString)))) {
+            qDebug() << "error connecting to inhibition reason changes via dbus";
+        }
+
+        if (!QDBusConnection::sessionBus().connect(SOLID_POWERMANAGEMENT_SERVICE,
+                                                   QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                   QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                   QStringLiteral("performanceDegradedReasonChanged"),
+                                                   this,
+                                                   SLOT(updatePowerProfilePerformanceDegradedReason(QString)))) {
+            qDebug() << "error connecting to degradation reason changes via dbus";
+        }
+
+        if (!QDBusConnection::sessionBus().connect(SOLID_POWERMANAGEMENT_SERVICE,
+                                                   QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                   QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                   QStringLiteral("profileHoldsChanged"),
+                                                   this,
+                                                   SLOT(updatePowerProfileHolds(QList<QVariantMap>)))) {
+            qDebug() << "error connecting to profile hold changes via dbus";
+        }
     }
 }
 
@@ -149,7 +184,7 @@ QStringList PowermanagementEngine::basicSourceNames() const
 {
     QStringList sources;
     sources << QStringLiteral("Battery") << QStringLiteral("AC Adapter") << QStringLiteral("Sleep States") << QStringLiteral("PowerDevil")
-            << QStringLiteral("Inhibitions");
+            << QStringLiteral("Inhibitions") << QStringLiteral("Power Profiles");
     return sources;
 }
 
@@ -362,6 +397,76 @@ bool PowermanagementEngine::sourceRequestEvent(const QString &name)
         // any info concerning lock screen/screensaver goes here
     } else if (name == QLatin1String("UserActivity")) {
         setData(QStringLiteral("UserActivity"), QStringLiteral("IdleTime"), KIdleTime::instance()->idleTime());
+    } else if (name == QLatin1String("Power Profiles")) {
+        auto profileMsg = QDBusMessage::createMethodCall(SOLID_POWERMANAGEMENT_SERVICE,
+                                                         QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                         QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                         QStringLiteral("currentProfile"));
+        auto profileWatcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(profileMsg));
+        connect(profileWatcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
+            watcher->deleteLater();
+            QDBusPendingReply<QString> reply = *watcher;
+            if (reply.isError()) {
+                return;
+            }
+            updatePowerProfileCurrentProfile(reply.value());
+        });
+
+        auto choicesMsg = QDBusMessage::createMethodCall(SOLID_POWERMANAGEMENT_SERVICE,
+                                                         QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                         QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                         QStringLiteral("profileChoices"));
+        auto choicesWatcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(choicesMsg));
+        connect(choicesWatcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
+            watcher->deleteLater();
+            QDBusPendingReply<QStringList> reply = *watcher;
+            if (reply.isError()) {
+                return;
+            }
+            updatePowerProfileChoices(reply.value());
+        });
+
+        auto inhibitedMsg = QDBusMessage::createMethodCall(SOLID_POWERMANAGEMENT_SERVICE,
+                                                           QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                           QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                           QStringLiteral("performanceInhibitedReason"));
+        auto inhibitedWatcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(inhibitedMsg));
+        connect(inhibitedWatcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
+            watcher->deleteLater();
+            QDBusPendingReply<QString> reply = *watcher;
+            if (reply.isError()) {
+                return;
+            }
+            updatePowerProfilePerformanceInhibitedReason(reply.value());
+        });
+
+        auto degradedMsg = QDBusMessage::createMethodCall(SOLID_POWERMANAGEMENT_SERVICE,
+                                                          QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                          QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                          QStringLiteral("performanceDegradedReason"));
+        auto degradedWatcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(degradedMsg));
+        connect(degradedWatcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
+            watcher->deleteLater();
+            QDBusPendingReply<QString> reply = *watcher;
+            if (reply.isError()) {
+                return;
+            };
+            updatePowerProfilePerformanceDegradedReason(reply.value());
+        });
+
+        auto holdsMsg = QDBusMessage::createMethodCall(SOLID_POWERMANAGEMENT_SERVICE,
+                                                       QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                       QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                       QStringLiteral("profileHolds"));
+        auto holdsWatcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(holdsMsg));
+        connect(holdsWatcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *watcher) {
+            watcher->deleteLater();
+            QDBusPendingReply<QList<QVariantMap>> reply = *watcher;
+            if (reply.isError()) {
+                return;
+            };
+            updatePowerProfileHolds(reply.value());
+        });
     } else {
         qDebug() << "Data for '" << name << "' not found";
         return false;
@@ -567,6 +672,43 @@ void PowermanagementEngine::updateAcPlugState(bool onBattery)
     setData(QStringLiteral("AC Adapter"), QStringLiteral("Plugged in"), !onBattery);
 }
 
+void PowermanagementEngine::updatePowerProfileCurrentProfile(const QString &activeProfile)
+{
+    setData(QStringLiteral("Power Profiles"), QStringLiteral("Current Profile"), activeProfile);
+}
+
+void PowermanagementEngine::updatePowerProfileChoices(const QStringList &choices)
+{
+    setData(QStringLiteral("Power Profiles"), QStringLiteral("Profiles"), choices);
+}
+
+void PowermanagementEngine::updatePowerProfilePerformanceInhibitedReason(const QString &reason)
+{
+    setData(QStringLiteral("Power Profiles"), QStringLiteral("Performance Inhibited Reason"), reason);
+}
+
+void PowermanagementEngine::updatePowerProfilePerformanceDegradedReason(const QString &reason)
+{
+    setData(QStringLiteral("Power Profiles"), QStringLiteral("Performance Degraded Reason"), reason);
+}
+
+void PowermanagementEngine::updatePowerProfileHolds(const QList<QVariantMap> &holds)
+{
+    QList<QVariantMap> out;
+    std::transform(holds.cbegin(), holds.cend(), std::back_inserter(out), [this](const QVariantMap &hold) {
+        QString prettyName;
+        QString icon;
+        populateApplicationData(hold[QStringLiteral("ApplicationId")].toString(), &prettyName, &icon);
+        return QVariantMap{
+            {QStringLiteral("Name"), prettyName},
+            {QStringLiteral("Icon"), icon},
+            {QStringLiteral("Reason"), hold[QStringLiteral("Reason")]},
+            {QStringLiteral("Profile"), hold[QStringLiteral("Profile")]},
+        };
+    });
+    setData(QStringLiteral("Power Profiles"), QStringLiteral("Profile Holds"), QVariant::fromValue(out));
+}
+
 void PowermanagementEngine::deviceRemoved(const QString &udi)
 {
     if (m_batterySources.contains(udi)) {
@@ -710,6 +852,6 @@ void PowermanagementEngine::chargeStopThresholdChanged(int threshold)
     setData(QStringLiteral("Battery"), QStringLiteral("Charge Stop Threshold"), threshold);
 }
 
-K_EXPORT_PLASMA_DATAENGINE_WITH_JSON(powermanagement, PowermanagementEngine, "plasma-dataengine-powermanagement.json")
+K_PLUGIN_CLASS_WITH_JSON(PowermanagementEngine, "plasma-dataengine-powermanagement.json")
 
 #include "powermanagementengine.moc"

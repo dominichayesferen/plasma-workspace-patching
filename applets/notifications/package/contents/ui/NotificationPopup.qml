@@ -1,26 +1,13 @@
 /*
- * Copyright 2019 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- */
+    SPDX-FileCopyrightText: 2019 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
 
 import QtQuick 2.8
 import QtQuick.Layouts 1.1
 
+import org.kde.kquickcontrolsaddons 2.0 as KQuickAddons
 import org.kde.plasma.core 2.0 as PlasmaCore
 
 import org.kde.notificationmanager 1.0 as NotificationManager
@@ -102,7 +89,8 @@ PlasmaCore.Dialog {
     }
 
     location: PlasmaCore.Types.Floating
-    flags: notificationItem.replying ? 0 : Qt.WindowDoesNotAcceptFocus
+    // On wayland we need focus to copy to the clipboard, we change on mouse interaction until the cursor leaves 
+    flags: notificationItem.replying || focusListener.wantsFocus ? 0 : Qt.WindowDoesNotAcceptFocus
 
     visible: false
 
@@ -113,9 +101,17 @@ PlasmaCore.Dialog {
         }
     }
 
-    mainItem: Item {
+    mainItem: KQuickAddons.MouseEventListener {
+        id: focusListener
+        property bool wantsFocus: false
+        acceptedButtons: Qt.AllButtons
+        hoverEnabled: true
+        onPressed: wantsFocus = true
+        onContainsMouseChanged: wantsFocus = wantsFocus && containsMouse
+
         width: notificationPopup.popupWidth
-        height: notificationItem.implicitHeight + notificationItem.y
+        height: notificationItem.height + notificationItem.y
+
         DraggableDelegate {
             id: area
             width: parent.width
@@ -168,30 +164,11 @@ PlasmaCore.Dialog {
                     }
                 }
             }
-            
-            Rectangle {
-                id: timeoutIndicatorRect
-                anchors {
-                    bottom: parent.bottom
-                    bottomMargin: -notificationPopup.margins.bottom
-                    left: parent.left
-                    leftMargin: -notificationPopup.margins.left
-                }
-                height: units.devicePixelRatio * 2.4
-                color: theme.highlightColor
-                opacity: timeoutIndicatorAnimation.running ? 0.6 : 0
-                visible: units.longDuration > 1
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: units.longDuration
-                    }
-                }
-            }
 
             NumberAnimation {
-                target: timeoutIndicatorRect
-                property: "width"
-                from: area.width + notificationPopup.margins.left + notificationPopup.margins.right
+                target: notificationItem
+                property: "remainingTime"
+                from: timer.interval
                 to: 0
                 duration: timer.interval
                 running: timer.running && PlasmaCore.Units.longDuration > 1

@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2007 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "Viewer.h"
 #include "KfiConstants.h"
@@ -30,7 +12,6 @@
 #include <KDBusService>
 #include <KParts/BrowserExtension>
 #include <KPluginFactory>
-#include <KPluginLoader>
 #include <KSharedConfig>
 #include <KShortcutsDialog>
 #include <KStandardAction>
@@ -45,28 +26,31 @@ namespace KFI
 {
 CViewer::CViewer()
 {
-    KPluginFactory *factory = KPluginLoader("kfontviewpart").factory();
+    const auto result = KPluginFactory::instantiatePlugin<KParts::ReadOnlyPart>(KPluginMetaData(QStringLiteral("kf5/parts/kfontviewpart")), this);
 
-    if (factory) {
-        itsPreview = factory->create<KParts::ReadOnlyPart>(this);
+    if (!result) {
+        qWarning() << "Error loading kfontviewpart:" << result.errorString;
+        exit(1);
+    }
 
-        actionCollection()->addAction(KStandardAction::Open, this, SLOT(fileOpen()));
-        actionCollection()->addAction(KStandardAction::Quit, this, SLOT(close()));
-        actionCollection()->addAction(KStandardAction::KeyBindings, this, SLOT(configureKeys()));
-        itsPrintAct = actionCollection()->addAction(KStandardAction::Print, itsPreview, SLOT(print()));
+    itsPreview = result.plugin;
 
-        itsPrintAct->setEnabled(false);
+    actionCollection()->addAction(KStandardAction::Open, this, SLOT(fileOpen()));
+    actionCollection()->addAction(KStandardAction::Quit, this, SLOT(close()));
+    actionCollection()->addAction(KStandardAction::KeyBindings, this, SLOT(configureKeys()));
+    itsPrintAct = actionCollection()->addAction(KStandardAction::Print, itsPreview, SLOT(print()));
 
-        if (itsPreview->browserExtension())
-            connect(itsPreview->browserExtension(), &KParts::BrowserExtension::enableAction, this, &CViewer::enableAction);
+    itsPrintAct->setEnabled(false);
 
-        setCentralWidget(itsPreview->widget());
-        createGUI(itsPreview);
+    if (itsPreview->browserExtension()) {
+        connect(itsPreview->browserExtension(), &KParts::BrowserExtension::enableAction, this, &CViewer::enableAction);
+    }
 
-        setAutoSaveSettings();
-        applyMainWindowSettings(KSharedConfig::openConfig()->group("MainWindow"));
-    } else
-        exit(0);
+    setCentralWidget(itsPreview->widget());
+    createGUI(itsPreview);
+
+    setAutoSaveSettings();
+    applyMainWindowSettings(KSharedConfig::openConfig()->group("MainWindow"));
 }
 
 void CViewer::fileOpen()
@@ -80,15 +64,17 @@ void CViewer::fileOpen()
                                          << "application/x-font-pcf");
     if (dlg.exec() == QDialog::Accepted) {
         QUrl url = dlg.selectedUrls().value(0);
-        if (url.isValid())
+        if (url.isValid()) {
             showUrl(url);
+        }
     }
 }
 
 void CViewer::showUrl(const QUrl &url)
 {
-    if (url.isValid())
+    if (url.isValid()) {
         itsPreview->openUrl(url);
+    }
 }
 
 void CViewer::configureKeys()
@@ -101,8 +87,9 @@ void CViewer::configureKeys()
 
 void CViewer::enableAction(const char *name, bool enable)
 {
-    if (0 == qstrcmp("print", name))
+    if (0 == qstrcmp("print", name)) {
         itsPrintAct->setEnabled(enable);
+    }
 }
 
 class ViewerApplication : public QApplication

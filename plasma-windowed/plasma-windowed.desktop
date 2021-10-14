@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Plasma Windowed
+Name[ar]=بلازما المؤطرة
 Name[az]=Pəncərədə Plasma
 Name[bs]=Plazma uprozorena
 Name[ca]=Plasma amb finestres
@@ -42,6 +43,7 @@ Name[sr@ijekavian]=Плазма у прозору
 Name[sr@ijekavianlatin]=Plasma u prozoru
 Name[sr@latin]=Plasma u prozoru
 Name[sv]=Plasma i fönster
+Name[ta]=சாளர பிளாஸ்மாய்டுகள்
 Name[tr]=Plasma Penceresi
 Name[uk]=Плазма у вікні
 Name[vi]=Plasma cửa sổ hoá
@@ -49,6 +51,7 @@ Name[x-test]=xxPlasma Windowedxx
 Name[zh_CN]=窗口化 Plasma
 Name[zh_TW]=Plasma 視窗
 Comment=Run Plasmoids as simple applications
+Comment[ar]=شغل بلازمويد كتطبيق بسيط
 Comment[az]=Plasma əlavəsini adi tətbiq kimi başlatmaq
 Comment[bs]=Pokreni plazmoide kao običnu aplikaciju
 Comment[ca]=Executa els plasmoides com a simples aplicacions

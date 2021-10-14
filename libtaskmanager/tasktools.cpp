@@ -1,22 +1,8 @@
-/********************************************************************
-Copyright 2016  Eike Hein <hein.org>
+/*
+    SPDX-FileCopyrightText: 2016 Eike Hein <hein@kde.org>
 
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) version 3, or any
-later version accepted by the membership of KDE e.V. (or its
-successor approved by the membership of KDE e.V.), which shall
-act as a proxy defined in Section 6 of version 3 of the license.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library.  If not, see <http://www.gnu.org/licenses/>.
-*********************************************************************/
+    SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+*/
 
 #include "tasktools.h"
 #include "abstracttasksmodel.h"
@@ -830,7 +816,9 @@ void runApp(const AppData &appData, const QList<QUrl> &urls)
             auto *job = new KIO::ApplicationLauncherJob(service);
             job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
             job->setUrls(urls);
-            job->setStartupId(KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+            if (KWindowSystem::isPlatformX11()) {
+                job->setStartupId(KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+            }
             job->start();
 
             KActivities::ResourceInstance::notifyAccessed(QUrl(QStringLiteral("applications:") + service->storageId()),
@@ -838,7 +826,9 @@ void runApp(const AppData &appData, const QList<QUrl> &urls)
         } else {
             auto *job = new KIO::OpenUrlJob(appData.url);
             job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
-            job->setStartupId(KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+            if (KWindowSystem::isPlatformX11()) {
+                job->setStartupId(KStartupInfo::createNewStartupIdForTimestamp(timeStamp));
+            }
             job->setRunExecutables(true);
             job->start();
 

@@ -1,20 +1,8 @@
 /*
- * Copyright 2009 Chani Armitage <chani@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2009 Chani Armitage <chani@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "appsengine.h"
 #include "appsource.h"
@@ -35,15 +23,10 @@ AppsEngine::~AppsEngine()
 void AppsEngine::init()
 {
     addGroup(KServiceGroup::root());
-    connect(KSycoca::self(), QOverload<const QStringList &>::of(&KSycoca::databaseChanged), this, &AppsEngine::sycocaChanged);
-}
-
-void AppsEngine::sycocaChanged(const QStringList &changes)
-{
-    if (changes.contains(QLatin1String("apps")) || changes.contains(QLatin1String("xdgdata-apps"))) {
+    connect(KSycoca::self(), QOverload<>::of(&KSycoca::databaseChanged), this, [this]() {
         removeAllSources();
         addGroup(KServiceGroup::root());
-    }
+    });
 }
 
 Plasma::Service *AppsEngine::serviceForSource(const QString &name)
@@ -88,6 +71,6 @@ void AppsEngine::addApp(KService::Ptr app)
     addSource(appSource);
 }
 
-K_EXPORT_PLASMA_DATAENGINE_WITH_JSON(apps, AppsEngine, "plasma-dataengine-apps.json")
+K_PLUGIN_CLASS_WITH_JSON(AppsEngine, "plasma-dataengine-apps.json")
 
 #include "appsengine.moc"

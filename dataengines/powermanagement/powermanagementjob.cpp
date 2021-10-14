@@ -1,20 +1,8 @@
 /*
- * Copyright 2011 Sebastian Kügler <sebas@kde.org>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Library General Public License version 2 as
- * published by the Free Software Foundation
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details
- *
- * You should have received a copy of the GNU Library General Public
- * License along with this program; if not, write to the
- * Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2011 Sebastian Kügler <sebas@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include <QDBusConnection>
 #include <QDBusInterface>
@@ -40,12 +28,12 @@ PowerManagementJob::~PowerManagementJob()
 {
 }
 
-static void callWhenFinished(const QDBusPendingCall &pending, std::function<void()> func, QObject *parent)
+static void callWhenFinished(const QDBusPendingCall &pending, std::function<void(bool)> func, QObject *parent)
 {
     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(pending, parent);
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished, parent, [func](QDBusPendingCallWatcher *watcher) {
         watcher->deleteLater();
-        func();
+        func(!watcher->isError());
     });
 }
 
@@ -116,7 +104,7 @@ void PowerManagementJob::start()
                                                           QStringLiteral("/org/freedesktop/PowerManagement/Inhibit"),
                                                           QStringLiteral("org.freedesktop.PowerManagement.Inhibit"),
                                                           QStringLiteral("UnInhibit"));
-        msg << parameters().value(QStringLiteral("cookie")).toInt();
+        msg << parameters().value(QStringLiteral("cookie")).toUInt();
         QDBusReply<void> reply = QDBusConnection::sessionBus().call(msg);
         setResult(reply.isValid());
         return;
@@ -134,7 +122,7 @@ void PowerManagementJob::start()
                                                           QStringLiteral("/ScreenSaver"),
                                                           QStringLiteral("org.freedesktop.ScreenSaver"),
                                                           QStringLiteral("UnInhibit"));
-        msg << parameters().value(QStringLiteral("cookie")).toInt();
+        msg << parameters().value(QStringLiteral("cookie")).toUInt();
         QDBusReply<uint> reply = QDBusConnection::sessionBus().call(msg);
         setResult(reply.isValid());
         return;
@@ -142,8 +130,8 @@ void PowerManagementJob::start()
         auto pending = setScreenBrightness(parameters().value(QStringLiteral("brightness")).toInt(), parameters().value(QStringLiteral("silent")).toBool());
         callWhenFinished(
             pending,
-            [this] {
-                setResult(true);
+            [this] (bool success) {
+                setResult(success);
             },
             this);
         return;
@@ -151,8 +139,17 @@ void PowerManagementJob::start()
         auto pending = setKeyboardBrightness(parameters().value(QStringLiteral("brightness")).toInt(), parameters().value(QStringLiteral("silent")).toBool());
         callWhenFinished(
             pending,
-            [this] {
-                setResult(true);
+            [this] (bool success) {
+                setResult(success);
+            },
+            this);
+        return;
+    } else if (operation == QLatin1String("setPowerProfile")) {
+        auto pending = setPowerProfile(parameters().value(QStringLiteral("profile")).toString());
+        callWhenFinished(
+            pending,
+            [this] (bool success) {
+                setResult(success);
             },
             this);
         return;
@@ -178,6 +175,16 @@ QDBusPendingCall PowerManagementJob::setKeyboardBrightness(int value, bool silen
                                                       QStringLiteral("/org/kde/Solid/PowerManagement/Actions/KeyboardBrightnessControl"),
                                                       QStringLiteral("org.kde.Solid.PowerManagement.Actions.KeyboardBrightnessControl"),
                                                       silent ? "setKeyboardBrightnessSilent" : "setKeyboardBrightness");
+    msg << value;
+    return QDBusConnection::sessionBus().asyncCall(msg);
+}
+
+QDBusPendingCall PowerManagementJob::setPowerProfile(const QString &value)
+{
+    QDBusMessage msg = QDBusMessage::createMethodCall(QStringLiteral("org.kde.Solid.PowerManagement"),
+                                                      QStringLiteral("/org/kde/Solid/PowerManagement/Actions/PowerProfile"),
+                                                      QStringLiteral("org.kde.Solid.PowerManagement.Actions.PowerProfile"),
+                                                      QStringLiteral("setProfile"));
     msg << value;
     return QDBusConnection::sessionBus().asyncCall(msg);
 }

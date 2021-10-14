@@ -1,27 +1,17 @@
 /*
- *  Copyright © 2003-2007 Fredrik Höglund <fredrik@kde.org>
- *  Copyright © 2019 Benjamin Port <benjamin.port@enioka.com>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Fredrik Höglund <fredrik@kde.org>
+    SPDX-FileCopyrightText: 2019 Benjamin Port <benjamin.port@enioka.com>
 
-#ifndef KCMCURSORTHEME_H
-#define KCMCURSORTHEME_H
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
+#pragma once
+
+#include <KNSCore/EntryWrapper>
 #include <KQuickAddons/ManagedConfigModule>
 #include <QScopedPointer>
+
+#include "cursorthemesettings.h"
 
 class QQmlListReference;
 class QStandardItemModel;
@@ -30,7 +20,6 @@ class QTemporaryFile;
 class CursorThemeModel;
 class SortProxyModel;
 class CursorTheme;
-class CursorThemeSettings;
 class CursorThemeData;
 
 namespace KIO
@@ -97,7 +86,7 @@ Q_SIGNALS:
     void showErrorMessage(const QString &message);
 
 public Q_SLOTS:
-    void ghnsEntriesChanged(const QQmlListReference &changedEntries);
+    void ghnsEntryChanged(KNSCore::EntryWrapper *entry);
     void installThemeFromFile(const QUrl &url);
 
 private Q_SLOTS:
@@ -135,5 +124,3 @@ private:
     QScopedPointer<QTemporaryFile> m_tempInstallFile;
     QPointer<KIO::FileCopyJob> m_tempCopyJob;
 };
-
-#endif

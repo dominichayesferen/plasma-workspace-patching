@@ -1,30 +1,18 @@
 /*
-  Copyright (c) 1999 Matthias Hoelzer-Kluepfel <hoelzer@kde.org>
+    SPDX-FileCopyrightText: 1999 Matthias Hoelzer-Kluepfel <hoelzer@kde.org>
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
+    SPDX-License-Identifier: GPL-2.0-or-later
 */
 
 #include <config-workspace.h>
 
-#include "klauncher_iface.h"
 #include "main.h"
 
 #include <unistd.h>
 
 #include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusPendingCall>
 #include <QDebug>
 #include <QFile>
 #include <QGuiApplication>
@@ -71,9 +59,9 @@ bool KCMInit::runModule(const QString &libName, KService::Ptr service)
     } else
         kcminit = KCMINIT_PREFIX + libName;
 
-    QString path = KPluginLoader::findPlugin(libName);
+    QString path = QPluginLoader(libName).fileName();
     if (path.isEmpty()) {
-        path = KPluginLoader::findPlugin(QStringLiteral("kcms/") + libName);
+        path = QPluginLoader(QStringLiteral("kcms/") + libName).fileName();
     }
 
     if (path.isEmpty()) {
@@ -130,7 +118,7 @@ void KCMInit::runModules(int phase)
         // try to load the library
         if (!m_alreadyInitialized.contains(library)) {
             runModule(library, service);
-            m_alreadyInitialized.insert(library);
+            m_alreadyInitialized.append(library);
         }
     }
 }
@@ -202,11 +190,12 @@ void KCMInit::runPhase1()
     qApp->exit(0);
 }
 
-extern "C" Q_DECL_EXPORT int kdemain(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-    // kdeinit waits for kcminit to finish, but during KDE startup
-    // only important kcm's are started very early in the login process,
-    // the rest is delayed, so fork and make parent return after the initial phase
+    // plasma-session startup waits for kcminit to finish running phase 0 kcms
+    // (theoretically that is only important kcms that need to be started very
+    // early in the login process), the rest is delayed, so fork and make parent
+    // return after the initial phase
     pipe(ready);
     if (fork() != 0) {
         waitForReady();

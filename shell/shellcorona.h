@@ -1,27 +1,13 @@
 /*
- *   Copyright 2008 Aaron Seigo <aseigo@kde.org>
- *   Copyright 2013 Sebastian Kügler <sebas@kde.org>
- *   Copyright 2013 Ivan Cukic <ivan.cukic@kde.org>
- *   Copyright 2013 Marco Martin <mart@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2008 Aaron Seigo <aseigo@kde.org>
+    SPDX-FileCopyrightText: 2013 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2013 Ivan Cukic <ivan.cukic@kde.org>
+    SPDX-FileCopyrightText: 2013 Marco Martin <mart@kde.org>
 
-#ifndef SHELLCORONA_H
-#define SHELLCORONA_H
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
+
+#pragma once
 
 #include "plasma/corona.h"
 
@@ -120,6 +106,8 @@ public:
 
     QString defaultContainmentPlugin() const;
 
+    static QString defaultShell();
+
 Q_SIGNALS:
     void glInitializationFailed();
 
@@ -142,14 +130,9 @@ public Q_SLOTS:
     /// DBUS methods
     void toggleDashboard();
     void setDashboardShown(bool show);
-    void loadInteractiveConsole();
-    void showInteractiveConsole();
-    void loadScriptInInteractiveConsole(const QString &script);
-    void showInteractiveKWinConsole();
-    void loadKWinScriptInInteractiveConsole(const QString &script);
     void toggleActivityManager();
     void toggleWidgetExplorer();
-    void evaluateScript(const QString &string);
+    QString evaluateScript(const QString &string);
     void activateLauncherMenu();
 
     QByteArray dumpCurrentLayoutJS() const;
@@ -176,6 +159,8 @@ public Q_SLOTS:
     {
         return m_panelViews.count();
     }
+
+    void refreshCurrentShell();
 
 protected Q_SLOTS:
     /**
@@ -210,7 +195,7 @@ private Q_SLOTS:
     void currentActivityChanged(const QString &newActivity);
     void activityAdded(const QString &id);
     void activityRemoved(const QString &id);
-    void checkAddPanelAction(const QStringList &sycocaChanges = QStringList());
+    void checkAddPanelAction();
     void addPanel();
     void addPanel(QAction *action);
     void populateAddPanelsMenu();
@@ -219,7 +204,6 @@ private Q_SLOTS:
     void primaryOutputChanged();
 
     void panelContainmentDestroyed(QObject *cont);
-    void interactiveConsoleVisibilityChanged(bool visible);
     void handleScreenRemoved(QScreen *screen);
 
     void activateTaskManagerEntry(int index);
@@ -258,7 +242,6 @@ private:
     QScopedPointer<QMenu> m_addPanelsMenu;
     KPackage::Package m_lookAndFeelPackage;
     QSet<QScreen *> m_redundantOutputs;
-    KDeclarative::QmlObjectSharedEngine *m_interactiveConsole;
 
     QTimer m_waitingPanelsTimer;
     QTimer m_appConfigSyncTimer;
@@ -270,5 +253,3 @@ private:
 
     StrutManager *m_strutManager;
 };
-
-#endif // SHELLCORONA_H

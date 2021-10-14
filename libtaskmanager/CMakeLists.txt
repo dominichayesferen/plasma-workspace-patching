@@ -17,6 +17,7 @@ set(taskmanager_LIB_SRCS
     tasksmodel.cpp
     tasktools.cpp
     virtualdesktopinfo.cpp
+    waylandstartuptasksmodel.cpp
     waylandtasksmodel.cpp
     windowtasksmodel.cpp
 )
@@ -24,6 +25,7 @@ set(taskmanager_LIB_SRCS
 if (X11_FOUND)
     set(taskmanager_LIB_SRCS
         ${taskmanager_LIB_SRCS}
+        xstartuptasksmodel.cpp
         xwindowsystemeventbatcher.cpp
         xwindowtasksmodel.cpp
     )
@@ -83,6 +85,7 @@ install(FILES
     tasksmodel.h
     tasktools.h
     virtualdesktopinfo.h
+    waylandstartuptasksmodel.h
     waylandtasksmodel.h
     windowtasksmodel.h
     ${CMAKE_CURRENT_BINARY_DIR}/taskmanager_export.h
@@ -91,6 +94,7 @@ install(FILES
 
 if (X11_FOUND)
     install(FILES
+        xstartuptasksmodel.h
         xwindowtasksmodel.h
         DESTINATION ${KDE_INSTALL_INCLUDEDIR}/taskmanager COMPONENT Devel
     )

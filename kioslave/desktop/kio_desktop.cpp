@@ -1,20 +1,7 @@
-/* This file is part of the KDE project
-   Copyright (C) 2008, 2009 Fredrik Höglund <fredrik@kde.org>
+/*
+    SPDX-FileCopyrightText: 2008, 2009 Fredrik Höglund <fredrik@kde.org>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
 #include "kio_desktop.h"
@@ -22,7 +9,6 @@
 #include <KConfigGroup>
 #include <KDesktopFile>
 #include <KDirNotify>
-#include <KDiskFreeSpaceInfo>
 #include <KIO/UDSEntry>
 #include <KLocalizedString>
 
@@ -30,9 +16,17 @@
 #include <QDir>
 #include <QFile>
 #include <QStandardPaths>
+#include <QStorageInfo>
 
 #include "desktopnotifier_interface.h"
 #include "kded_interface.h"
+
+// Pseudo plugin class to embed meta data
+class KIOPluginForMetaData : public QObject
+{
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "org.kde.kio.slave.desktop" FILE "desktop.json")
+};
 
 extern "C" {
 int Q_DECL_EXPORT kdemain(int argc, char **argv)
@@ -241,12 +235,14 @@ void DesktopProtocol::fileSystemFreeSpace(const QUrl &url)
     Q_UNUSED(url)
 
     const QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-    const KDiskFreeSpaceInfo spaceInfo = KDiskFreeSpaceInfo::freeSpaceInfo(desktopPath);
-    if (spaceInfo.isValid()) {
-        setMetaData(QStringLiteral("total"), QString::number(spaceInfo.size()));
-        setMetaData(QStringLiteral("available"), QString::number(spaceInfo.available()));
+    QStorageInfo storageInfo{desktopPath};
+    if (storageInfo.isValid() && storageInfo.isReady()) {
+        setMetaData(QStringLiteral("total"), QString::number(storageInfo.bytesTotal()));
+        setMetaData(QStringLiteral("available"), QString::number(storageInfo.bytesAvailable()));
         finished();
     } else {
         error(KIO::ERR_CANNOT_STAT, desktopPath);
     }
 }
+
+#include "kio_desktop.moc"

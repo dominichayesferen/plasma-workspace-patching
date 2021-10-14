@@ -1,25 +1,14 @@
 /*
- *   Copyright (C) 2009 Petri Damsten <damu@iki.fi>
- *
- *   This program is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU General Public License as
- *   published by the Free Software Foundation; either version 2 of
- *   the License, or (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2009 Petri Damsten <damu@iki.fi>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "geolocation.h"
 
 #include <limits.h>
 
-#include <KServiceTypeTrader>
+#include <KPluginMetaData>
 #include <NetworkManagerQt/Manager>
 #include <QDebug>
 #include <QNetworkConfigurationManager>
@@ -29,7 +18,6 @@ static const char SOURCE[] = "location";
 Geolocation::Geolocation(QObject *parent, const QVariantList &args)
     : Plasma::DataEngine(parent, args)
 {
-    Q_UNUSED(args)
     setMinimumPollingInterval(500);
     connect(NetworkManager::notifier(), &NetworkManager::Notifier::networkingEnabledChanged, this, &Geolocation::networkStatusChanged);
     connect(NetworkManager::notifier(), &NetworkManager::Notifier::wirelessEnabledChanged, this, &Geolocation::networkStatusChanged);
@@ -47,19 +35,17 @@ Geolocation::Geolocation(QObject *parent, const QVariantList &args)
 void Geolocation::init()
 {
     // TODO: should this be delayed even further, e.g. when the source is requested?
-    const KService::List offers = KServiceTypeTrader::self()->query(QStringLiteral("Plasma/GeolocationProvider"));
-    QVariantList args;
-
-    for (const KService::Ptr &service : offers) {
-        QString error;
-        GeolocationProvider *plugin = service->createInstance<GeolocationProvider>(nullptr, args, &error);
-        if (plugin) {
+    const QVector<KPluginMetaData> offers = KPluginMetaData::findPlugins("plasma/geolocationprovider");
+    for (const auto &metaData : offers) {
+        auto result = KPluginFactory::instantiatePlugin<GeolocationProvider>(metaData, this);
+        if (result) {
+            GeolocationProvider *plugin = result.plugin;
             m_plugins << plugin;
             plugin->init(&m_data, &m_accuracy);
             connect(plugin, &GeolocationProvider::updated, this, &Geolocation::pluginUpdated);
             connect(plugin, &GeolocationProvider::availabilityChanged, this, &Geolocation::pluginAvailabilityChanged);
         } else {
-            qDebug() << "Failed to load GeolocationProvider:" << error;
+            qDebug() << "Failed to load GeolocationProvider:" << metaData.fileName() << result.errorString;
         }
     }
 }
@@ -146,6 +132,6 @@ void Geolocation::actuallySetData()
     setData(SOURCE, m_data);
 }
 
-K_EXPORT_PLASMA_DATAENGINE_WITH_JSON(geolocation, Geolocation, "plasma-dataengine-geolocation.json")
+K_PLUGIN_CLASS_WITH_JSON(Geolocation, "plasma-dataengine-geolocation.json")
 
 #include "geolocation.moc"

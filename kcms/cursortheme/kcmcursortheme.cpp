@@ -1,21 +1,9 @@
 /*
- *  Copyright © 2003-2007 Fredrik Höglund <fredrik@kde.org>
- *  Copyright © 2019 Benjamin Port <benjamin.port@enioka.com>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Fredrik Höglund <fredrik@kde.org>
+    SPDX-FileCopyrightText: 2019 Benjamin Port <benjamin.port@enioka.com>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include <config-X11.h>
 
@@ -42,9 +30,6 @@
 #include <KTar>
 #include <KUrlRequesterDialog>
 
-#include <KNSCore/EntryWrapper>
-
-#include <QQmlListReference>
 #include <QStandardItemModel>
 #include <QX11Info>
 
@@ -71,8 +56,8 @@ CursorThemeConfig::CursorThemeConfig(QObject *parent, const QVariantList &args)
     m_preferredSize = cursorThemeSettings()->cursorSize();
     connect(cursorThemeSettings(), &CursorThemeSettings::cursorThemeChanged, this, &CursorThemeConfig::updateSizeComboBox);
     qmlRegisterType<PreviewWidget>("org.kde.private.kcm_cursortheme", 1, 0, "PreviewWidget");
-    qmlRegisterType<SortProxyModel>();
-    qmlRegisterType<CursorThemeSettings>();
+    qmlRegisterAnonymousType<SortProxyModel>("SortProxyModel",1);
+    qmlRegisterAnonymousType<CursorThemeSettings>("CursorThemeSettings",1);
     KAboutData *aboutData = new KAboutData(QStringLiteral("kcm_cursortheme"),
                                            i18n("Cursors"),
                                            QStringLiteral("1.0"),
@@ -357,38 +342,33 @@ bool CursorThemeConfig::isSaveNeeded() const
     return !m_themeModel->match(m_themeModel->index(0, 0), CursorTheme::PendingDeletionRole, true).isEmpty();
 }
 
-void CursorThemeConfig::ghnsEntriesChanged(const QQmlListReference &changedEntries)
+void CursorThemeConfig::ghnsEntryChanged(KNSCore::EntryWrapper *entry)
 {
-    for (int i = 0; i < changedEntries.count(); ++i) {
-        KNSCore::EntryWrapper *entry = qobject_cast<KNSCore::EntryWrapper *>(changedEntries.at(i));
-        if (entry) {
-            if (entry->entry().status() == KNS3::Entry::Deleted) {
-                for (const QString &deleted : entry->entry().uninstalledFiles()) {
-                    QVector<QStringRef> list = deleted.splitRef(QLatin1Char('/'));
-                    if (list.last() == QLatin1Char('*')) {
-                        list.takeLast();
-                    }
-                    QModelIndex idx = m_themeModel->findIndex(list.last().toString());
-                    if (idx.isValid()) {
-                        m_themeModel->removeTheme(idx);
-                    }
-                }
-            } else if (entry->entry().status() == KNS3::Entry::Installed) {
-                for (const QString &created : entry->entry().installedFiles()) {
-                    QStringList list = created.split(QLatin1Char('/'));
-                    if (list.last() == QLatin1Char('*')) {
-                        list.takeLast();
-                    }
-                    // Because we sometimes get some extra slashes in the installed files list
-                    list.removeAll({});
-                    // Because we'll also get the containing folder, if it was not already there
-                    // we need to ignore it.
-                    if (list.last() == QLatin1String(".icons")) {
-                        continue;
-                    }
-                    m_themeModel->addTheme(list.join(QLatin1Char('/')));
-                }
+    if (entry->entry().status() == KNS3::Entry::Deleted) {
+        for (const QString &deleted : entry->entry().uninstalledFiles()) {
+            QVector<QStringRef> list = deleted.splitRef(QLatin1Char('/'));
+            if (list.last() == QLatin1Char('*')) {
+                list.takeLast();
             }
+            QModelIndex idx = m_themeModel->findIndex(list.last().toString());
+            if (idx.isValid()) {
+                m_themeModel->removeTheme(idx);
+            }
+        }
+    } else if (entry->entry().status() == KNS3::Entry::Installed) {
+        for (const QString &created : entry->entry().installedFiles()) {
+            QStringList list = created.split(QLatin1Char('/'));
+            if (list.last() == QLatin1Char('*')) {
+                list.takeLast();
+            }
+            // Because we sometimes get some extra slashes in the installed files list
+            list.removeAll({});
+            // Because we'll also get the containing folder, if it was not already there
+            // we need to ignore it.
+            if (list.last() == QLatin1String(".icons")) {
+                continue;
+            }
+            m_themeModel->addTheme(list.join(QLatin1Char('/')));
         }
     }
 }
@@ -500,11 +480,12 @@ void CursorThemeConfig::installThemeFile(const QString &path)
 void CursorThemeConfig::removeThemes()
 {
     const QModelIndexList indices = m_themeModel->match(m_themeModel->index(0, 0), CursorTheme::PendingDeletionRole, true, -1);
-    for (const auto &idx : indices) {
-        if (!idx.isValid()) {
-            return;
-        }
-
+    QList<QPersistentModelIndex> persistentIndices;
+    persistentIndices.reserve(indices.count());
+    std::transform(indices.constBegin(), indices.constEnd(), std::back_inserter(persistentIndices), [](const QModelIndex index) {
+        return QPersistentModelIndex(index);
+    });
+    for (const auto &idx : qAsConst(persistentIndices)) {
         const CursorTheme *theme = m_themeModel->theme(idx);
 
         // Delete the theme from the harddrive

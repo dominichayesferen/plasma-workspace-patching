@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Feedback
+Name[ar]=مشاركة بياناتك
 Name[az]=Rəy bildirişi
 Name[ca]=Comentaris
 Name[cs]=Zpětná vazba
@@ -46,6 +47,7 @@ Type=Service
 X-KDE-PluginInfo-License=GPL
 X-KDE-PluginInfo-Name=kcm_feedback
 X-KDE-ServiceTypes=Plasma/Generic
+X-KDE-FormFactors=tablet,handset,desktop
 X-Plasma-API=declarativeappletscript
 
 X-Plasma-MainScript=ui/main.qml

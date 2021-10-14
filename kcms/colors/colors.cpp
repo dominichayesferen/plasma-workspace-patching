@@ -1,29 +1,16 @@
 /*
- * Copyright (C) 2007 Matthew Woehlke <mw_triad@users.sourceforge.net>
- * Copyright (C) 2007 Jeremy Whiting <jpwhiting@kde.org>
- * Copyright (C) 2016 Olivier Churlaud <olivier@churlaud.com>
- * Copyright (C) 2019 Kai Uwe Broulik <kde@privat.broulik.de>
- * Copyright (c) 2019 Cyril Rossi <cyril.rossi@enioka.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2007 Matthew Woehlke <mw_triad@users.sourceforge.net>
+    SPDX-FileCopyrightText: 2007 Jeremy Whiting <jpwhiting@kde.org>
+    SPDX-FileCopyrightText: 2016 Olivier Churlaud <olivier@churlaud.com>
+    SPDX-FileCopyrightText: 2019 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2019 Cyril Rossi <cyril.rossi@enioka.com>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
 
 #include "colors.h"
 
+#include <QColor>
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QFileInfo>
@@ -74,6 +61,7 @@ KCMColors::KCMColors(QObject *parent, const QVariantList &args)
     qmlRegisterType<ColorsSettings>();
 
     KAboutData *about = new KAboutData(QStringLiteral("kcm_colors"), i18n("Colors"), QStringLiteral("2.0"), QString(), KAboutLicense::GPL);
+
     about->addAuthor(i18n("Kai Uwe Broulik"), QString(), QStringLiteral("kde@privat.broulik.de"));
     setAboutData(about);
 
@@ -87,6 +75,8 @@ KCMColors::KCMColors(QObject *parent, const QVariantList &args)
     connect(colorsSettings(), &ColorsSettings::colorSchemeChanged, this, [this] {
         m_model->setSelectedScheme(colorsSettings()->colorScheme());
     });
+
+    connect(colorsSettings(), &ColorsSettings::accentColorChanged, this, &KCMColors::accentColorChanged);
 
     connect(m_model, &ColorsModel::selectedSchemeChanged, m_filteredModel, &FilterProxyModel::setSelectedScheme);
     m_filteredModel->setSourceModel(m_model);
@@ -112,47 +102,76 @@ ColorsSettings *KCMColors::colorsSettings() const
     return m_data->settings();
 }
 
+QColor KCMColors::accentColor() const
+{
+    const QColor color = colorsSettings()->accentColor();
+    if (!color.isValid()) {
+        return QColor(Qt::transparent);
+    }
+    return color;
+}
+
+void KCMColors::setAccentColor(const QColor &accentColor)
+{
+    colorsSettings()->setAccentColor(accentColor);
+    Q_EMIT settingsChanged();
+}
+
 bool KCMColors::downloadingFile() const
 {
     return m_tempCopyJob;
 }
 
-void KCMColors::reloadModel(const QQmlListReference &changedEntries)
+void KCMColors::knsEntryChanged(KNSCore::EntryWrapper *entry)
 {
+    if (!entry) {
+        return;
+    }
     m_model->load();
 
     // If a new theme was installed, select the first color file in it
-    if (changedEntries.count() > 0) {
-        QStringList installedThemes;
+    QStringList installedThemes;
+    const QString suffix = QStringLiteral(".colors");
+    if (entry->entry().status() == KNS3::Entry::Installed) {
+        for (const QString &path : entry->entry().installedFiles()) {
+            const QString fileName = path.section(QLatin1Char('/'), -1, -1);
 
-        const QString suffix = QStringLiteral(".colors");
-
-        for (int i = 0; i < changedEntries.count(); ++i) {
-            KNSCore::EntryWrapper *entry = qobject_cast<KNSCore::EntryWrapper *>(changedEntries.at(i));
-            if (entry && entry->entry().status() == KNS3::Entry::Installed) {
-                for (const QString &path : entry->entry().installedFiles()) {
-                    const QString fileName = path.section(QLatin1Char('/'), -1, -1);
-
-                    const int suffixPos = fileName.indexOf(suffix);
-                    if (suffixPos != fileName.length() - suffix.length()) {
-                        continue;
-                    }
-
-                    installedThemes.append(fileName.left(suffixPos));
-                }
-
-                if (!installedThemes.isEmpty()) {
-                    // The list is sorted by (potentially translated) name
-                    // but that would require us parse every file, so this should be close enough
-                    std::sort(installedThemes.begin(), installedThemes.end());
-
-                    m_model->setSelectedScheme(installedThemes.constFirst());
-                }
-                // Only do this for the first newly installed theme we find
-                break;
+            const int suffixPos = fileName.indexOf(suffix);
+            if (suffixPos != fileName.length() - suffix.length()) {
+                continue;
             }
+
+            installedThemes.append(fileName.left(suffixPos));
+        }
+
+        if (!installedThemes.isEmpty()) {
+            // The list is sorted by (potentially translated) name
+            // but that would require us parse every file, so this should be close enough
+            std::sort(installedThemes.begin(), installedThemes.end());
+
+            m_model->setSelectedScheme(installedThemes.constFirst());
         }
     }
+}
+
+void KCMColors::loadSelectedColorScheme()
+{
+    colorsSettings()->config()->reparseConfiguration();
+    colorsSettings()->read();
+    const QString schemeName = colorsSettings()->colorScheme();
+
+    // If the scheme named in kdeglobals doesn't exist, show a warning and use default scheme
+    if (m_model->indexOfScheme(schemeName) == -1) {
+        m_model->setSelectedScheme(colorsSettings()->defaultColorSchemeValue());
+        // These are normally synced but initially the model doesn't emit a change to avoid the
+        // Apply button from being enabled without any user interaction. Sync manually here.
+        m_filteredModel->setSelectedScheme(colorsSettings()->defaultColorSchemeValue());
+        emit showSchemeNotInstalledWarning(schemeName);
+    } else {
+        m_model->setSelectedScheme(schemeName);
+        m_filteredModel->setSelectedScheme(schemeName);
+    }
+    setNeedsSave(false);
 }
 
 void KCMColors::installSchemeFromFile(const QUrl &url)
@@ -300,7 +319,7 @@ void KCMColors::editScheme(const QString &schemeName, QQuickItem *ctx)
 
 bool KCMColors::isSaveNeeded() const
 {
-    return m_activeSchemeEdited || !m_model->match(m_model->index(0, 0), ColorsModel::PendingDeletionRole, true).isEmpty();
+    return m_activeSchemeEdited || !m_model->match(m_model->index(0, 0), ColorsModel::PendingDeletionRole, true).isEmpty() || colorsSettings()->isSaveNeeded();
 }
 
 void KCMColors::load()
@@ -311,19 +330,7 @@ void KCMColors::load()
     m_config->markAsClean();
     m_config->reparseConfiguration();
 
-    const QString schemeName = colorsSettings()->colorScheme();
-
-    // If the scheme named in kdeglobals doesn't exist, show a warning and use default scheme
-    if (m_model->indexOfScheme(schemeName) == -1) {
-        m_model->setSelectedScheme(colorsSettings()->defaultColorSchemeValue());
-        // These are normally synced but initially the model doesn't emit a change to avoid the
-        // Apply button from being enabled without any user interaction. Sync manually here.
-        m_filteredModel->setSelectedScheme(colorsSettings()->defaultColorSchemeValue());
-        emit showSchemeNotInstalledWarning(schemeName);
-    } else {
-        m_model->setSelectedScheme(schemeName);
-        m_filteredModel->setSelectedScheme(schemeName);
-    }
+    loadSelectedColorScheme();
 
     {
         KConfig cfg(QStringLiteral("kcmdisplayrc"), KConfig::NoGlobals);
@@ -343,7 +350,7 @@ void KCMColors::save()
     // We need to save the colors change first, to avoid a situation,
     // when we announced that the color scheme has changed, but
     // the colors themselves in the color scheme have not yet
-    if (m_selectedSchemeDirty || m_activeSchemeEdited) {
+    if (m_selectedSchemeDirty || m_activeSchemeEdited || colorsSettings()->isSaveNeeded()) {
         saveColors();
     }
     ManagedConfigModule::save();
@@ -354,8 +361,31 @@ void KCMColors::save()
 
 void KCMColors::saveColors()
 {
-    applyScheme(colorsSettings(), m_model);
+    const QString path = QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("color-schemes/%1.colors").arg(m_model->selectedScheme()));
+    // hard to figure out why mutating from the colours settings
+    // doesn't affect the applicator's view on config, but operating on the
+    // globalConfig directly works.
+    // code already a mess, so might as well just do what works.
+    KSharedConfigPtr globalConfig = KSharedConfig::openConfig(QStringLiteral("kdeglobals"));
+
+    auto setGlobals = [=]() {
+        globalConfig->group("General").writeEntry("AccentColor", QColor());
+        if (accentColor() != QColor(Qt::transparent)) {
+            globalConfig->group("General").writeEntry("AccentColor", accentColor(), KConfig::Notify);
+        } else {
+            globalConfig->group("General").deleteEntry("AccentColor", KConfig::Notify);
+        }
+    };
+
+    setGlobals();
+    applyScheme(path, colorsSettings()->config());
     m_selectedSchemeDirty = false;
+    setGlobals();
+}
+
+QColor KCMColors::accentBackground(const QColor& accent, const QColor& background)
+{
+    return ::accentBackground(accent, background);
 }
 
 void KCMColors::processPendingDeletions()

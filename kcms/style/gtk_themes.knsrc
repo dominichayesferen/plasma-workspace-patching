@@ -1,5 +1,6 @@
 [KNewStuff3]
 Name=GNOME/GTK Application Styles
+Name[ar]=نمط تطبيقات جي.تي.كي/غنوم
 Name[az]=GNOME/GTK Tətbiq Üslubu
 Name[ca]=Estils de les aplicacions GNOME/GTK
 Name[cs]=Styly aplikací GNOME/GTK
@@ -38,6 +39,7 @@ Name[vi]=Kiểu cách ứng dụng GNOME/GTK
 Name[x-test]=xxGNOME/GTK Application Stylesxx
 Name[zh_CN]=GNOME/GTK 应用程序风格
 
+ProvidersUrl=https://autoconfig.kde.org/ocs/providers.xml
 Categories=GTK 3.x Theme/Style
 Uncompress=always
 InstallPath=.themes

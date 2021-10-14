@@ -1,31 +1,12 @@
 /*
-  This file is part of the KDE project.
+    SPDX-FileCopyrightText: 2011 Lionel Chauvin <megabigbug@yahoo.fr>
+    SPDX-FileCopyrightText: 2011, 2012 Cédric Bellegarde <gnumdk@gmail.com>
+    SPDX-FileCopyrightText: 2016 Kai Uwe Broulik <kde@privat.broulik.de>
 
-  Copyright (c) 2011 Lionel Chauvin <megabigbug@yahoo.fr>
-  Copyright (c) 2011,2012 Cédric Bellegarde <gnumdk@gmail.com>
-  Copyright (c) 2016 Kai Uwe Broulik <kde@privat.broulik.de>
-
-  Permission is hereby granted, free of charge, to any person obtaining a
-  copy of this software and associated documentation files (the "Software"),
-  to deal in the Software without restriction, including without limitation
-  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-  and/or sell copies of the Software, and to permit persons to whom the
-  Software is furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-  DEALINGS IN THE SOFTWARE.
+    SPDX-License-Identifier: MIT
 */
 
-#ifndef APPMENUMODULE_H
-#define APPMENUMODULE_H
+#pragma once
 
 #include <config-X11.h>
 #ifdef HAVE_X11
@@ -109,7 +90,5 @@ private:
 #ifdef HAVE_X11
     xcb_connection_t *m_xcbConn = nullptr;
 #endif
-    KWayland::Client::PlasmaShell *m_plasmashell = nullptr;;
+    KWayland::Client::PlasmaShell *m_plasmashell = nullptr;
 };
-
-#endif

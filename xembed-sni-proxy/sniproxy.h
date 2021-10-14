@@ -1,26 +1,12 @@
 /*
- * Holds one embedded window, registers as DBus entry
- * Copyright (C) 2015 <davidedmundson@kde.org> David Edmundson
- * Copyright (C) 2019 <materka@gmail.com> Konrad Materka
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- *
- */
+    Holds one embedded window, registers as DBus entry
+    SPDX-FileCopyrightText: 2015 David Edmundson <davidedmundson@kde.org>
+    SPDX-FileCopyrightText: 2019 Konrad Materka <materka@gmail.com>
 
-#ifndef SNI_PROXY_H
-#define SNI_PROXY_H
+    SPDX-License-Identifier: LGPL-2.1-or-later
+*/
+
+#pragma once
 
 #include <QDBusArgument>
 #include <QDBusConnection>
@@ -44,7 +30,6 @@ class SNIProxy : public QObject
     Q_PROPERTY(int WindowId READ WindowId)
     Q_PROPERTY(bool ItemIsMenu READ ItemIsMenu)
     Q_PROPERTY(KDbusImageVector IconPixmap READ IconPixmap)
-    Q_PROPERTY(QDBusObjectPath Menu READ menu CONSTANT)
 
 public:
     explicit SNIProxy(xcb_window_t wid, QObject *parent = nullptr);
@@ -53,10 +38,7 @@ public:
     void update();
     void resizeWindow(const uint16_t width, const uint16_t height) const;
     void hideContainerWindow(xcb_window_t windowId) const;
-    QDBusObjectPath menu() const
-    {
-        return QDBusObjectPath("/");
-    }
+
     /**
      * @return the category of the application associated to this item
      * @see Category
@@ -169,5 +151,3 @@ private:
     bool sendingClickEvent;
     InjectMode m_injectMode;
 };
-
-#endif // SNIPROXY_H

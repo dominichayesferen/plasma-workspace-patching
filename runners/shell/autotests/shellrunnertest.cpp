@@ -1,3 +1,7 @@
+/*
+    SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+    SPDX-FileCopyrightText: 2021 Alexander Lohnau <alexander.lonau@gmx.de>
+*/
 
 #include <QStandardPaths>
 #include <QTemporaryFile>
@@ -33,9 +37,8 @@ void ShellRunnerTest::initTestCase()
     QStandardPaths::setTestModeEnabled(true);
     setlocale(LC_ALL, "C.utf8");
 
-    auto pluginMetaDatas = KPluginLoader::findPluginsById(QStringLiteral(PLUGIN_BUILD_DIR), QStringLiteral(RUNNER_NAME));
-    QCOMPARE(pluginMetaDatas.count(), 1);
-    KPluginMetaData runnerMetadata = pluginMetaDatas.first();
+    const KPluginMetaData runnerMetadata = KPluginMetaData::findPluginById(QStringLiteral(PLUGIN_BUILD_DIR), QStringLiteral(RUNNER_NAME));
+    QVERIFY(runnerMetadata.isValid());
     delete manager;
     manager = new RunnerManager();
     manager->setAllowedRunners({QStringLiteral(RUNNER_NAME)});

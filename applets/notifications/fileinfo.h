@@ -1,19 +1,7 @@
 /*
-    Copyright (C) 2021 Kai Uwe Broulik <kde@broulik.de>
+    SPDX-FileCopyrightText: 2021 Kai Uwe Broulik <kde@broulik.de>
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-2.1-or-later
 */
 
 #pragma once
@@ -24,31 +12,12 @@
 
 #include <KService>
 
+class QAction;
+
 namespace KIO
 {
 class MimeTypeFinderJob;
 }
-
-class Application
-{
-    Q_GADGET
-
-    Q_PROPERTY(QString name READ name CONSTANT)
-    Q_PROPERTY(QString iconName READ iconName CONSTANT)
-    Q_PROPERTY(bool valid READ isValid CONSTANT)
-
-public:
-    Application();
-    explicit Application(const KService::Ptr &service);
-
-    QString name() const;
-    QString iconName() const;
-    bool isValid() const;
-
-private:
-    KService::Ptr m_service;
-};
-Q_DECLARE_METATYPE(Application)
 
 class FileInfo : public QObject
 {
@@ -61,7 +30,10 @@ class FileInfo : public QObject
 
     Q_PROPERTY(QString mimeType READ mimeType NOTIFY mimeTypeChanged)
     Q_PROPERTY(QString iconName READ iconName NOTIFY mimeTypeChanged)
-    Q_PROPERTY(Application preferredApplication READ preferredApplication NOTIFY mimeTypeChanged)
+
+    Q_PROPERTY(QAction *openAction READ openAction NOTIFY openActionChanged)
+    // QML can't deal with QIcon...
+    Q_PROPERTY(QString openActionIconName READ openActionIconName NOTIFY openActionIconNameChanged)
 
 public:
     explicit FileInfo(QObject *parent = nullptr);
@@ -83,8 +55,11 @@ public:
     QString iconName() const;
     Q_SIGNAL void iconNameChanged(const QString &iconName);
 
-    Application preferredApplication() const;
-    Q_SIGNAL void preferredApplicationChanged();
+    QAction *openAction() const;
+    Q_SIGNAL void openActionChanged();
+
+    QString openActionIconName() const;
+    Q_SIGNAL void openActionIconNameChanged();
 
 private:
     void reload();
@@ -102,5 +77,6 @@ private:
     QString m_mimeType;
     QString m_iconName;
 
-    Application m_preferredApplication;
+    KService::Ptr m_preferredApplication;
+    QAction *m_openAction = nullptr;
 };

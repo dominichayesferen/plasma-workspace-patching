@@ -1,19 +1,8 @@
 /*
- * Copyright 2014 Marco Martin <mart@kde.org>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2014 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
@@ -86,7 +75,7 @@ ColumnLayout {
             Accessible.description: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Configure Search Plugins")
             visible: runnerWindow.canConfigure
             PlasmaComponents3.ToolTip {
-                text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Configure KRunner...")
+                text: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Configure KRunner…")
             }
         }
         PlasmaComponents3.TextField {
@@ -100,9 +89,9 @@ ColumnLayout {
             activeFocusOnPress: true
             placeholderText: results.runnerName ? i18ndc("plasma_lookandfeel_org.kde.lookandfeel",
                                                          "Textfield placeholder text, query specific KRunner",
-                                                         "Search '%1'...", results.runnerName)
+                                                         "Search '%1'…", results.runnerName)
                                                 : i18ndc("plasma_lookandfeel_org.kde.lookandfeel",
-                                                         "Textfield placeholder text", "Search...")
+                                                         "Textfield placeholder text", "Search…")
 
             PlasmaComponents3.BusyIndicator {
                 anchors {

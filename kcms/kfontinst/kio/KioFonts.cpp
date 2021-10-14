@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2007 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "KioFonts.h"
 #include "Family.h"
@@ -46,10 +28,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define MAX_IPC_SIZE (1024 * 32)
-#define KFI_DBUG qCDebug(KCM_KFONTINST_KIO) << '(' << time(NULL) << ')'
+static constexpr int s_MAX_IPC_SIZE = 1024 * 32;
 
-static const int constReconfigTimeout = 10;
+static constexpr int constReconfigTimeout = 10;
+
+// Pseudo plugin class to embed meta data
+class KIOPluginForMetaData : public QObject
+{
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID "org.kde.kio.slave.fonts" FILE "fonts.json")
+};
 
 extern "C" {
 
@@ -87,10 +75,11 @@ static CKioFonts::EFolder getFolder(const QStringList &list)
     if (list.size() > 0) {
         QString folder = list[0];
 
-        if (isSysFolder(folder))
+        if (isSysFolder(folder)) {
             return CKioFonts::FOLDER_SYS;
-        else if (isUserFolder(folder))
+        } else if (isUserFolder(folder)) {
             return CKioFonts::FOLDER_USER;
+        }
         return CKioFonts::FOLDER_UNKNOWN;
     }
 
@@ -106,11 +95,13 @@ static int getSize(const QString &file)
         if (S_ISLNK(buff.st_mode)) {
             char buffer2[1000];
             int n = readlink(f.constData(), buffer2, 999);
-            if (n != -1)
+            if (n != -1) {
                 buffer2[n] = '\0';
+            }
 
-            if (-1 == QT_STAT(f.constData(), &buff))
+            if (-1 == QT_STAT(f.constData(), &buff)) {
                 return -1;
+            }
         }
         return buff.st_size;
     }
@@ -122,8 +113,9 @@ static bool writeAll(int fd, const char *buf, size_t len)
 {
     while (len > 0) {
         ssize_t written = write(fd, buf, len);
-        if (written < 0 && EINTR != errno)
+        if (written < 0 && EINTR != errno) {
             return false;
+        }
         buf += written;
         len -= written;
     }
@@ -142,9 +134,11 @@ static QString removeKnownExtension(const QUrl &url)
     QString fname(url.fileName());
     int pos;
 
-    for (int i = 0; constExtensions[i]; ++i)
-        if (-1 != (pos = fname.lastIndexOf(QString::fromLatin1(constExtensions[i]), -1, Qt::CaseInsensitive)))
+    for (int i = 0; constExtensions[i]; ++i) {
+        if (-1 != (pos = fname.lastIndexOf(QString::fromLatin1(constExtensions[i]), -1, Qt::CaseInsensitive))) {
             return fname.left(pos);
+        }
+    }
     return fname;
 }
 
@@ -153,19 +147,25 @@ CKioFonts::CKioFonts(const QByteArray &pool, const QByteArray &app)
     , itsInterface(new FontInstInterface())
     , itsTempDir(nullptr)
 {
-    KFI_DBUG;
 }
 
 CKioFonts::~CKioFonts()
 {
-    KFI_DBUG;
     delete itsInterface;
     delete itsTempDir;
 }
 
 void CKioFonts::listDir(const QUrl &url)
 {
-    KFI_DBUG << url;
+    qCDebug(KCM_KFONTINST_KIO) << url;
+
+    KIO::UDSEntry ownRootEntry;
+    ownRootEntry.reserve(4);
+    ownRootEntry.fastInsert(KIO::UDSEntry::UDS_NAME, QStringLiteral("."));
+    ownRootEntry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, S_IFDIR);
+    ownRootEntry.fastInsert(KIO::UDSEntry::UDS_SIZE, 0);
+    ownRootEntry.fastInsert(KIO::UDSEntry::UDS_ACCESS, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH);
+    listEntry(ownRootEntry);
 
     QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), Qt::SkipEmptyParts));
     EFolder folder = Misc::root() ? FOLDER_SYS : getFolder(pathList);
@@ -174,7 +174,7 @@ void CKioFonts::listDir(const QUrl &url)
 
     switch (folder) {
     case FOLDER_ROOT:
-        KFI_DBUG << "List root folder";
+        qCDebug(KCM_KFONTINST_KIO) << "List root folder";
         size = 2;
         totalSize(2);
         createUDSEntry(entry, FOLDER_SYS);
@@ -192,24 +192,25 @@ void CKioFonts::listDir(const QUrl &url)
 
     if (FOLDER_UNKNOWN != folder) {
         finished();
-    } else
+    } else {
         error(KIO::ERR_DOES_NOT_EXIST, url.toDisplayString());
+    }
 }
 
 void CKioFonts::put(const QUrl &url, int /*permissions*/, KIO::JobFlags /*flags*/)
 {
-    KFI_DBUG << url;
+    qCDebug(KCM_KFONTINST_KIO) << url;
     QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), Qt::SkipEmptyParts));
     EFolder folder(getFolder(pathList));
 
-    if (!Misc::root() && FOLDER_ROOT == folder)
+    if (!Misc::root() && FOLDER_ROOT == folder) {
         error(KIO::ERR_SLAVE_DEFINED, i18n("Can only install fonts to either \"%1\" or \"%2\".", i18n(KFI_KIO_FONTS_USER), i18n(KFI_KIO_FONTS_SYS)));
-    else if (Misc::isPackage(url.fileName()))
+    } else if (Misc::isPackage(url.fileName())) {
         error(KIO::ERR_SLAVE_DEFINED,
               i18n("You cannot install a fonts package directly.\n"
                    "Please extract %1, and install the components individually.",
                    url.toDisplayString()));
-    else {
+    } else {
         if (!itsTempDir) {
             itsTempDir = new QTemporaryDir(QDir::tempPath() + QString::fromLatin1("/kio_fonts_") + QString::number(getpid()));
             itsTempDir->setAutoRemove(true);
@@ -245,14 +246,15 @@ void CKioFonts::put(const QUrl &url, int /*permissions*/, KIO::JobFlags /*flags*
 
             handleResp(itsInterface->install(tempFile, Misc::root() || FOLDER_SYS == folder), url.fileName(), tempFile, FOLDER_SYS == folder);
             QFile::remove(tempFile);
-        } else
+        } else {
             error(EACCES == errno ? KIO::ERR_WRITE_ACCESS_DENIED : KIO::ERR_CANNOT_OPEN_FOR_WRITING, dest.fileName());
+        }
     }
 }
 
 void CKioFonts::get(const QUrl &url)
 {
-    KFI_DBUG << url;
+    qCDebug(KCM_KFONTINST_KIO) << url;
     QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), Qt::SkipEmptyParts));
     EFolder folder(getFolder(pathList));
     Family family(getFont(url, folder));
@@ -275,9 +277,11 @@ void CKioFonts::get(const QUrl &url)
 
             bool hidden(true);
 
-            for (; it != end && hidden; ++it)
-                if (!Misc::isHidden(Misc::getFile((*it).path())))
+            for (; it != end && hidden; ++it) {
+                if (!Misc::isHidden(Misc::getFile((*it).path()))) {
                     hidden = false;
+                }
+            }
 
             if (hidden) {
                 //
@@ -286,20 +290,21 @@ void CKioFonts::get(const QUrl &url)
                 bool found = false;
                 it = (*style).files().begin();
                 end = (*style).files().end();
-                for (; it != end && hidden; ++it)
+                for (; it != end && hidden; ++it) {
                     if (isScalable((*it).path())) {
-                        KFI_DBUG << "hasMetaData(\"thumbnail\"), so return FILE: " << (*it).path() << " / " << (*it).index();
+                        qCDebug(KCM_KFONTINST_KIO) << "hasMetaData(\"thumbnail\"), so return FILE: " << (*it).path() << " / " << (*it).index();
                         stream << KFI_PATH_KEY << (*it).path() << Qt::endl << KFI_FACE_KEY << (*it).index() << Qt::endl;
                         found = true;
                         break;
                     }
+                }
 
                 if (!found) {
-                    KFI_DBUG << "hasMetaData(\"thumbnail\"), so return Url: " << url;
+                    qCDebug(KCM_KFONTINST_KIO) << "hasMetaData(\"thumbnail\"), so return Url: " << url;
                     stream << url.toDisplayString();
                 }
             } else {
-                KFI_DBUG << "hasMetaData(\"thumbnail\"), so return DETAILS: " << family.name() << " / " << (*style).value();
+                qCDebug(KCM_KFONTINST_KIO) << "hasMetaData(\"thumbnail\"), so return DETAILS: " << family.name() << " / " << (*style).value();
 
                 stream << KFI_NAME_KEY << family.name() << Qt::endl << KFI_STYLE_KEY << (*style).value() << Qt::endl;
             }
@@ -310,7 +315,7 @@ void CKioFonts::get(const QUrl &url)
             data(QByteArray());
             processedSize(array.size());
             finished();
-            KFI_DBUG << "Finished thumbnail...";
+            qCDebug(KCM_KFONTINST_KIO) << "Finished thumbnail...";
             return;
         }
 
@@ -328,13 +333,14 @@ void CKioFonts::get(const QUrl &url)
 
             QStringList::ConstIterator ait(assoc.constBegin()), aend(assoc.constEnd());
 
-            for (; ait != aend; ++ait)
+            for (; ait != aend; ++ait) {
                 files.insert(*ait);
+            }
         }
 
-        if (1 == files.count())
+        if (1 == files.count()) {
             realPath = (*files.begin());
-        else // Font is made up of multiple files - so create .zip of them all!
+        } else // Font is made up of multiple files - so create .zip of them all!
         {
             QTemporaryFile tmpFile;
 
@@ -348,8 +354,9 @@ void CKioFonts::get(const QUrl &url)
                     QMap<QString, QString> map = Misc::getFontFileMap(files);
                     QMap<QString, QString>::ConstIterator it(map.constBegin()), end(map.constEnd());
 
-                    for (; it != end; ++it)
+                    for (; it != end; ++it) {
                         zip.addLocalFile(it.value(), it.key());
+                    }
 
                     multiple = true;
                     zip.close();
@@ -358,20 +365,20 @@ void CKioFonts::get(const QUrl &url)
         }
 
         QByteArray realPathC(QFile::encodeName(realPath));
-        KFI_DBUG << "real: " << realPathC;
+        qCDebug(KCM_KFONTINST_KIO) << "real: " << realPathC;
 
-        if (-2 == QT_STAT(realPathC.constData(), &buff))
+        if (-2 == QT_STAT(realPathC.constData(), &buff)) {
             error(EACCES == errno ? KIO::ERR_ACCESS_DENIED : KIO::ERR_DOES_NOT_EXIST, url.toDisplayString());
-        else if (S_ISDIR(buff.st_mode))
+        } else if (S_ISDIR(buff.st_mode)) {
             error(KIO::ERR_IS_DIRECTORY, url.toDisplayString());
-        else if (!S_ISREG(buff.st_mode))
+        } else if (!S_ISREG(buff.st_mode)) {
             error(KIO::ERR_CANNOT_OPEN_FOR_READING, url.toDisplayString());
-        else {
+        } else {
             int fd = QT_OPEN(realPathC.constData(), O_RDONLY);
 
-            if (fd < 0)
+            if (fd < 0) {
                 error(KIO::ERR_CANNOT_OPEN_FOR_READING, url.toDisplayString());
-            else {
+            } else {
                 // Determine the mimetype of the file to be retrieved, and emit it.
                 // This is mandatory in all slaves (for KRun/BrowserRun to work).
                 // This code can be optimized by using QFileInfo instead of buff above
@@ -382,24 +389,27 @@ void CKioFonts::get(const QUrl &url)
                 totalSize(buff.st_size);
 
                 KIO::filesize_t processed = 0;
-                char buffer[MAX_IPC_SIZE];
+                char buffer[s_MAX_IPC_SIZE];
                 QByteArray array;
 
                 while (1) {
-                    int n = ::read(fd, buffer, MAX_IPC_SIZE);
+                    int n = ::read(fd, buffer, s_MAX_IPC_SIZE);
 
                     if (-1 == n) {
-                        if (EINTR == errno)
+                        if (EINTR == errno) {
                             continue;
+                        }
 
                         error(KIO::ERR_CANNOT_READ, url.toDisplayString());
                         ::close(fd);
-                        if (multiple)
+                        if (multiple) {
                             ::unlink(realPathC);
+                        }
                         return;
                     }
-                    if (0 == n)
+                    if (0 == n) {
                         break; // Finished
+                    }
 
                     array = array.fromRawData(buffer, n);
                     data(array);
@@ -415,10 +425,12 @@ void CKioFonts::get(const QUrl &url)
                 finished();
             }
         }
-        if (multiple)
+        if (multiple) {
             ::unlink(realPathC);
-    } else
+        }
+    } else {
         error(KIO::ERR_CANNOT_READ, url.toDisplayString());
+    }
 }
 
 void CKioFonts::copy(const QUrl &, const QUrl &, int, KIO::JobFlags)
@@ -433,24 +445,25 @@ void CKioFonts::rename(const QUrl &, const QUrl &, KIO::JobFlags)
 
 void CKioFonts::del(const QUrl &url, bool isFile)
 {
-    KFI_DBUG << url;
+    qCDebug(KCM_KFONTINST_KIO) << url;
     QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), Qt::SkipEmptyParts));
     EFolder folder(getFolder(pathList));
     QString name(removeKnownExtension(url));
 
-    if (!isFile)
+    if (!isFile) {
         error(KIO::ERR_SLAVE_DEFINED, i18n("Only fonts may be deleted."));
-    else if (!Misc::root() && FOLDER_ROOT == folder)
+    } else if (!Misc::root() && FOLDER_ROOT == folder) {
         error(KIO::ERR_SLAVE_DEFINED, i18n("Can only remove fonts from either \"%1\" or \"%2\".", i18n(KFI_KIO_FONTS_USER), i18n(KFI_KIO_FONTS_SYS)));
-    else if (!name.isEmpty())
+    } else if (!name.isEmpty()) {
         handleResp(itsInterface->uninstall(name, Misc::root() || FOLDER_SYS == folder), name);
-    else
+    } else {
         error(KIO::ERR_DOES_NOT_EXIST, url.toDisplayString());
+    }
 }
 
 void CKioFonts::stat(const QUrl &url)
 {
-    KFI_DBUG << url;
+    qCDebug(KCM_KFONTINST_KIO) << url;
 
     QStringList pathList(url.adjusted(QUrl::StripTrailingSlash).path().split(QLatin1Char('/'), Qt::SkipEmptyParts));
     EFolder folder = getFolder(pathList);
@@ -462,11 +475,11 @@ void CKioFonts::stat(const QUrl &url)
         createUDSEntry(entry, FOLDER_ROOT);
         break;
     case 1:
-        if (Misc::root())
+        if (Misc::root()) {
             ok = createStatEntry(entry, url, FOLDER_SYS);
-        else if (FOLDER_SYS == folder || FOLDER_USER == folder)
+        } else if (FOLDER_SYS == folder || FOLDER_USER == folder) {
             createUDSEntry(entry, folder);
-        else {
+        } else {
             error(KIO::ERR_SLAVE_DEFINED, i18n("Please specify \"%1\" or \"%2\".", i18n(KFI_KIO_FONTS_USER), i18n(KFI_KIO_FONTS_SYS)));
             return;
         }
@@ -486,9 +499,9 @@ void CKioFonts::stat(const QUrl &url)
 
 void CKioFonts::special(const QByteArray &a)
 {
-    if (!a.isEmpty())
+    if (!a.isEmpty()) {
         error(KIO::ERR_UNSUPPORTED_ACTION, i18n("No special methods supported."));
-    else {
+    } else {
         setTimeoutSpecialCommand(-1);
         itsInterface->reconfigure();
     }
@@ -496,13 +509,13 @@ void CKioFonts::special(const QByteArray &a)
 
 int CKioFonts::listFolder(KIO::UDSEntry &entry, EFolder folder)
 {
-    KFI_DBUG << folder;
+    qCDebug(KCM_KFONTINST_KIO) << folder;
 
     int styleCount(0);
     KFI::Families families(itsInterface->list(FOLDER_SYS == folder));
     FamilyCont::ConstIterator family(families.items.begin()), end(families.items.end());
 
-    KFI_DBUG << "Num families:" << families.items.count();
+    qCDebug(KCM_KFONTINST_KIO) << "Num families:" << families.items.count();
 
     for (; family != end; ++family) {
         StyleCont::ConstIterator styleIt((*family).styles().begin()), styleEnd((*family).styles().end());
@@ -522,10 +535,11 @@ QString CKioFonts::getUserName(uid_t uid)
 {
     if (!itsUserCache.contains(uid)) {
         struct passwd *user = getpwuid(uid);
-        if (user)
+        if (user) {
             itsUserCache.insert(uid, QString::fromLatin1(user->pw_name));
-        else
+        } else {
             return QString::number(uid);
+        }
     }
     return itsUserCache[uid];
 }
@@ -534,10 +548,11 @@ QString CKioFonts::getGroupName(gid_t gid)
 {
     if (!itsGroupCache.contains(gid)) {
         struct group *grp = getgrgid(gid);
-        if (grp)
+        if (grp) {
             itsGroupCache.insert(gid, QString::fromLatin1(grp->gr_name));
-        else
+        } else {
             return QString::number(gid);
+        }
     }
     return itsGroupCache[gid];
 }
@@ -556,7 +571,7 @@ bool CKioFonts::createStatEntry(KIO::UDSEntry &entry, const QUrl &url, EFolder f
 
 void CKioFonts::createUDSEntry(KIO::UDSEntry &entry, EFolder folder)
 {
-    KFI_DBUG << QString(FOLDER_SYS == folder ? i18n(KFI_KIO_FONTS_SYS) : i18n(KFI_KIO_FONTS_USER));
+    qCDebug(KCM_KFONTINST_KIO) << QString(FOLDER_SYS == folder ? i18n(KFI_KIO_FONTS_SYS) : i18n(KFI_KIO_FONTS_USER));
     entry.clear();
     entry.fastInsert(KIO::UDSEntry::UDS_NAME,
                      FOLDER_ROOT == folder || Misc::root() ? i18n("Fonts")
@@ -577,46 +592,52 @@ bool CKioFonts::createUDSEntry(KIO::UDSEntry &entry, EFolder folder, const Famil
     QList<File> files;
     bool hidden = true, haveExtraFiles = false;
 
-    KFI_DBUG << name;
+    qCDebug(KCM_KFONTINST_KIO) << name;
 
     for (; file != fileEnd; ++file) {
         size += getSize((*file).path());
         // TODO: Make scalable a property of the file?
         // Then isScalable() is not needed!!!
-        if (isScalable((*file).path()))
+        if (isScalable((*file).path())) {
             files.prepend(*file);
-        else
+        } else {
             files.append(*file);
+        }
 
-        if (hidden && !Misc::isHidden(Misc::getFile((*file).path())))
+        if (hidden && !Misc::isHidden(Misc::getFile((*file).path()))) {
             hidden = false;
+        }
 
         QStringList assoc;
         Misc::getAssociatedFiles((*file).path(), assoc);
 
         QStringList::ConstIterator oit(assoc.constBegin()), oend(assoc.constEnd());
 
-        if (!haveExtraFiles && !assoc.isEmpty())
+        if (!haveExtraFiles && !assoc.isEmpty()) {
             haveExtraFiles = true;
+        }
 
-        for (; oit != oend; ++oit)
+        for (; oit != oend; ++oit) {
             size += getSize(*oit);
+        }
     }
 
     entry.clear();
 
-    entry.fastInsert(KIO::UDSEntry::UDS_NAME, name);
+    entry.fastInsert(KIO::UDSEntry::UDS_DISPLAY_NAME, name);
     entry.fastInsert(KIO::UDSEntry::UDS_SIZE, size);
     entry.fastInsert(UDS_EXTRA_FC_STYLE, style.value());
 
     QList<File>::ConstIterator it(files.constBegin()), end(files.constEnd());
 
     for (; it != end; ++it) {
-        QByteArray cPath(QFile::encodeName((*it).path()));
+        const QString fontPath = it->path();
+        QByteArray cPath(QFile::encodeName(fontPath));
         QT_STATBUF buff;
 
         if (-1 != QT_LSTAT(cPath, &buff)) {
-            QString fileName(Misc::getFile((*it).path())), mt;
+            const QString fileName = Misc::getFile(fontPath);
+            QString mt;
             int dotPos(fileName.lastIndexOf('.'));
             QString extension(-1 == dotPos ? QString() : fileName.mid(dotPos));
 
@@ -625,24 +646,25 @@ bool CKioFonts::createUDSEntry(KIO::UDSEntry &entry, EFolder folder, const Famil
                 extension = -1 == dotPos ? QString() : fileName.mid(dotPos);
             }
 
-            if (QString::fromLatin1(".ttf") == extension || QString::fromLatin1(".ttc") == extension)
+            if (QString::fromLatin1(".ttf") == extension || QString::fromLatin1(".ttc") == extension) {
                 mt = "application/x-font-ttf";
-            else if (QString::fromLatin1(".otf") == extension)
+            } else if (QString::fromLatin1(".otf") == extension) {
                 mt = "application/x-font-otf";
-            else if (QString::fromLatin1(".pfa") == extension || QString::fromLatin1(".pfb") == extension)
+            } else if (QString::fromLatin1(".pfa") == extension || QString::fromLatin1(".pfb") == extension) {
                 mt = "application/x-font-type1";
-            else if (QString::fromLatin1(".pcf.gz") == extension || QString::fromLatin1(".pcf") == extension)
+            } else if (QString::fromLatin1(".pcf.gz") == extension || QString::fromLatin1(".pcf") == extension) {
                 mt = "application/x-font-pcf";
-            else if (QString::fromLatin1(".bdf.gz") == extension || QString::fromLatin1(".bdf") == extension)
+            } else if (QString::fromLatin1(".bdf.gz") == extension || QString::fromLatin1(".bdf") == extension) {
                 mt = "application/x-font-bdf";
-            else {
+            } else {
                 // File extension check failed, use QMimeDatabase to read contents...
                 QMimeDatabase db;
-                QMimeType mime = db.mimeTypeForFile((*it).path());
+                QMimeType mime = db.mimeTypeForFile(fontPath);
                 QStringList patterns = mime.globPatterns();
                 mt = mime.name();
-                if (patterns.size() > 0)
+                if (patterns.size() > 0) {
                     extension = (*patterns.begin()).remove("*");
+                }
             }
 
             entry.fastInsert(KIO::UDSEntry::UDS_FILE_TYPE, buff.st_mode & S_IFMT);
@@ -652,29 +674,15 @@ bool CKioFonts::createUDSEntry(KIO::UDSEntry &entry, EFolder folder, const Famil
             entry.fastInsert(KIO::UDSEntry::UDS_USER, getUserName(buff.st_uid));
             entry.fastInsert(KIO::UDSEntry::UDS_GROUP, getGroupName(buff.st_gid));
             entry.fastInsert(KIO::UDSEntry::UDS_MIME_TYPE, mt);
+            const QUrl entryUrl = QUrl::fromLocalFile(fontPath);
+            entry.fastInsert(KIO::UDSEntry::UDS_URL, entryUrl.toDisplayString());
+            entry.fastInsert(KIO::UDSEntry::UDS_NAME, entryUrl.fileName());
 
             if (hidden) {
                 entry.fastInsert(KIO::UDSEntry::UDS_HIDDEN, 1);
-                entry.fastInsert(UDS_EXTRA_FILE_NAME, (*it).path());
-                entry.fastInsert(UDS_EXTRA_FILE_FACE, (*it).path());
+                entry.fastInsert(UDS_EXTRA_FILE_NAME, fontPath);
+                entry.fastInsert(UDS_EXTRA_FILE_FACE, fontPath);
             }
-
-            QString path(QString::fromLatin1("/"));
-
-            if (!Misc::root()) {
-                path += FOLDER_SYS == folder ? i18n(KFI_KIO_FONTS_SYS) : i18n(KFI_KIO_FONTS_USER);
-                path += QString::fromLatin1("/");
-            }
-            path += name;
-
-            if (files.count() > 1 || haveExtraFiles)
-                path += QString::fromLatin1(KFI_FONTS_PACKAGE);
-            else
-                path += extension;
-
-            QUrl url(QUrl::fromLocalFile(path));
-            url.setScheme(KFI_KIO_FONTS_PROTOCOL);
-            entry.fastInsert(KIO::UDSEntry::UDS_URL, url.url());
             return true;
         }
     }
@@ -686,7 +694,7 @@ Family CKioFonts::getFont(const QUrl &url, EFolder folder)
 {
     QString name(removeKnownExtension(url));
 
-    KFI_DBUG << url << name;
+    qCDebug(KCM_KFONTINST_KIO) << url << name;
 
     return itsInterface->statFont(name, FOLDER_SYS == folder);
 }
@@ -724,8 +732,10 @@ void CKioFonts::handleResp(int resp, const QString &file, const QString &tempFil
         error(resp, file);
     }
 
-    if (FontInst::STATUS_OK == resp)
+    if (FontInst::STATUS_OK == resp) {
         setTimeoutSpecialCommand(constReconfigTimeout);
+    }
+}
 }
 
-}
+#include "KioFonts.moc"

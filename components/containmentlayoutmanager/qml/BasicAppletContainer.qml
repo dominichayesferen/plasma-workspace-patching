@@ -1,21 +1,8 @@
 /*
- *  Copyright 2019 Marco Martin <mart@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2 or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU Library General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2019 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.12
 import QtQuick.Layouts 1.2
@@ -96,7 +83,10 @@ ContainmentLayoutManager.AppletContainer {
     initialSize.width: applet.switchWidth + leftPadding + rightPadding
     initialSize.height: applet.switchHeight + topPadding + bottomPadding
 
+    onRotationChanged: background.syncBlurEnabled()
+
     background: PlasmaCore.FrameSvgItem {
+        id: background
         imagePath: {
             if (!contentItem) {
                 return "";
@@ -109,6 +99,16 @@ ContainmentLayoutManager.AppletContainer {
                 return "";
             }
         }
+
+        property bool blurEnabled: false
+        function syncBlurEnabled() {
+            blurEnabled = appletContainer.rotation === 0 && plasmoid.GraphicsInfo.api !== GraphicsInfo.Software && hasElementPrefix("blurred");
+        }
+        prefix: blurEnabled ? "blurred" : ""
+        Component.onCompleted: syncBlurEnabled()
+
+        onRepaintNeeded: syncBlurEnabled()
+
         DropShadow {
             anchors {
                 fill: parent
@@ -131,6 +131,54 @@ ContainmentLayoutManager.AppletContainer {
             source: contentItem && contentItem.effectiveBackgroundHints & PlasmaCore.Types.ShadowBackground ? contentItem : null
             visible: source != null
         }
+
+        OpacityMask {
+            id: mask
+            enabled: visible
+            rotation: appletContainer.rotation
+            Component.onCompleted:  mask.parent = plasmoid
+            width: appletContainer.width
+            height: appletContainer.height
+            x: appletContainer.Kirigami.ScenePosition.x + Math.max(0, -appletContainer.x)
+            y: appletContainer.Kirigami.ScenePosition.y + Math.max(0, -appletContainer.y)
+
+            visible: background.blurEnabled && (appletContainer.applet.effectiveBackgroundHints & PlasmaCore.Types.StandardBackground)
+            z: -2
+            source: blur
+            maskSource: 
+            ShaderEffectSource {
+                width: mask.width
+                height: mask.height
+                sourceRect: Qt.rect(Math.max(0, -appletContainer.x),
+                                    Math.max(0, -appletContainer.y),
+                                    width, height);
+                sourceItem: PlasmaCore.FrameSvgItem {
+                    imagePath: "widgets/background"
+                    prefix: "blurred-mask"
+                    parent: appletContainer.background
+                    anchors.fill: parent
+                    visible: false
+                }
+            }
+
+            FastBlur {
+                id: blur
+                anchors.fill: parent
+
+                radius: 128
+                visible: false
+
+                source: ShaderEffectSource {
+                    width: blur.width
+                    height: blur.height
+                    sourceRect: Qt.rect(Math.max(0, appletContainer.x),
+                                        Math.max(0, appletContainer.y),
+                                        appletContainer.width - Math.max(0, - (appletContainer.parent.width - appletContainer.x - appletContainer.width)),
+                                        appletContainer.height - Math.max(0, - (appletContainer.parent.height - appletContainer.y - appletContainer.height)));
+                    sourceItem: plasmoid.wallpaper
+                }
+            }
+        }
     }
 
     busyIndicatorComponent: PlasmaComponents.BusyIndicator {
@@ -140,7 +188,7 @@ ContainmentLayoutManager.AppletContainer {
     }
     configurationRequiredComponent: PlasmaComponents.Button {
         anchors.centerIn: parent
-        text: i18n("Configure...")
+        text: i18n("Configure…")
         icon.name: "configure"
         visible: applet.configurationRequired
         onClicked: applet.action("configure").trigger();

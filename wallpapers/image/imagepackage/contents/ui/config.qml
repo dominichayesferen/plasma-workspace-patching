@@ -1,22 +1,10 @@
 /*
- *  Copyright 2013 Marco Martin <mart@kde.org>
- *  Copyright 2014 Kai Uwe Broulik <kde@privat.broulik.de>
- *  Copyright 2019 David Redondo <kde@david-redondo.de>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  2.010-1301, USA.
- */
+    SPDX-FileCopyrightText: 2013 Marco Martin <mart@kde.org>
+    SPDX-FileCopyrightText: 2014 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 import QtQuick 2.5
 import QtQuick.Controls 2.5 as QtControls2
@@ -26,7 +14,6 @@ import org.kde.plasma.wallpapers.image 2.0 as Wallpaper
 import org.kde.kquickcontrols 2.0 as KQuickControls
 import org.kde.kquickcontrolsaddons 2.0
 import org.kde.newstuff 1.62 as NewStuff
-import org.kde.draganddrop 2.0 as DragDrop
 import org.kde.kcm 1.5 as KCM
 import org.kde.kirigami 2.12 as Kirigami
 
@@ -40,6 +27,8 @@ ColumnLayout {
     property int cfg_FillModeDefault
     property int cfg_SlideshowMode
     property int cfg_SlideshowModeDefault
+    property bool cfg_SlideshowFoldersFirst
+    property bool cfg_SlideshowFoldersFirstDefault: false
     property alias cfg_Blur: blurRadioButton.checked
     property bool cfg_BlurDefault
     property var cfg_SlidePaths: []
@@ -69,6 +58,7 @@ ColumnLayout {
         onSlidePathsChanged: cfg_SlidePaths = slidePaths
         onUncheckedSlidesChanged: cfg_UncheckedSlides = uncheckedSlides
         onSlideshowModeChanged: cfg_SlideshowMode = slideshowMode
+        onSlideshowFoldersFirstChanged: cfg_SlideshowFoldersFirst = slideshowFoldersFirst
     }
 
     onCfg_FillModeChanged: {
@@ -84,6 +74,10 @@ ColumnLayout {
 
     onCfg_SlideshowModeChanged: {
         imageWallpaper.slideshowMode = cfg_SlideshowMode
+    }
+
+    onCfg_SlideshowFoldersFirstChanged: {
+        imageWallpaper.slideshowFoldersFirst = cfg_SlideshowFoldersFirst
     }
 
     property int hoursIntervalValue: Math.floor(cfg_SlideInterval / 3600)
@@ -108,11 +102,11 @@ ColumnLayout {
                             'fillMode': Image.PreserveAspectCrop
                         },
                         {
-                            'label': i18nd("plasma_wallpaper_org.kde.image","Scaled"),
+                            'label': i18nd("plasma_wallpaper_org.kde.image", "Scaled"),
                             'fillMode': Image.Stretch
                         },
                         {
-                            'label': i18nd("plasma_wallpaper_org.kde.image","Scaled, Keep Proportions"),
+                            'label': i18nd("plasma_wallpaper_org.kde.image", "Scaled, Keep Proportions"),
                             'fillMode': Image.PreserveAspectFit
                         },
                         {
@@ -120,10 +114,10 @@ ColumnLayout {
                             'fillMode': Image.Pad
                         },
                         {
-                            'label': i18nd("plasma_wallpaper_org.kde.image","Tiled"),
+                            'label': i18nd("plasma_wallpaper_org.kde.image", "Tiled"),
                             'fillMode': Image.Tile
                         }
-                    ]
+            ]
 
             textRole: "label"
             onCurrentIndexChanged: cfg_FillMode = model[currentIndex]["fillMode"]
@@ -141,50 +135,6 @@ ColumnLayout {
                         //resizeComboBox.textLength = Math.max(resizeComboBox.textLength, tl+5);
                     }
                 }
-            }
-        }
-
-        QtControls2.ComboBox {
-            id: slideshowComboBox
-            visible: configDialog.currentWallpaper == "org.kde.slideshow"
-            Kirigami.FormData.label: i18nd("plasma_wallpaper_org.kde.image", "Order:")
-            model: [
-                {
-                    'label': i18nd("plasma_wallpaper_org.kde.image", "Random"),
-                    'slideshowMode':  Wallpaper.Image.Random
-                },
-                {
-                    'label': i18nd("plasma_wallpaper_org.kde.image", "A to Z"),
-                    'slideshowMode':  Wallpaper.Image.Alphabetical
-                },
-                {
-                    'label': i18nd("plasma_wallpaper_org.kde.image", "Z to A"),
-                    'slideshowMode':  Wallpaper.Image.AlphabeticalReversed
-                },
-                {
-                    'label': i18nd("plasma_wallpaper_org.kde.image", "Date modified (newest first)"),
-                    'slideshowMode':  Wallpaper.Image.ModifiedReversed
-                },
-                {
-                    'label': i18nd("plasma_wallpaper_org.kde.image", "Date modified (oldest first)"),
-                    'slideshowMode':  Wallpaper.Image.Modified
-                }
-            ]
-            textRole: "label"
-            onCurrentIndexChanged: {
-                cfg_SlideshowMode = model[currentIndex]["slideshowMode"];
-            }
-            Component.onCompleted: setMethod();
-            function setMethod() {
-                for (var i = 0; i < model.length; i++) {
-                    if (model[i]["slideshowMode"] === wallpaper.configuration.SlideshowMode) {
-                        slideshowComboBox.currentIndex = i;
-                    }
-                }
-            }
-
-            KCM.SettingHighlighter {
-                highlight: cfg_SlideshowMode != cfg_SlideshowModeDefault
             }
         }
 
@@ -223,7 +173,7 @@ ColumnLayout {
     }
 
     Component {
-        id: foldersComponent
+        id: slideshowComponent
         ColumnLayout {
             Connections {
                 target: root
@@ -231,11 +181,72 @@ ColumnLayout {
                 function onMinutesIntervalValueChanged() {minutesInterval.value = root.minutesIntervalValue}
                 function onSecondsIntervalValueChanged() {secondsInterval.value = root.secondsIntervalValue}
             }
-            //FIXME: there should be only one spinbox: QtControls spinboxes are still too limited for it tough
+
             Kirigami.FormLayout {
                 twinFormLayouts: parentLayout
+
                 RowLayout {
-                    Kirigami.FormData.label: i18nd("plasma_wallpaper_org.kde.image","Change every:")
+                    id: slideshowModeRow
+                    Kirigami.FormData.label: i18nd("plasma_wallpaper_org.kde.image", "Order:")
+
+                    QtControls2.ComboBox {
+                        id: slideshowModeComboBox
+
+                        model: [
+                                   {
+                                       'label': i18nd("plasma_wallpaper_org.kde.image", "Random"),
+                                       'slideshowMode':  Wallpaper.Image.Random
+                                   },
+                                   {
+                                       'label': i18nd("plasma_wallpaper_org.kde.image", "A to Z"),
+                                       'slideshowMode':  Wallpaper.Image.Alphabetical
+                                   },
+                                   {
+                                       'label': i18nd("plasma_wallpaper_org.kde.image", "Z to A"),
+                                       'slideshowMode':  Wallpaper.Image.AlphabeticalReversed
+                                   },
+                                   {
+                                       'label': i18nd("plasma_wallpaper_org.kde.image", "Date modified (newest first)"),
+                                       'slideshowMode':  Wallpaper.Image.ModifiedReversed
+                                   },
+                                   {
+                                       'label': i18nd("plasma_wallpaper_org.kde.image", "Date modified (oldest first)"),
+                                       'slideshowMode':  Wallpaper.Image.Modified
+                                   }
+                               ]
+                        textRole: "label"
+                        onCurrentIndexChanged: {
+                            cfg_SlideshowMode = model[currentIndex]["slideshowMode"];
+                        }
+                        Component.onCompleted: setMethod();
+                        function setMethod() {
+                            for (var i = 0; i < model.length; i++) {
+                                if (model[i]["slideshowMode"] === wallpaper.configuration.SlideshowMode) {
+                                    slideshowModeComboBox.currentIndex = i;
+                                }
+                            }
+                        }
+
+                        KCM.SettingHighlighter {
+                            highlight: cfg_SlideshowMode != cfg_SlideshowModeDefault
+                        }
+                    }
+
+                    QtControls2.CheckBox {
+                        id: slideshowFoldersFirstCheckBox
+                        text: i18nd("plasma_wallpaper_org.kde.image", "Group by folders")
+                        checked: root.cfg_SlideshowFoldersFirst
+                        onToggled: cfg_SlideshowFoldersFirst = slideshowFoldersFirstCheckBox.checked
+
+                        KCM.SettingHighlighter {
+                            highlight: root.cfg_SlideshowFoldersFirst !== cfg_SlideshowFoldersFirstDefault
+                        }
+                    }
+                }
+
+                // FIXME: there should be only one spinbox: QtControls spinboxes are still too limited for it tough
+                RowLayout {
+                    Kirigami.FormData.label: i18nd("plasma_wallpaper_org.kde.image", "Change every:")
                     QtControls2.SpinBox {
                         id: hoursInterval
                         value: root.hoursIntervalValue
@@ -296,7 +307,7 @@ ColumnLayout {
                 }
             }
             Kirigami.Heading {
-                text: i18nd("plasma_wallpaper_org.kde.image","Folders")
+                text: i18nd("plasma_wallpaper_org.kde.image", "Folders")
                 level: 2
             }
             GridLayout {
@@ -372,15 +383,19 @@ ColumnLayout {
                 QtControls2.Button {
                     Layout.alignment: Qt.AlignRight
                     icon.name: "list-add"
-                    text: i18nd("plasma_wallpaper_org.kde.image","Add Folder...")
+                    text: i18nd("plasma_wallpaper_org.kde.image","Add Folder…")
                     onClicked: imageWallpaper.showAddSlidePathsDialog()
                 }
                 NewStuff.Button {
                     Layout.alignment: Qt.AlignRight
                     configFile: Kirigami.Settings.isMobile ? "wallpaper-mobile.knsrc" : "wallpaper.knsrc"
-                    text: i18nd("plasma_wallpaper_org.kde.image", "Get New Wallpapers...")
+                    text: i18nd("plasma_wallpaper_org.kde.image", "Get New Wallpapers…")
                     viewMode: NewStuff.Page.ViewMode.Preview
-                    onChangedEntriesChanged: imageWallpaper.newStuffFinished();
+                    onEntryEvent: function(entry, event) {
+                        if (event == 1) { // StatusChangedEvent
+                            imageWallpaper.newStuffFinished()
+                        }
+                    }
                 }
             }
         }
@@ -411,15 +426,13 @@ ColumnLayout {
                 view.delegate: WallpaperDelegate {
                     color: cfg_Color
                 }
+            }
 
-                Kirigami.PlaceholderMessage {
-                    anchors.fill: parent
-                    anchors.margins: Kirigami.Units.largeSpacing * 2
-                    // FIXME: this is needed to vertically center it in the grid for some reason
-                    anchors.topMargin: wallpapersGrid.height / 2
-                    visible: wallpapersGrid.view.count === 0
-                    text: i18nd("plasma_wallpaper_org.kde.image", "There are no wallpapers in this slideshow")
-                }
+            Kirigami.PlaceholderMessage {
+                anchors.centerIn: parent
+                width: parent.width - (Kirigami.Units.largeSpacing * 4)
+                visible: wallpapersGrid.view.count === 0
+                text: i18nd("plasma_wallpaper_org.kde.image", "There are no wallpapers in this slideshow")
             }
 
             KCM.SettingHighlighter {
@@ -429,17 +442,17 @@ ColumnLayout {
         }
     }
 
-    DragDrop.DropArea {
+    DropArea {
         Layout.fillWidth: true
         Layout.fillHeight: true
 
-        onDragEnter: {
-            if (!event.mimeData.hasUrls) {
-                event.ignore();
+        onEntered: {
+            if (drag.hasUrls) {
+                event.accept();
             }
         }
-        onDrop: {
-            event.mimeData.urls.forEach(function (url) {
+        onDropped: {
+            drop.urls.forEach(function (url) {
                 if (url.indexOf("file://") === 0) {
                     var path = url.substr(7); // 7 is length of "file://"
                     if (configDialog.currentWallpaper === "org.kde.image") {
@@ -454,7 +467,7 @@ ColumnLayout {
         Loader {
             anchors.fill: parent
             sourceComponent: (configDialog.currentWallpaper == "org.kde.image") ? thumbnailsComponent :
-                ((configDialog.currentWallpaper == "org.kde.slideshow") ? foldersComponent : undefined)
+                ((configDialog.currentWallpaper == "org.kde.slideshow") ? slideshowComponent : undefined)
         }
     }
 
@@ -464,15 +477,19 @@ ColumnLayout {
         visible: configDialog.currentWallpaper == "org.kde.image"
         QtControls2.Button {
             icon.name: "list-add"
-            text: i18nd("plasma_wallpaper_org.kde.image","Add Image...")
+            text: i18nd("plasma_wallpaper_org.kde.image","Add Image…")
             onClicked: imageWallpaper.showFileDialog();
         }
         NewStuff.Button {
             Layout.alignment: Qt.AlignRight
             configFile: Kirigami.Settings.isMobile ? "wallpaper-mobile.knsrc" : "wallpaper.knsrc"
-            text: i18nd("plasma_wallpaper_org.kde.image", "Get New Wallpapers...")
+            text: i18nd("plasma_wallpaper_org.kde.image", "Get New Wallpapers…")
             viewMode: NewStuff.Page.ViewMode.Preview
-            onChangedEntriesChanged: imageWallpaper.newStuffFinished();
+            onEntryEvent: function(entry, event) {
+                if (event == 1) { // StatusChangedEvent
+                    imageWallpaper.newStuffFinished()
+                }
+            }
         }
     }
 }

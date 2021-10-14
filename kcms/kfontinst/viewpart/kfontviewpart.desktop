@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Font Viewer
+Name[ar]=عارض الخط
 Name[az]=Şriftə baxış vasitəsi
 Name[ca]=Visor de tipus de lletra
 Name[cs]=Prohlížeč písem
@@ -38,7 +39,7 @@ Name[x-test]=xxFont Viewerxx
 Name[zh_CN]=字体查看器
 MimeType=application/x-font-ttf;application/x-font-type1;application/x-font-otf;application/x-font-pcf;application/x-font-bdf;fonts/package;
 X-KDE-ServiceTypes=KParts/ReadOnlyPart,Browser/View
-X-KDE-Library=kfontviewpart
+X-KDE-Library=kf5/parts/kfontviewpart
 Type=Service
 InitialPreference=1
 Icon=kfontview

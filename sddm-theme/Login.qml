@@ -19,7 +19,7 @@ SessionManagementScreen {
     property int visibleBoundary: mapFromItem(loginButton, 0, 0).y
     onHeightChanged: visibleBoundary = mapFromItem(loginButton, 0, 0).y + loginButton.height + PlasmaCore.Units.smallSpacing
 
-    property int fontSize: parseInt(config.fontSize)
+    property int fontSize: parseInt(config.fontSize) + 2
 
     signal loginRequest(string username, string password)
 
@@ -83,6 +83,8 @@ SessionManagementScreen {
                 }
             }
 
+            visible: userList.currentItem.needsPassword
+
             Keys.onEscapePressed: {
                 mainStack.currentItem.forceActiveFocus();
             }
@@ -113,10 +115,11 @@ SessionManagementScreen {
             id: loginButton
             Accessible.name: i18nd("plasma_lookandfeel_org.kde.lookandfeel", "Log In")
             Layout.preferredHeight: passwordBox.implicitHeight
-            Layout.preferredWidth: loginButton.Layout.preferredHeight
+            Layout.preferredWidth: text.length == 0 ? loginButton.Layout.preferredHeight : -1
 
-            icon.name: "go-next"
+            icon.name: text.length == 0 ? "go-next" : ""
 
+            text: userList.currentItem.needsPassword ? "" : i18n("Log In")
             onClicked: startLogin();
         }
     }

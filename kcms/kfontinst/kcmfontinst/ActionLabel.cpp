@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2007 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "ActionLabel.h"
 #include <KIconLoader>
@@ -63,8 +45,9 @@ CActionLabel::CActionLabel(QWidget *parent)
         QImage img(KIconLoader::global()->loadIcon("application-x-font-ttf", KIconLoader::NoGroup, 32).toImage());
         double increment = 360.0 / constNumIcons;
 
-        for (int i = 0; i < constNumIcons; ++i)
+        for (int i = 0; i < constNumIcons; ++i) {
             theIcons[i] = new QPixmap(QPixmap::fromImage(0 == i ? img : img.transformed(rotateMatrix(img.width(), img.height(), increment * i))));
+        }
     }
 
     setPixmap(*theIcons[0]);
@@ -74,11 +57,12 @@ CActionLabel::CActionLabel(QWidget *parent)
 
 CActionLabel::~CActionLabel()
 {
-    if (0 == --theUsageCount)
+    if (0 == --theUsageCount) {
         for (int i = 0; i < constNumIcons; ++i) {
             delete theIcons[i];
             theIcons[i] = nullptr;
         }
+    }
 }
 
 void CActionLabel::startAnimation()
@@ -97,8 +81,9 @@ void CActionLabel::stopAnimation()
 
 void CActionLabel::rotateIcon()
 {
-    if (++itsCount == constNumIcons)
+    if (++itsCount == constNumIcons) {
         itsCount = 0;
+    }
 
     setPixmap(*theIcons[itsCount]);
 }

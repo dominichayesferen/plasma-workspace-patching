@@ -1,26 +1,12 @@
 /*
- *  Copyright (C) 2014 John Layt <john@layt.net>
- *  Copyright (C) 2018 Eike Hein <hein@kde.org>
- *  Copyright (C) 2019 Kevin Ottens <kevin.ottens@enioka.com>
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Library General Public
- *  License as published by the Free Software Foundation; either
- *  version 2 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Library General Public License for more details.
- *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this library; see the file COPYING.LIB.  If not, write to
- *  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- *  Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2014 John Layt <john@layt.net>
+    SPDX-FileCopyrightText: 2018 Eike Hein <hein@kde.org>
+    SPDX-FileCopyrightText: 2019 Kevin Ottens <kevin.ottens@enioka.com>
 
-#ifndef TRANSLATIONS_H
-#define TRANSLATIONS_H
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
+
+#pragma once
 
 #include <KQuickAddons/ManagedConfigModule>
 
@@ -35,8 +21,6 @@ class Translations : public KQuickAddons::ManagedConfigModule
     Q_OBJECT
 
     Q_PROPERTY(QAbstractItemModel *translationsModel READ translationsModel CONSTANT)
-    Q_PROPERTY(QAbstractItemModel *selectedTranslationsModel READ selectedTranslationsModel CONSTANT)
-    Q_PROPERTY(QAbstractItemModel *availableTranslationsModel READ availableTranslationsModel CONSTANT)
     Q_PROPERTY(bool everSaved READ everSaved NOTIFY everSavedChanged)
 
 public:
@@ -44,8 +28,6 @@ public:
     ~Translations() override;
 
     QAbstractItemModel *translationsModel() const;
-    QAbstractItemModel *selectedTranslationsModel() const;
-    QAbstractItemModel *availableTranslationsModel() const;
 
     bool everSaved() const;
     TranslationsSettings *settings() const;
@@ -66,10 +48,6 @@ private:
 
     TranslationsData *m_data;
     TranslationsModel *m_translationsModel;
-    SelectedTranslationsModel *m_selectedTranslationsModel;
-    AvailableTranslationsModel *m_availableTranslationsModel;
 
     bool m_everSaved;
 };
-
-#endif

@@ -1,26 +1,14 @@
-/***************************************************************************
- *   Copyright (C) 2014-2015 by Eike Hein <hein@kde.org>                   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .        *
- ***************************************************************************/
+/*
+    SPDX-FileCopyrightText: 2014-2015 Eike Hein <hein@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "recentusagemodel.h"
 #include "actionlist.h"
 #include "appentry.h"
 #include "appsmodel.h"
+#include "debug.h"
 #include "kastatsfavoritesmodel.h"
 #include <kio_version.h>
 
@@ -42,6 +30,7 @@
 #include <KLocalizedString>
 #include <KNotificationJobUiDelegate>
 #include <KRun>
+#include <KService/KApplicationTrader>
 #include <KService>
 #include <KStartupInfo>
 
@@ -173,13 +162,18 @@ QString RecentUsageModel::description() const
 
 QString RecentUsageModel::resourceAt(int row) const
 {
+    return rowValueAt(row, ResultModel::ResourceRole).toString();
+}
+
+QVariant RecentUsageModel::rowValueAt(int row, ResultModel::Roles role) const
+{
     QSortFilterProxyModel *sourceProxy = qobject_cast<QSortFilterProxyModel *>(sourceModel());
 
     if (sourceProxy) {
-        return sourceProxy->sourceModel()->data(sourceProxy->mapToSource(sourceProxy->index(row, 0)), ResultModel::ResourceRole).toString();
+        return sourceProxy->sourceModel()->data(sourceProxy->mapToSource(sourceProxy->index(row, 0)), role).toString();
     }
 
-    return sourceModel()->data(index(row, 0), ResultModel::ResourceRole).toString();
+    return sourceModel()->data(index(row, 0), role);
 }
 
 QVariant RecentUsageModel::data(const QModelIndex &index, int role) const
@@ -352,6 +346,7 @@ bool RecentUsageModel::trigger(int row, const QString &actionId, const QVariant 
 
     if (actionId.isEmpty() && withinBounds) {
         const QString &resource = resourceAt(row);
+        const QString &mimeType = rowValueAt(row, ResultModel::MimeType).toString();
 
         if (!resource.startsWith(QLatin1String("applications:"))) {
             const QUrl resourceUrl = docData(resource, Kicker::UrlRole).toUrl();
@@ -376,6 +371,22 @@ bool RecentUsageModel::trigger(int row, const QString &actionId, const QVariant 
             timeStamp = QX11Info::appUserTime();
         }
 #endif
+
+        // prevents using a service file that does not support opening a mime type for a file it created
+        // for instance a screenshot tool
+        if (!mimeType.isEmpty()) {
+            if (!service->hasMimeType(mimeType)) {
+                // needs to find the application that supports this mimetype
+                service = KApplicationTrader::preferredService(mimeType);
+
+                if (!service) {
+                    // no service found to handle the mimetype
+                    return false;
+                } else {
+                    qCWarning(KICKER_DEBUG) << "Preventing the file to open with " << service->desktopEntryName() << "no alternative found";
+                }
+            }
+        }
 
         auto *job = new KIO::ApplicationLauncherJob(service);
         job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));

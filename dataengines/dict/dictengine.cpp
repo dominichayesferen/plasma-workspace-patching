@@ -1,20 +1,9 @@
 /*
- *   Copyright (C) 2007 Thomas Georgiou <TAGeorgiou@gmail.com> and Jeff Cooper <weirdsox11@gmail.com>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2007 Jeff Cooper <weirdsox11@gmail.com>
+    SPDX-FileCopyrightText: 2007 Thomas Georgiou <TAGeorgiou@gmail.com>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "dictengine.h"
 #include <iostream>
@@ -256,6 +245,6 @@ bool DictEngine::sourceRequestEvent(const QString &query)
     return true;
 }
 
-K_EXPORT_PLASMA_DATAENGINE_WITH_JSON(dict, DictEngine, "plasma-dataengine-dict.json")
+K_PLUGIN_CLASS_WITH_JSON(DictEngine, "plasma-dataengine-dict.json")
 
 #include "dictengine.moc"

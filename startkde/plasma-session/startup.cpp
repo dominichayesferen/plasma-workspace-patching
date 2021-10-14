@@ -1,34 +1,16 @@
-/*****************************************************************
+/*
+    SPDX-FileCopyrightText: 2000 Matthias Ettrich <ettrich@kde.org>
+    SPDX-FileCopyrightText: 2005 Lubos Lunak <l.lunak@kde.org>
+    SPDX-FileCopyrightText: 2018 David Edmundson <davidedmundson@kde.org>
 
-Copyright 2000 Matthias Ettrich <ettrich@kde.org>
-Copyright 2005 Lubos Lunak <l.lunak@kde.org>
-Copyright 2018 David Edmundson <davidedmundson@kde.org>
+    SPDX-FileContributor: Oswald Buddenhagen <ob6@inf.tu-dresden.de>
 
+    some code taken from the dcopserver (part of the KDE libraries), which is
+    SPDX-FileCopyrightText: 1999 Matthias Ettrich <ettrich@kde.org>
+    SPDX-FileCopyrightText: 1999 Preston Brown <pbrown@kde.org>
 
-relatively small extensions by Oswald Buddenhagen <ob6@inf.tu-dresden.de>
-
-some code taken from the dcopserver (part of the KDE libraries), which is
-Copyright 1999 Matthias Ettrich <ettrich@kde.org>
-Copyright 1999 Preston Brown <pbrown@kde.org>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
-AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-******************************************************************/
+    SPDX-License-Identifier: MIT
+*/
 
 #include "startup.h"
 
@@ -37,7 +19,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "kcminit_interface.h"
 #include "kded_interface.h"
 #include "ksmserver_interface.h"
-#include <klauncher_interface.h>
 
 #include <KCompositeJob>
 #include <KConfigGroup>
@@ -221,14 +202,10 @@ Startup::Startup(QObject *parent)
 
     const AutoStart autostart;
 
+    // Keep for KF5; remove in KF6 (KInit will be gone then)
     QProcess::execute(QStringLiteral(CMAKE_INSTALL_FULL_LIBEXECDIR_KF5 "/start_kdeinit_wrapper"), QStringList());
 
-    KJob *phase1;
-    QProcessEnvironment kdedProcessEnv;
-    kdedProcessEnv.insert(QStringLiteral("KDED_STARTED_BY_KDEINIT"), QStringLiteral("1"));
-
     KJob *windowManagerJob = nullptr;
-
     if (qEnvironmentVariable("XDG_SESSION_TYPE") != QLatin1String("wayland")) {
         QString windowManager;
         if (qEnvironmentVariableIsSet("KDEWM")) {
@@ -245,9 +222,10 @@ Startup::Startup(QObject *parent)
         }
     }
 
+    KJob *phase1 = nullptr;
     const QVector<KJob *> sequence = {
         new StartProcessJob(QStringLiteral("kcminit_startup"), {}),
-        new StartServiceJob(QStringLiteral("kded5"), {}, QStringLiteral("org.kde.kded5"), kdedProcessEnv),
+        new StartServiceJob(QStringLiteral("kded5"), {}, QStringLiteral("org.kde.kded5"), {}),
         windowManagerJob,
         new StartServiceJob(QStringLiteral("ksmserver"), QCoreApplication::instance()->arguments().mid(1), QStringLiteral("org.kde.ksmserver")),
         new StartupPhase0(autostart, this),

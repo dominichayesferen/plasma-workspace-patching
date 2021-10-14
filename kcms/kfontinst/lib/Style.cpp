@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2009 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2009 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "Style.h"
 #include "Fc.h"
@@ -38,34 +20,39 @@ Style::Style(const QDomElement &elem, bool loadFiles)
 
     if (elem.hasAttribute(WEIGHT_ATTR)) {
         tmp = elem.attribute(WEIGHT_ATTR).toInt(&ok);
-        if (ok)
+        if (ok) {
             weight = tmp;
+        }
     }
     if (elem.hasAttribute(WIDTH_ATTR)) {
         tmp = elem.attribute(WIDTH_ATTR).toInt(&ok);
-        if (ok)
+        if (ok) {
             width = tmp;
+        }
     }
 
     if (elem.hasAttribute(SLANT_ATTR)) {
         tmp = elem.attribute(SLANT_ATTR).toInt(&ok);
-        if (ok)
+        if (ok) {
             slant = tmp;
+        }
     }
 
     itsScalable = !elem.hasAttribute(SCALABLE_ATTR) || elem.attribute(SCALABLE_ATTR) != "false";
     itsValue = FC::createStyleVal(weight, width, slant);
     itsWritingSystems = 0;
 
-    if (elem.hasAttribute(LANGS_ATTR))
+    if (elem.hasAttribute(LANGS_ATTR)) {
         itsWritingSystems = WritingSystems::instance()->get(elem.attribute(LANGS_ATTR).split(LANG_SEP, Qt::SkipEmptyParts));
+    }
 
     if (loadFiles) {
         if (elem.hasAttribute(PATH_ATTR)) {
             File file(elem, false);
 
-            if (!file.path().isEmpty())
+            if (!file.path().isEmpty()) {
                 itsFiles.insert(file);
+            }
         } else {
             for (QDomNode n = elem.firstChild(); !n.isNull(); n = n.nextSibling()) {
                 QDomElement ent = n.toElement();
@@ -73,8 +60,9 @@ Style::Style(const QDomElement &elem, bool loadFiles)
                 if (FILE_TAG == ent.tagName()) {
                     File file(ent, false);
 
-                    if (!file.path().isEmpty())
+                    if (!file.path().isEmpty()) {
                         itsFiles.insert(file);
+                    }
                 }
             }
         }
@@ -89,8 +77,9 @@ QString Style::toXml(bool disabled, const QString &family, QTextStream &s) const
     for (; it != end; ++it) {
         QString f((*it).toXml(disabled, s));
 
-        if (!f.isEmpty())
+        if (!f.isEmpty()) {
             files.append(f);
+        }
     }
 
     if (files.count() > 0) {
@@ -99,30 +88,37 @@ QString Style::toXml(bool disabled, const QString &family, QTextStream &s) const
 
         KFI::FC::decomposeStyleVal(itsValue, weight, width, slant);
 
-        if (!family.isEmpty())
+        if (!family.isEmpty()) {
             str += FAMILY_ATTR "=\"" + family + "\" ";
-        if (KFI_NULL_SETTING != weight)
+        }
+        if (KFI_NULL_SETTING != weight) {
             str += WEIGHT_ATTR "=\"" + QString::number(weight) + "\" ";
-        if (KFI_NULL_SETTING != width)
+        }
+        if (KFI_NULL_SETTING != width) {
             str += WIDTH_ATTR "=\"" + QString::number(width) + "\" ";
-        if (KFI_NULL_SETTING != slant)
+        }
+        if (KFI_NULL_SETTING != slant) {
             str += SLANT_ATTR "=\"" + QString::number(slant) + "\" ";
-        if (!itsScalable)
+        }
+        if (!itsScalable) {
             str += SCALABLE_ATTR "=\"false\" ";
+        }
 
         QStringList ws(WritingSystems::instance()->getLangs(itsWritingSystems));
 
-        if (!ws.isEmpty())
+        if (!ws.isEmpty()) {
             str += LANGS_ATTR "=\"" + ws.join(LANG_SEP) + "\" ";
+        }
 
-        if (1 == files.count())
+        if (1 == files.count()) {
             str += (*files.begin()) + "/>";
-        else {
+        } else {
             QStringList::ConstIterator it(files.begin()), end(files.end());
 
             str += ">\n";
-            for (; it != end; ++it)
+            for (; it != end; ++it) {
                 str += "   <" FILE_TAG " " + (*it) + "/>\n";
+            }
             str += "  </" FONT_TAG ">";
         }
 
@@ -141,8 +137,9 @@ QDBusArgument &operator<<(QDBusArgument &argument, const KFI::Style &obj)
     argument << obj.value() << obj.scalable() << obj.writingSystems();
     argument.beginArray(qMetaTypeId<KFI::File>());
     KFI::FileCont::ConstIterator it(obj.files().begin()), end(obj.files().end());
-    for (; it != end; ++it)
+    for (; it != end; ++it) {
         argument << *it;
+    }
     argument.endArray();
     argument.endStructure();
     return argument;

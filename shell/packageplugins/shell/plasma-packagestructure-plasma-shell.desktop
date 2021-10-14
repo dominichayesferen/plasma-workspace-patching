@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Plasma Shell
+Name[ar]=طرفية بلازما
 Name[ast]=Shell de Plasma
 Name[az]=Plasma üz qabığı
 Name[bs]=Plazma školjka
@@ -56,6 +57,6 @@ X-KDE-Library=plasma_packagestructure_plasmashell
 
 X-KDE-PluginInfo-Author=Marco Martin
 X-KDE-PluginInfo-Email=notmart@gmail.com
-X-KDE-PluginInfo-Name=Plasma/Shell
+KPackageStructure=Plasma/Shell
 X-KDE-PluginInfo-Version=1
 X-KDE-ParentApp=org.kde.plasmashell

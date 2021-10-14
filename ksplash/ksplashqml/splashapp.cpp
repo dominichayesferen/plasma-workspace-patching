@@ -1,22 +1,9 @@
 /*
- *   Copyright (C) 2010 Ivan Cukic <ivan.cukic(at)kde.org>
- *   Copyright (C) 2013 Martin Klapetek <mklapetek(at)kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License version 2,
- *   or (at your option) any later version, as published by the Free
- *   Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2010 Ivan Cukic <ivan.cukic(at)kde.org>
+    SPDX-FileCopyrightText: 2013 Martin Klapetek <mklapetek(at)kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "splashapp.h"
 #include "splashwindow.h"
@@ -36,14 +23,14 @@
 #define TEST_STEP_INTERVAL 2000
 
 /**
- * There are 7 used stages in ksplash
- *  - initial
+ * There are 7 stages in ksplash
+ *  - initial (from this class)
+ *  - startPlasma (from startplasma)
  *  - kcminit
- *  - kinit
  *  - ksmserver
- *  - wm
- *  - ready
- *  - desktop
+ *  - wm (for X11 from KWin, for Wayland from this class)
+ *  - ready (from plasma-session startup)
+ *  - desktop (from shellcorona)
  */
 
 SplashApp::SplashApp(int &argc, char **argv)
@@ -111,11 +98,6 @@ void SplashApp::timerEvent(QTimerEvent *event)
 
 void SplashApp::setStage(const QString &stage)
 {
-    // filter out startup events from KDED as they will be removed in a future release
-    if (stage == QLatin1String("kded") || stage == QLatin1String("confupdate")) {
-        return;
-    }
-
     if (m_stages.contains(stage)) {
         return;
     }
@@ -136,6 +118,9 @@ void SplashApp::setStage(int stage)
 
 void SplashApp::adoptScreen(QScreen *screen)
 {
+    if (screen->geometry().isNull()) {
+        return;
+    }
     SplashWindow *w = new SplashWindow(m_testing, m_window, m_theme);
     w->setGeometry(screen->geometry());
     w->setScreen(screen);

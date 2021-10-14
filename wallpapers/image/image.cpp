@@ -1,27 +1,14 @@
-/***************************************************************************
- *   Copyright 2007 Paolo Capriotti <p.capriotti@gmail.com>                *
- *   Copyright 2007 Aaron Seigo <aseigo@kde.org>                           *
- *   Copyright 2008 Petri Damsten <damu@iki.fi>                            *
- *   Copyright 2008 Alexis Ménard <darktears31@gmail.com>                  *
- *   Copyright 2014 Sebastian Kügler <sebas@kde.org>                       *
- *   Copyright 2015 Kai Uwe Broulik <kde@privat.broulik.de>                *
- *   Copyright 2019 David Redondo <kde@david-redondo.de>                   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .        *
- ***************************************************************************/
+/*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
+    SPDX-FileCopyrightText: 2007 Aaron Seigo <aseigo@kde.org>
+    SPDX-FileCopyrightText: 2008 Petri Damsten <damu@iki.fi>
+    SPDX-FileCopyrightText: 2008 Alexis Ménard <darktears31@gmail.com>
+    SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2015 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "image.h"
 #include "debug.h"
@@ -43,11 +30,12 @@
 #include <KDirWatch>
 #include <KIO/CopyJob>
 #include <KIO/Job>
+#include <KIO/OpenUrlJob>
+#include <KNotificationJobUiDelegate>
 #include <KRandom>
 #include <QDebug>
 #include <QFileDialog>
 #include <klocalizedstring.h>
-#include <krun.h>
 
 #include "backgroundlistmodel.h"
 #include "slidefiltermodel.h"
@@ -65,6 +53,7 @@ Image::Image(QObject *parent)
     , m_dirWatch(new KDirWatch(this))
     , m_mode(SingleImage)
     , m_slideshowMode(Random)
+    , m_slideshowFoldersFirst(false)
     , m_currentSlide(-1)
     , m_model(nullptr)
     , m_slideshowModel(new SlideModel(this, this))
@@ -165,18 +154,37 @@ Image::SlideshowMode Image::slideshowMode() const
     return m_slideshowMode;
 }
 
-void Image::setSlideshowMode(Image::SlideshowMode mode)
+void Image::setSlideshowMode(Image::SlideshowMode slideshowMode)
 {
-    if (mode == m_slideshowMode) {
+    if (slideshowMode == m_slideshowMode) {
         return;
     }
-    m_slideshowMode = mode;
-    m_slideFilterModel->setSortingMode(mode);
+    m_slideshowMode = slideshowMode;
+    m_slideFilterModel->setSortingMode(m_slideshowMode, m_slideshowFoldersFirst);
     m_slideFilterModel->sort(0);
     if (m_mode == SlideShow) {
         startSlideshow();
     }
     emit slideshowModeChanged();
+}
+
+bool Image::slideshowFoldersFirst() const
+{
+    return m_slideshowFoldersFirst;
+}
+
+void Image::setSlideshowFoldersFirst(bool slideshowFoldersFirst)
+{
+    if (slideshowFoldersFirst == m_slideshowFoldersFirst) {
+        return;
+    }
+    m_slideshowFoldersFirst = slideshowFoldersFirst;
+    m_slideFilterModel->setSortingMode(m_slideshowMode, m_slideshowFoldersFirst);
+    m_slideFilterModel->sort(0);
+    if (m_mode == SlideShow) {
+        startSlideshow();
+    }
+    emit slideshowFoldersFirstChanged();
 }
 
 float distance(const QSize &size, const QSize &desired)
@@ -797,18 +805,6 @@ void Image::nextSlide()
     Q_EMIT wallpaperPathChanged();
 }
 
-void Image::openSlide()
-{
-    if (!m_wallpaperPackage.isValid()) {
-        return;
-    }
-
-    // open in image viewer
-    QUrl filepath(m_wallpaperPackage.filePath("preferred"));
-    qCDebug(IMAGEWALLPAPER) << "opening file " << filepath.path();
-    new KRun(filepath, nullptr);
-}
-
 void Image::pathCreated(const QString &path)
 {
     if (m_slideshowModel->indexOf(path) == -1) {
@@ -890,7 +886,11 @@ void Image::commitDeletion()
 
 void Image::openFolder(const QString &path)
 {
-    new KRun(QUrl::fromLocalFile(path), nullptr);
+    auto *job = new KIO::OpenUrlJob(QUrl::fromLocalFile(path));
+    auto *delegate = new KNotificationJobUiDelegate;
+    delegate->setAutoErrorHandlingEnabled(true);
+    job->setUiDelegate(delegate);
+    job->start();
 }
 
 void Image::toggleSlide(const QString &path, bool checked)

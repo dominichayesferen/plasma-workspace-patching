@@ -1,28 +1,14 @@
-/***************************************************************************
- *   Copyright 2007 Paolo Capriotti <p.capriotti@gmail.com>                *
- *   Copyright 2008 by Petri Damsten <damu@iki.fi>                         *
- *   Copyright 2014 Sebastian Kügler <sebas@kde.org>                       *
- *   Copyright 2015 Kai Uwe Broulik <kde@privat.broulik.de>                *
- *   Copyright 2019 David Redondo <kde@david-redondo.de>                   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .        *
- ***************************************************************************/
+/*
+    SPDX-FileCopyrightText: 2007 Paolo Capriotti <p.capriotti@gmail.com>
+    SPDX-FileCopyrightText: 2008 Petri Damsten <damu@iki.fi>
+    SPDX-FileCopyrightText: 2014 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2015 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
 
-#ifndef IMAGE_HEADER
-#define IMAGE_HEADER
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
+
+#pragma once
 
 #include <QDateTime>
 #include <QObject>
@@ -51,6 +37,7 @@ class Image : public QObject, public QQmlParserStatus
 
     Q_PROPERTY(RenderingMode renderingMode READ renderingMode WRITE setRenderingMode NOTIFY renderingModeChanged)
     Q_PROPERTY(SlideshowMode slideshowMode READ slideshowMode WRITE setSlideshowMode NOTIFY slideshowModeChanged)
+    Q_PROPERTY(bool slideshowFoldersFirst READ slideshowFoldersFirst WRITE setSlideshowFoldersFirst NOTIFY slideshowFoldersFirstChanged)
     Q_PROPERTY(QUrl wallpaperPath READ wallpaperPath NOTIFY wallpaperPathChanged)
     Q_PROPERTY(QAbstractItemModel *wallpaperModel READ wallpaperModel CONSTANT)
     Q_PROPERTY(QAbstractItemModel *slideFilterModel READ slideFilterModel CONSTANT)
@@ -77,7 +64,7 @@ public:
     };
     Q_ENUM(SlideshowMode)
 
-    explicit Image(QObject *parent = nullptr);
+    explicit Image(QObject* parent = nullptr);
     ~Image() override;
 
     QUrl wallpaperPath() const;
@@ -101,7 +88,10 @@ public:
     void setRenderingMode(RenderingMode mode);
 
     SlideshowMode slideshowMode() const;
-    void setSlideshowMode(SlideshowMode mode);
+    void setSlideshowMode(SlideshowMode slideshowMode);
+
+    bool slideshowFoldersFirst() const;
+    void setSlideshowFoldersFirst(bool slideshowFoldersFirst);
 
     QSize targetSize() const;
     void setTargetSize(const QSize &size);
@@ -140,6 +130,7 @@ Q_SIGNALS:
     void wallpaperPathChanged();
     void renderingModeChanged();
     void slideshowModeChanged();
+    void slideshowFoldersFirstChanged();
     void targetSizeChanged();
     void slideTimerChanged();
     void usersWallpapersChanged();
@@ -151,10 +142,6 @@ Q_SIGNALS:
 protected Q_SLOTS:
     void showAddSlidePathsDialog();
     void wallpaperBrowseCompleted();
-    /**
-     * Open the current slide in the default image application
-     */
-    void openSlide();
     void startSlideshow();
     void fileDialogFinished();
     void addUrl(const QUrl &url, bool setAsCurrent);
@@ -188,6 +175,7 @@ private:
 
     RenderingMode m_mode;
     SlideshowMode m_slideshowMode;
+    bool m_slideshowFoldersFirst;
 
     KPackage::Package m_wallpaperPackage;
     QStringList m_slidePaths;
@@ -202,5 +190,3 @@ private:
     QDateTime m_previousModified;
     QString m_findToken;
 };
-
-#endif

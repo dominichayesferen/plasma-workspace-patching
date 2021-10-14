@@ -1,19 +1,7 @@
 /*
-   Copyright (c) 2021 Dan Leinir Turthra Jensen <admin@leinir.dk>
+    SPDX-FileCopyrightText: 2021 Dan Leinir Turthra Jensen <admin@leinir.dk>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License version 2 as published by the Free Software Foundation.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: LGPL-2.0-only
 */
 
 #include "colorsapplicator.h"
@@ -95,7 +83,9 @@ int main(int argc, char **argv)
                 if (newSchemeIndex > -1) {
                     model->setSelectedScheme(requestedScheme);
                     settings->setColorScheme(requestedScheme);
-                    applyScheme(settings, model);
+                    const QString path =
+                        QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("color-schemes/%1.colors").arg(model->selectedScheme()));
+                    applyScheme(path, settings->config());
                     settings->save();
                     ts << i18n("Successfully applied the color scheme %1 to your current Plasma session", requestedScheme) << Qt::endl;
                 } else {

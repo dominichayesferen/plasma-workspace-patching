@@ -5,15 +5,18 @@ if(X11_Xcursor_FOUND)
     set(HAVE_XCURSOR TRUE)
 endif()
 
-if(${Breeze_FOUND} AND ${BREEZE_WITH_KDECORATION})
-    set(HAVE_BREEZE_DECO TRUE)
+if(${Breeze_FOUND})
+    if(${BREEZE_WITH_KDECORATION})
+        set(HAVE_BREEZE_DECO TRUE)
+    endif()
 endif()
 
 configure_file (config-kcm.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-kcm.h )
 
 set(kcm_lookandfeel_SRCS
     kcm.cpp
-    ../kcms-common_p.h
+    ../colors/colorsapplicator.cpp
+    ../kcms-common.cpp
 )
 
 if (X11_Xcursor_FOUND)
@@ -42,10 +45,13 @@ target_link_libraries(kcm_lookandfeel_static
     KF5::JobWidgets
     KF5::Service
     KF5::QuickAddons
+    KF5::GuiAddons
     KF5::KIOWidgets
     KF5::Declarative
+    KF5::NewStuff
     PW::KWorkspace
     krdb
+    PlasmaAutostart
 )
 if(X11_FOUND)
     target_link_libraries(kcm_lookandfeel_static Qt::X11Extras)
@@ -57,15 +63,13 @@ if (X11_Xfixes_FOUND)
    target_link_libraries(kcm_lookandfeel_static X11::Xfixes)
 endif ()
 
-add_library(kcm_lookandfeel MODULE kcmmain.cpp)
+kcoreaddons_add_plugin(kcm_lookandfeel SOURCES kcmmain.cpp INSTALL_NAMESPACE "kcms")
 kcoreaddons_desktop_to_json(kcm_lookandfeel "kcm_lookandfeel.desktop" SERVICE_TYPES kcmodule.desktop)
 target_link_libraries(kcm_lookandfeel kcm_lookandfeel_static)
 
 #this desktop file is installed only for retrocompatibility with sycoca
 install(FILES lookandfeelsettings.kcfg DESTINATION ${KDE_INSTALL_KCFGDIR})
 install(FILES kcm_lookandfeel.desktop DESTINATION ${KDE_INSTALL_KSERVICES5DIR})
-set_target_properties(kcm_lookandfeel PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/kcms")
-install(TARGETS kcm_lookandfeel DESTINATION ${KDE_INSTALL_PLUGINDIR}/kcms)
 install(FILES lookandfeel.knsrc DESTINATION ${KDE_INSTALL_KNSRCDIR})
 
 if(BUILD_TESTING)
@@ -87,16 +91,3 @@ ADD_CUSTOM_TARGET(plasma-apply-lookandfeel_link ALL
                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${KDE_INSTALL_FULL_BINDIR}/plasma-apply-lookandfeel ${CMAKE_CURRENT_BINARY_DIR}/lookandfeeltool)
 install( FILES ${CMAKE_CURRENT_BINARY_DIR}/lookandfeeltool DESTINATION ${KDE_INSTALL_FULL_BINDIR}/ )
 install( TARGETS plasma-apply-lookandfeel ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )
-
-###### Qt Style command line tool
-
-kconfig_add_kcfg_files(plasma-apply-appstyle_SRCS lookandfeelsettings.kcfgc GENERATE_MOC)
-
-add_executable(plasma-apply-appstyle qtstyletool.cpp)
-
-target_link_libraries(plasma-apply-appstyle kcm_lookandfeel_static)
-
-ADD_CUSTOM_TARGET(plasma-apply-appstyle_link ALL
-                  COMMAND ${CMAKE_COMMAND} -E create_symlink ${KDE_INSTALL_FULL_BINDIR}/plasma-apply-appstyle ${CMAKE_CURRENT_BINARY_DIR}/qtstyletool)
-install( FILES ${CMAKE_CURRENT_BINARY_DIR}/qtstyletool DESTINATION ${KDE_INSTALL_FULL_BINDIR}/ )
-install( TARGETS plasma-apply-appstyle ${KDE_INSTALL_TARGETS_DEFAULT_ARGS} )

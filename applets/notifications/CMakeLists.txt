@@ -9,8 +9,7 @@ set(notificationapplet_SRCS
     thumbnailer.cpp
 )
 
-add_library(plasma_applet_notifications MODULE ${notificationapplet_SRCS})
-
+kcoreaddons_add_plugin(plasma_applet_notifications SOURCES ${notificationapplet_SRCS} INSTALL_NAMESPACE "plasma/applets")
 kcoreaddons_desktop_to_json(plasma_applet_notifications package/metadata.desktop)
 
 target_link_libraries(plasma_applet_notifications
@@ -21,9 +20,9 @@ target_link_libraries(plasma_applet_notifications
                       KF5::Plasma
                       KF5::PlasmaQuick
                       KF5::GlobalAccel
+                      KF5::KIOGui
                       KF5::KIOWidgets # for PreviewJob
+                      KF5::Notifications # for KNotificationJobUiDelegate
                       )
-
-install(TARGETS plasma_applet_notifications DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/applets)
 
 plasma_install_package(package org.kde.plasma.notifications)

@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Layout Template
+Name[ar]=قالب التخطيط
 Name[az]=Şablon Qatları
 Name[bs]=Predložak rasporeda
 Name[ca]=Plantilla de disposició
@@ -56,6 +57,6 @@ X-KDE-Library=plasma_packagestructure_layouttemplate
 
 X-KDE-PluginInfo-Author=Marco Martin
 X-KDE-PluginInfo-Email=notmart@gmail.com
-X-KDE-PluginInfo-Name=Plasma/LayoutTemplate
+KPackageStructure=Plasma/LayoutTemplate
 X-KDE-PluginInfo-Version=1
 X-KDE-ParentApp=org.kde.plasmashell

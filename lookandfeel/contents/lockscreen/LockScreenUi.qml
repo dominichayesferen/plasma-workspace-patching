@@ -1,21 +1,8 @@
-/********************************************************************
- This file is part of the KDE project.
+/*
+    SPDX-FileCopyrightText: 2014 Aleix Pol Gonzalez <aleixpol@blue-systems.com>
 
-Copyright (C) 2014 Aleix Pol Gonzalez <aleixpol@blue-systems.com>
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*********************************************************************/
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 import QtQuick 2.8
 import QtQuick.Controls 1.1
@@ -416,6 +403,7 @@ PlasmaCore.ColorScope {
                         }
                         ScriptAction {
                             script: {
+                                inputPanel.item.activated = false;
                                 Qt.inputMethod.hide();
                             }
                         }
@@ -445,7 +433,12 @@ PlasmaCore.ColorScope {
                 // initiating session switch and preparing lockscreen for possible return of user
                 function finalSwitchSession() {
                     mainStack.pop({immediate:true})
-                    sessionsModel.switchUser(userListCurrentModelData.vtNumber)
+                    if (userListCurrentItem === null) {
+                        console.warn("Switching to an undefined user")
+                    } else if (userListCurrentItem.vtNumber === undefined) {
+                        console.warn("Switching to an undefined VT")
+                    }
+                    sessionsModel.switchUser(userListCurrentItem.vtNumber)
                     lockScreenRoot.state = ''
                 }
 
@@ -514,6 +507,7 @@ PlasmaCore.ColorScope {
             }
 
             PlasmaComponents3.ToolButton {
+                focusPolicy: Qt.TabFocus
                 text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "Button to show/hide virtual keyboard", "Virtual Keyboard")
                 icon.name: inputPanel.keyboardActive ? "input-keyboard-virtual-on" : "input-keyboard-virtual-off"
                 onClicked: {
@@ -527,6 +521,7 @@ PlasmaCore.ColorScope {
             }
 
             PlasmaComponents3.ToolButton {
+                focusPolicy: Qt.TabFocus
                 Accessible.description: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "Button to change keyboard layout", "Switch layout")
                 icon.name: "input-keyboard"
 

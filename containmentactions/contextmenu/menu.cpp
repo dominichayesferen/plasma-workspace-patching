@@ -1,21 +1,8 @@
 /*
- *   Copyright 2009 by Chani Armitage <chani@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2009 Chani Armitage <chani@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 #include "menu.h"
 
@@ -66,16 +53,31 @@ void ContextMenu::restore(const KConfigGroup &config)
     QSet<QString> disabled;
 
     if (c->containmentType() == Plasma::Types::PanelContainment || c->containmentType() == Plasma::Types::CustomPanelContainment) {
-        m_actionOrder << QStringLiteral("add widgets") << QStringLiteral("_add panel") << QStringLiteral("_context") << QStringLiteral("configure")
+        m_actionOrder << QStringLiteral("add widgets")
+                      << QStringLiteral("_add panel")
+                      << QStringLiteral("_context")
+                      << QStringLiteral("configure")
                       << QStringLiteral("remove");
     } else {
         actions.insert(QStringLiteral("configure shortcuts"), false);
-        m_actionOrder << QStringLiteral("configure") << QStringLiteral("run associated application") << QStringLiteral("configure shortcuts")
-                      << QStringLiteral("_sep1") << QStringLiteral("_context") << QStringLiteral("_run_command") << QStringLiteral("add widgets")
-                      << QStringLiteral("_add panel") << QStringLiteral("manage activities") << QStringLiteral("remove") << QStringLiteral("edit mode")
-                      << QStringLiteral("_sep2") << QStringLiteral("_lock_screen") << QStringLiteral("_logout") << QStringLiteral("_sep3")
+        m_actionOrder << QStringLiteral("configure")
+                      << QStringLiteral("run associated application")
+                      << QStringLiteral("configure shortcuts")
+                      << QStringLiteral("_sep1")
+                      << QStringLiteral("_context")
+                      << QStringLiteral("_run_command")
+                      << QStringLiteral("add widgets")
+                      << QStringLiteral("_add panel")
+                      << QStringLiteral("manage activities")
+                      << QStringLiteral("remove")
+                      << QStringLiteral("edit mode")
+                      << QStringLiteral("_sep2")
+                      << QStringLiteral("_lock_screen")
+                      << QStringLiteral("_logout")
+                      << QStringLiteral("_sep3")
                       << QStringLiteral("_wallpaper");
         disabled.insert(QStringLiteral("configure shortcuts"));
+        disabled.insert(QStringLiteral("_run_command"));
     }
 
     for (const QString &name : qAsConst(m_actionOrder)) {
@@ -104,7 +106,7 @@ void ContextMenu::restore(const KConfigGroup &config)
         });
         connect(m_lockScreenAction, &QAction::triggered, m_session, &SessionManagement::lock);
 
-        m_logoutAction = new QAction(i18nc("plasma_containmentactions_contextmenu", "Leave..."), this);
+        m_logoutAction = new QAction(i18nc("plasma_containmentactions_contextmenu", "Leave…"), this);
         m_logoutAction->setIcon(QIcon::fromTheme(QStringLiteral("system-log-out")));
         m_logoutAction->setShortcut(KGlobalAccel::self()->globalShortcut(QStringLiteral("ksmserver"), QStringLiteral("Log Out")).value(0));
         m_logoutAction->setEnabled(m_session->canLogout());
@@ -288,6 +290,6 @@ void ContextMenu::save(KConfigGroup &config)
     }
 }
 
-K_EXPORT_PLASMA_CONTAINMENTACTIONS_WITH_JSON(contextmenu, ContextMenu, "plasma-containmentactions-contextmenu.json")
+K_PLUGIN_CLASS_WITH_JSON(ContextMenu, "plasma-containmentactions-contextmenu.json")
 
 #include "menu.moc"

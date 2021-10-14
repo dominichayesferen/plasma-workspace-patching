@@ -1,26 +1,14 @@
 /*
- *   Copyright 2016 David Edmundson <davidedmundson@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2 or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2016 David Edmundson <davidedmundson@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.8
 
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 1.1
+import QtQuick.Controls 2.12 as QQC2
 import QtGraphicalEffects 1.0
 
 import org.kde.plasma.core 2.0 as PlasmaCore
@@ -158,13 +146,20 @@ PlasmaCore.ColorScope {
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
-        StackView {
+        QQC2.StackView {
             id: mainStack
             anchors {
                 left: parent.left
                 right: parent.right
             }
             height: root.height + PlasmaCore.Units.gridUnit * 3
+
+            // If true (depends on the style and environment variables), hover events are always accepted
+            // and propagation stopped. This means the parent MouseArea won't get them and the UI won't be shown.
+            // Disable capturing those events while the UI is hidden to avoid that, while still passing events otherwise.
+            // One issue is that while the UI is visible, mouse activity won't keep resetting the timer, but when it
+            // finally expires, the next event should immediately set uiVisible = true again.
+            hoverEnabled: loginScreenRoot.uiVisible ? undefined : false
 
             focus: true //StackView is an implicit focus scope, so we need to give this focus so the item inside will have it
 
@@ -236,7 +231,7 @@ PlasmaCore.ColorScope {
                     },
                     ActionButton {
                         iconSource: "system-user-prompt"
-                        text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "For switching to a username and password prompt", "Other...")
+                        text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "For switching to a username and password prompt", "Other…")
                         fontSize: parseInt(config.fontSize) + 1
                         onClicked: mainStack.push(userPromptComponent)
                         enabled: true
@@ -252,6 +247,68 @@ PlasmaCore.ColorScope {
             Behavior on opacity {
                 OpacityAnimator {
                     duration: PlasmaCore.Units.longDuration
+                }
+            }
+
+            readonly property real zoomFactor: 3
+
+            popEnter: Transition {
+                ScaleAnimator {
+                    from: mainStack.zoomFactor
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 0
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            popExit: Transition {
+                ScaleAnimator {
+                    from: 1
+                    to: 0
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 1
+                    to: 0
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            pushEnter: Transition {
+                ScaleAnimator {
+                    from: 0
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 0
+                    to: 1
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            pushExit: Transition {
+                ScaleAnimator {
+                    from: 1
+                    to: mainStack.zoomFactor
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
+                }
+                OpacityAnimator {
+                    from: 1
+                    to: 0
+                    duration: PlasmaCore.Units.longDuration * (mainStack.zoomFactor / 2)
+                    easing.type: Easing.OutCubic
                 }
             }
         }
@@ -270,7 +327,8 @@ PlasmaCore.ColorScope {
                     state = "hidden";
                 }
             }
-            source: "components/VirtualKeyboard.qml"
+
+            source: Qt.platform.pluginName.includes("wayland") ? "components/VirtualKeyboard_wayland.qml" : "components/VirtualKeyboard.qml"
             anchors {
                 left: parent.left
                 right: parent.right
@@ -363,6 +421,7 @@ PlasmaCore.ColorScope {
                         }
                         ScriptAction {
                             script: {
+                                inputPanel.item.activated = false;
                                 Qt.inputMethod.hide();
                             }
                         }

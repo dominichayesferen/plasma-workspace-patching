@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2009 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2009 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "PreviewList.h"
 #include "Fc.h"
@@ -45,18 +27,20 @@ CPreviewList::CPreviewList(QObject *parent)
 
 QVariant CPreviewList::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
+    if (!index.isValid()) {
         return QVariant();
+    }
 
     CPreviewListItem *item = static_cast<CPreviewListItem *>(index.internalPointer());
 
-    if (item)
+    if (item) {
         switch (role) {
         case Qt::DisplayRole:
             return FC::createName(item->name(), item->style());
         default:
             break;
         }
+    }
     return QVariant();
 }
 
@@ -70,8 +54,9 @@ QModelIndex CPreviewList::index(int row, int column, const QModelIndex &parent) 
     if (!parent.isValid()) {
         CPreviewListItem *item = itsItems.value(row);
 
-        if (item)
+        if (item) {
             return createIndex(row, column, item);
+        }
     }
 
     return QModelIndex();
@@ -99,8 +84,9 @@ void CPreviewList::showFonts(const QModelIndexList &fonts)
         CFontModelItem *mi = static_cast<CFontModelItem *>(index.internalPointer());
         CFontItem *font = mi->parent() ? static_cast<CFontItem *>(mi) : (static_cast<CFamilyItem *>(mi))->regularFont();
 
-        if (font)
+        if (font) {
             itsItems.append(new CPreviewListItem(font->family(), font->styleInfo(), font->isEnabled() ? QString() : font->fileName(), font->index()));
+        }
     }
 
     emit layoutChanged();

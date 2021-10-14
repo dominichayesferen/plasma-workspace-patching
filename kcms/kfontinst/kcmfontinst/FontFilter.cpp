@@ -1,26 +1,9 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2007 Craig Drummond <craig@kde.org>
- *           2019      Guo Yunhe <i@guoyunhe.me>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Craig Drummond <craig@kde.org>
+    SPDX-FileCopyrightText: 2019 Guo Yunhe <i@guoyunhe.me>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "FontFilter.h"
 #include "FontFilterProxyStyle.h"
@@ -39,13 +22,12 @@
 
 namespace KFI
 {
-static const int constArrowPad(5);
-
 static void deselectCurrent(QActionGroup *act)
 {
     QAction *prev(act->checkedAction());
-    if (prev)
+    if (prev) {
         prev->setChecked(false);
+    }
 }
 
 static void deselectCurrent(KSelectAction *act)
@@ -108,8 +90,9 @@ static void sortActions(KSelectAction *group)
         std::sort(sorted.begin(), sorted.end());
         QList<SortAction>::ConstIterator s(sorted.constBegin()), sEnd(sorted.constEnd());
 
-        for (; s != sEnd; ++s)
+        for (; s != sEnd; ++s) {
             group->addAction((*s).action);
+        }
     }
 }
 
@@ -171,7 +154,7 @@ CFontFilter::CFontFilter(QWidget *parent)
 
     QStringList::ConstIterator it(CFontList::fontMimeTypes.constBegin()), end(CFontList::fontMimeTypes.constEnd());
     QMimeDatabase db;
-    for (; it != end; ++it)
+    for (; it != end; ++it) {
         if ((*it) != "application/vnd.kde.fontspackage") {
             QMimeType mime = db.mimeTypeForName(*it);
 
@@ -185,6 +168,7 @@ CFontFilter::CFontFilter(QWidget *parent)
                 mimes.append(pattern.remove(QStringLiteral("*.")));
             act->setData(mimes);
         }
+    }
 
     sortActions(ftMenu);
     connect(ftMenu, SIGNAL(triggered(QString)), SLOT(ftChanged(QString)));
@@ -225,9 +209,9 @@ void CFontFilter::setFoundries(const QSet<QString> &currentFoundries)
 
     // Determine which of 'foundries' are new ones, and which old ones need to be removed...
     for (; fIt != fEnd; ++fIt) {
-        if (foundries.contains((*fIt)->text()))
+        if (foundries.contains((*fIt)->text())) {
             foundries.remove((*fIt)->text());
-        else {
+        } else {
             ((KSelectAction *)itsActions[CRIT_FOUNDRY])->removeAction(*fIt);
             (*fIt)->deleteLater();
             changed = true;
@@ -252,10 +236,11 @@ void CFontFilter::setFoundries(const QSet<QString> &currentFoundries)
         sortActions((KSelectAction *)itsActions[CRIT_FOUNDRY]);
         if (!prev.isEmpty()) {
             act = ((KSelectAction *)itsActions[CRIT_FOUNDRY])->action(prev);
-            if (act)
+            if (act) {
                 ((KSelectAction *)itsActions[CRIT_FOUNDRY])->setCurrentAction(act);
-            else
+            } else {
                 ((KSelectAction *)itsActions[CRIT_FOUNDRY])->setCurrentItem(0);
+            }
         }
 
         itsActions[CRIT_FOUNDRY]->setVisible(((KSelectAction *)itsActions[CRIT_FOUNDRY])->actions().count());
@@ -278,7 +263,7 @@ void CFontFilter::filterChanged()
             itsCurrentFileTypes.clear();
 
             setCriteria(crit);
-            m_lineEdit->setPlaceholderText(i18n("Filter by %1...", act->text()));
+            m_lineEdit->setPlaceholderText(i18n("Filter by %1…", act->text()));
             m_lineEdit->setReadOnly(false);
         }
     }
@@ -292,8 +277,9 @@ void CFontFilter::ftChanged(const QString &ft)
 
     QAction *act(((KSelectAction *)itsActions[CRIT_FILETYPE])->currentAction());
 
-    if (act)
+    if (act) {
         itsCurrentFileTypes = act->data().toStringList();
+    }
     itsCurrentCriteria = CRIT_FILETYPE;
     m_lineEdit->setReadOnly(true);
     setCriteria(itsCurrentCriteria);
@@ -309,8 +295,9 @@ void CFontFilter::wsChanged(const QString &writingSystemName)
 
     QAction *act(((KSelectAction *)itsActions[CRIT_WS])->currentAction());
 
-    if (act)
+    if (act) {
         itsCurrentWs = (QFontDatabase::WritingSystem)act->data().toInt();
+    }
     itsCurrentCriteria = CRIT_WS;
     m_lineEdit->setReadOnly(true);
     setCriteria(itsCurrentCriteria);
@@ -343,8 +330,9 @@ void CFontFilter::addAction(ECriteria crit, bool on)
     itsActionGroup->addAction(itsActions[crit]);
     itsActions[crit]->setData((int)crit);
     itsActions[crit]->setChecked(on);
-    if (on)
-        m_lineEdit->setPlaceholderText(i18n("Filter by %1...", itsTexts[crit]));
+    if (on) {
+        m_lineEdit->setPlaceholderText(i18n("Filter by %1…", itsTexts[crit]));
+    }
     connect(itsActions[crit], &QAction::toggled, this, &CFontFilter::filterChanged);
 }
 

@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2007 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2007 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "FontPreview.h"
 #include "CharTip.h"
@@ -122,13 +104,14 @@ void CFontPreview::paintEvent(QPaintEvent *)
 
     paint.fillRect(rect(), palette().base());
     if (!itsImage.isNull()) {
-        if (abs(width() - itsLastWidth) > constStepSize || abs(height() - itsLastHeight) > constStepSize)
+        if (abs(width() - itsLastWidth) > constStepSize || abs(height() - itsLastHeight) > constStepSize) {
             showFont();
-        else
+        } else {
             paint.drawImage(
                 QPointF(constBorder, constBorder),
                 itsImage,
                 QRectF(0, 0, (width() - (constBorder * 2)) * itsImage.devicePixelRatioF(), (height() - (constBorder * 2)) * itsImage.devicePixelRatioF()));
+        }
     }
 }
 
@@ -137,25 +120,29 @@ void CFontPreview::mouseMoveEvent(QMouseEvent *event)
     if (!itsChars.isEmpty()) {
         QList<CFcEngine::TChar>::ConstIterator end(itsChars.end());
 
-        if (itsLastChar.isNull() || !itsLastChar.contains(event->pos()))
-            for (QList<CFcEngine::TChar>::ConstIterator it(itsChars.begin()); it != end; ++it)
+        if (itsLastChar.isNull() || !itsLastChar.contains(event->pos())) {
+            for (QList<CFcEngine::TChar>::ConstIterator it(itsChars.begin()); it != end; ++it) {
                 if ((*it).contains(event->pos())) {
-                    if (!itsTip)
+                    if (!itsTip) {
                         itsTip = new CCharTip(this);
+                    }
 
                     itsTip->setItem(*it);
                     itsLastChar = *it;
                     break;
                 }
+            }
+        }
     }
 }
 
 void CFontPreview::wheelEvent(QWheelEvent *e)
 {
-    if (e->angleDelta().y() > 0)
+    if (e->angleDelta().y() > 0) {
         zoomIn();
-    else if (e->angleDelta().y() < 0)
+    } else if (e->angleDelta().y() < 0) {
         zoomOut();
+    }
 
     e->accept();
 }

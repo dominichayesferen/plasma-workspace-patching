@@ -1,22 +1,8 @@
 /*
- *   Copyright (C) 2016-2021 Harald Sitter <sitter@kde.org>
- *
- *   This library is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU Lesser General Public
- *   License as published by the Free Software Foundation; either
- *   version 2.1 of the License, or (at your option) version 3, or any
- *   later version accepted by the membership of KDE e.V. (or its
- *   successor approved by the membership of KDE e.V.), which shall
- *   act as a proxy defined in Section 6 of version 3 of the license.
- *
- *   This library is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *   Lesser General Public License for more details.
- *
- *   You should have received a copy of the GNU Lesser General Public
- *   License along with this library.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2016-2021 Harald Sitter <sitter@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+*/
 
 #include <QDebug>
 #include <QDir>
@@ -45,9 +31,7 @@ private Q_SLOTS:
     void testChromeAppsRelevance();
     void testKonsoleVsYakuakeComment();
     void testSystemSettings();
-    void testForeignAppsOutscoreKCMs();
     void testINotifyUsage();
-    void testKCMId();
 };
 
 void ServiceRunnerTest::initTestCase()
@@ -169,42 +153,6 @@ void ServiceRunnerTest::testSystemSettings()
     QVERIFY(!foreignSystemSettingsFound);
 }
 
-void ServiceRunnerTest::testForeignAppsOutscoreKCMs()
-{
-    // Our software outscores other things, but foreign applications should still
-    // outscore our KCMs.
-    ServiceRunner runner(this, KPluginMetaData(), QVariantList());
-    Plasma::RunnerContext context;
-    context.setQuery(QStringLiteral("virt"));
-
-    runner.match(context);
-
-    std::optional<qreal> virtManRelevance;
-    std::optional<qreal> virtThingsRelevance;
-    std::optional<qreal> kcmRelevance;
-    const auto matches = context.matches();
-    for (const auto &match : matches) {
-        const QUrl url = match.data().toUrl();
-        if (url == QUrl(QStringLiteral("applications:virt-manager.desktop"))) {
-            virtManRelevance = match.relevance();
-        } else if (url == QUrl(QStringLiteral("applications:kcm_kwin_virtualdesktops.desktop"))) {
-            kcmRelevance = match.relevance();
-        } else if (url == QUrl(QStringLiteral("applications:org.kde.virtthings.desktop"))) {
-            virtThingsRelevance = match.relevance();
-        }
-    }
-    QVERIFY(virtManRelevance.has_value());
-    QVERIFY(virtThingsRelevance.has_value());
-    QVERIFY(kcmRelevance.has_value());
-
-    // KDE app should be >= non-KDE app
-    QVERIFY2(virtThingsRelevance >= virtManRelevance, qPrintable(QStringLiteral("%1 >= %2").arg(virtThingsRelevance.value(), virtManRelevance.value())));
-    // KDE app strictly greater KDE kcm
-    QVERIFY2(virtThingsRelevance > kcmRelevance, qPrintable(QStringLiteral("%1 > %2").arg(virtThingsRelevance.value(), kcmRelevance.value())));
-    // non-KDE app also strictly greater (because it is an app)
-    QVERIFY2(virtManRelevance > kcmRelevance, qPrintable(QStringLiteral("%1 > %2").arg(virtManRelevance.value(), kcmRelevance.value())));
-}
-
 void ServiceRunnerTest::testINotifyUsage()
 {
     auto inotifyCount = []() -> uint {
@@ -238,21 +186,6 @@ void ServiceRunnerTest::testINotifyUsage()
     thread->deleteLater();
 
     QVERIFY(inotifyCountCool);
-}
-
-void ServiceRunnerTest::testKCMId()
-{
-    ServiceRunner runner(this, KPluginMetaData(), QVariantList());
-    Plasma::RunnerContext context;
-    context.setQuery(QStringLiteral("kcm_kwin_virtualdesktops"));
-
-    runner.match(context);
-
-    const auto matches = context.matches();
-    QCOMPARE(matches.count(), 1);
-    // Ensure KCM ids are uniquely identifying the KCM, not just the host application.
-    // The specific format of the id is a bit besides the point so we'll only check for our kcm being mentioned.
-    QVERIFY(matches.at(0).id().contains("kcm_kwin_virtualdesktops"));
 }
 
 QTEST_MAIN(ServiceRunnerTest)

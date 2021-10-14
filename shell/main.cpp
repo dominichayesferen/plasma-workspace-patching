@@ -1,22 +1,10 @@
 /*
- *  Copyright 2012 Marco Martin <mart@kde.org>
- *  Copyright 2013 Sebastian Kügler <sebas@kde.org>
- *  Copyright 2015 David Edmundson <davidedmundson@kde.org>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2012 Marco Martin <mart@kde.org>
+    SPDX-FileCopyrightText: 2013 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2015 David Edmundson <davidedmundson@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -26,9 +14,9 @@
 #include <QLoggingCategory>
 #include <QMessageBox>
 #include <QProcess>
+#include <QQmlDebuggingEnabler>
 #include <QQuickWindow>
 #include <QSessionManager>
-#include <QtQml/QQmlDebuggingEnabler>
 
 #include <KAboutData>
 #include <KQuickAddons/QtQuickSettings>
@@ -110,10 +98,6 @@ int main(int argc, char *argv[])
 
     app.setQuitOnLastWindowClosed(false);
 
-    KSharedConfig::Ptr startupConf = KSharedConfig::openConfig(QStringLiteral("plasmashellrc"));
-    KConfigGroup startupConfGroup(startupConf, "Shell");
-    const QString defaultShell = startupConfGroup.readEntry("ShellPackage", qEnvironmentVariable("PLASMA_DEFAULT_SHELL", "org.kde.plasma.desktop"));
-
     bool replace = false;
 
     ShellCorona *corona;
@@ -128,7 +112,7 @@ int main(int argc, char *argv[])
         QCommandLineOption shellPluginOption(QStringList() << QStringLiteral("p") << QStringLiteral("shell-plugin"),
                                              i18n("Force loading the given shell plugin"),
                                              QStringLiteral("plugin"),
-                                             defaultShell);
+                                             ShellCorona::defaultShell());
 
         QCommandLineOption standaloneOption(QStringList() << QStringLiteral("a") << QStringLiteral("standalone"),
                                             i18n("Load plasmashell as a standalone application, needs the shell-plugin option to be specified"));

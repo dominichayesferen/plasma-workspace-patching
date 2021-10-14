@@ -1,21 +1,8 @@
 /*
- * Copyright (C) 2019 David Edmundson <davidedmundson@kde.org>
- * Copyright (C) 2019 Aleix Pol Gonzalez <aleixpol@kde.org>
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Library General Public
- *  License as published by the Free Software Foundation; either
- *  version 2 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Library General Public License for more details.
- *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this library; see the file COPYING.LIB.  If not, write to
- *  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- *  Boston, MA 02110-1301, USA.
+    SPDX-FileCopyrightText: 2019 David Edmundson <davidedmundson@kde.org>
+    SPDX-FileCopyrightText: 2019 Aleix Pol Gonzalez <aleixpol@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
 */
 
 import QtQuick 2.1
@@ -23,6 +10,7 @@ import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.3 as QQC2
 import org.kde.kirigami 2.6 as Kirigami
 import org.kde.userfeedback 1.0 as UserFeedback
+import org.kde.userfeedback.kcm 1.0
 import org.kde.kcm 1.3
 
 SimpleKCM {
@@ -159,6 +147,21 @@ SimpleKCM {
                             }
                         }
                     }
+                }
+            }
+
+            Item {
+                implicitHeight: Kirigami.Units.largeSpacing
+                Layout.fillWidth: true
+            }
+            Repeater {
+                model: kcm.audits
+                delegate: Kirigami.LinkButton {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignLeft
+                    Kirigami.FormData.label: model.index === 0 ? i18n("View sent data:") : ""
+                    text: modelData.program
+                    onClicked: Qt.openUrlExternally(modelData.audits)
                 }
             }
         }

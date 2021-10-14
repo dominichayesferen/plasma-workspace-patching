@@ -1,22 +1,8 @@
 /*
- * Copyright 2018 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2018 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
 
 import QtQuick 2.7
 import QtQuick.Layouts 1.1
@@ -257,13 +243,13 @@ KCM.GridViewKCM {
                 actions: [
                     Kirigami.Action {
                         enabled: root.view.enabled
-                        text: i18n("Install from File...")
+                        text: i18n("Install from File…")
                         icon.name: "document-import"
                         onTriggered: fileDialogLoader.active = true
                     },
                     Kirigami.Action {
                         enabled: root.view.enabled
-                        text: i18n("Get New Icons...")
+                        text: i18n("Get New Icons…")
                         icon.name: "get-hot-new-stuff"
                         onTriggered: { newStuffPage.open(); }
                     }
@@ -297,9 +283,13 @@ KCM.GridViewKCM {
             configFile: "icons.knsrc"
             viewMode: NewStuff.Page.ViewMode.Preview
             Connections {
-                target: newStuffPage.item.engine.engine
-                function onSignalEntryEvent(entry, event) {
-                    kcm.ghnsEntriesChanged();
+                target: newStuffPage.item.engine
+                function onEntryEvent(entry, event) {
+                    if (event == 2) { // AdoptedEvent
+                        kcm.reloadConfig();
+                    } else if (event == 1) { // StatusChangedEvent
+                        kcm.ghnsEntriesChanged();
+                    }
                 }
             }
         }

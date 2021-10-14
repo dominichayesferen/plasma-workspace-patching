@@ -1,23 +1,10 @@
 /*
- *   Copyright 2011 Sebastian Kügler <sebas@kde.org>
- *   Copyright 2011 Viranch Mehta <viranch.mehta@gmail.com>
- *   Copyright 2013-2015 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2 or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2011 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2011 Viranch Mehta <viranch.mehta@gmail.com>
+    SPDX-FileCopyrightText: 2013-2015 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.0
 import QtQuick.Layouts 1.1
@@ -170,7 +157,7 @@ Item {
         Logic.updateInhibitions(batterymonitor, pmSource)
 
         if (batterymonitor.kcmEnergyInformationAuthorized) {
-            plasmoid.setAction("energyinformationkcm", i18n("&Show Energy Information..."), "documentinfo");
+            plasmoid.setAction("energyinformationkcm", i18n("&Show Energy Information…"), "documentinfo");
         }
         plasmoid.setAction("showPercentage", i18n("Show Battery Percentage on Icon"), "format-number-percent");
         plasmoid.action("showPercentage").checkable = true;
@@ -178,7 +165,7 @@ Item {
 
         if (batterymonitor.kcmAuthorized) {
             plasmoid.removeAction("configure");
-            plasmoid.setAction("configure", i18n("&Configure Energy Saving..."), "configure", "alt+d, s");
+            plasmoid.setAction("configure", i18n("&Configure Energy Saving…"), "configure", "alt+d, s");
         }
     }
 
@@ -231,6 +218,13 @@ Item {
 
         pluggedIn: pmSource.data["AC Adapter"] !== undefined && pmSource.data["AC Adapter"]["Plugged in"]
 
+        readonly property string actuallyActiveProfile: pmSource.data["Power Profiles"] ? (pmSource.data["Power Profiles"]["Current Profile"] || "") : ""
+        activeProfile: actuallyActiveProfile
+        profiles: pmSource.data["Power Profiles"] ? (pmSource.data["Power Profiles"]["Profiles"] || []) : []
+        inhibitionReason: pmSource.data["Power Profiles"] ? (pmSource.data["Power Profiles"]["Performance Inhibited Reason"] || "") : ""
+        degradationReason: pmSource.data["Power Profiles"] ? (pmSource.data["Power Profiles"]["Performance Degraded Reason"] || "") : ""
+        profileHolds:  pmSource.data["Power Profiles"] ? (pmSource.data["Power Profiles"]["Profile Holds"] || []) : []
+
         property int cookie1: -1
         property int cookie2: -1
         onPowermanagementChanged: {
@@ -268,6 +262,32 @@ Item {
                 });
             }
             batterymonitor.powermanagementDisabled = disabled
+        }
+
+        PlasmaCore.DataSource {
+            id: notificationSource
+            engine: "notifications"
+        }
+
+        onActivateProfileRequested: {
+            dialogItem.activeProfile = profile
+            const service = pmSource.serviceForSource("PowerDevil");
+            let op = service.operationDescription("setPowerProfile");
+            op.profile = profile;
+
+            let job = service.startOperationCall(op);
+            job.finished.connect((job) => {
+                dialogItem.activeProfile = Qt.binding(() => actuallyActiveProfile)
+                if (!job.result) {
+                    var notifications = notificationSource.serviceForSource("notification")
+                    var operation = notifications.operationDescription("createNotification");
+                    operation.appName = i18n("Battery and Brightness")
+                    operation.appIcon = "dialog-error";
+                    operation.icon = "dialog-error"
+                    operation.body = i18n("Failed to activate %1 mode", profile)
+                    notifications.startOperationCall(operation);
+                }
+            });
         }
     }
 }

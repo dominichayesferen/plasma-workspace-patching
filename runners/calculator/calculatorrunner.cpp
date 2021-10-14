@@ -1,24 +1,12 @@
 /*
- *   Copyright (C) 2007 Barış Metin <baris@pardus.org.tr>
- *   Copyright (C) 2006 David Faure <faure@kde.org>
- *   Copyright (C) 2007 Richard Moore <rich@kde.org>
- *   Copyright (C) 2010 Matteo Agostinelli <agostinelli@gmail.com>
- *   Copyright (C) 2021 Alexander Lohnau <alexander.lohnau@gmx.de>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2007 Barış Metin <baris@pardus.org.tr>
+    SPDX-FileCopyrightText: 2006 David Faure <faure@kde.org>
+    SPDX-FileCopyrightText: 2007 Richard Moore <rich@kde.org>
+    SPDX-FileCopyrightText: 2010 Matteo Agostinelli <agostinelli@gmail.com>
+    SPDX-FileCopyrightText: 2021 Alexander Lohnau <alexander.lohnau@gmx.de>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "calculatorrunner.h"
 
@@ -37,7 +25,7 @@
 #include <KLocalizedString>
 #include <krunner/querymatch.h>
 
-K_EXPORT_PLASMA_RUNNER_WITH_JSON(CalculatorRunner, "plasma-runner-calculator.json")
+K_PLUGIN_CLASS_WITH_JSON(CalculatorRunner, "plasma-runner-calculator.json")
 
 CalculatorRunner::CalculatorRunner(QObject *parent, const KPluginMetaData &metaData, const QVariantList &args)
     : Plasma::AbstractRunner(parent, metaData, args)
@@ -349,7 +337,6 @@ void CalculatorRunner::run(const Plasma::RunnerContext &context, const Plasma::Q
 
 QMimeData *CalculatorRunner::mimeDataForMatch(const Plasma::QueryMatch &match)
 {
-    // qDebug();
     QMimeData *result = new QMimeData();
     result->setText(match.text());
     return result;

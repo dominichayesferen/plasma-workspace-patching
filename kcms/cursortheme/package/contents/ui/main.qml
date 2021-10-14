@@ -1,19 +1,7 @@
 /*
-   Copyright (c) 2015 Marco Martin <mart@kde.org>
+    SPDX-FileCopyrightText: 2015 Marco Martin <mart@kde.org>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License version 2 as published by the Free Software Foundation.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: LGPL-2.0-only
 */
 
 import QtQuick 2.7
@@ -92,12 +80,6 @@ KCM.GridViewKCM {
         RowLayout {
             id: row1
 
-            KCM.SettingStateBinding {
-                configObject: kcm.cursorThemeSettings
-                settingName: "cursorSize"
-                extraEnabledConditions: kcm.canResize
-            }
-
             QtControls.Label {
                 text: i18n("Size:")
             }
@@ -109,6 +91,12 @@ KCM.GridViewKCM {
                 onActivated: {
                     kcm.cursorThemeSettings.cursorSize = kcm.cursorSizeFromIndex(sizeCombo.currentIndex);
                     kcm.preferredSize = kcm.cursorSizeFromIndex(sizeCombo.currentIndex);
+                }
+
+                KCM.SettingStateBinding {
+                    configObject: kcm.cursorThemeSettings
+                    settingName: "cursorSize"
+                    extraEnabledConditions: kcm.canResize
                 }
 
                 delegate: QtControls.ItemDelegate {
@@ -143,13 +131,13 @@ KCM.GridViewKCM {
                 alignment: Qt.AlignRight
                 actions: [
                     Kirigami.Action {
-                        text: i18n("&Install from File...")
+                        text: i18n("&Install from File…")
                         icon.name: "document-import"
                         onTriggered: fileDialogLoader.active = true
                         enabled: kcm.canInstall
                     },
                     Kirigami.Action {
-                        text: i18n("&Get New Cursors...")
+                        text: i18n("&Get New Cursors…")
                         icon.name: "get-hot-new-stuff"
                         onTriggered: { newStuffPage.open(); }
                         enabled: kcm.canInstall
@@ -181,11 +169,16 @@ KCM.GridViewKCM {
         asynchronous: true
 
         sourceComponent: NewStuff.Dialog {
+            id: newStuffDialog
             configFile: "xcursor.knsrc"
             viewMode: NewStuff.Page.ViewMode.Tiles
             Connections {
-                target: newStuffPage.item
-                onChangedEntriesChanged: kcm.ghnsEntriesChanged(newStuffPage.item.changedEntries);
+                target: newStuffDialog.engine
+                function onEntryEvent(entry, event) {
+                    if (event == 1) { // StatusChangedEvent
+                        kcm.ghnsEntryChanged(entry);
+                    }
+                }
             }
         }
     }

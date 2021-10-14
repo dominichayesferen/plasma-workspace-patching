@@ -1,22 +1,8 @@
 /*
- * Copyright 2019 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2019 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
 
 import QtQuick 2.9
 import QtQuick.Layouts 1.1
@@ -53,7 +39,7 @@ KCM.SimpleKCM {
             Kirigami.FormData.isSection: true
             Layout.fillWidth: true
             type: Kirigami.MessageType.Error
-            text: i18n("Could not find a 'Notifications' widget which is required for displaying notifications.");
+            text: i18n("Could not find a 'Notifications' widget, which is required for displaying notifications. Make sure that it is enabled either in your System Tray or as a standalone widget.");
             visible: currentOwnerInfo.status === NotificationManager.ServerInfo.NotRunning
         }
 
@@ -219,7 +205,7 @@ KCM.SimpleKCM {
             }
             QtControls.Button {
                 id: positionCustomButton
-                text: i18n("Choose Custom Position...")
+                text: i18n("Choose Custom Position…")
                 icon.name: "preferences-desktop-display"
                 onClicked: kcm.push("PopupPositionPage.qml")
             }
@@ -330,7 +316,7 @@ KCM.SimpleKCM {
 
         QtControls.Button {
             Kirigami.FormData.label: i18n("Applications:")
-            text: i18n("Configure...")
+            text: i18n("Configure…")
             icon.name: "configure"
             enabled: root.notificationsAvailable
             onClicked: root.openSourcesSettings()

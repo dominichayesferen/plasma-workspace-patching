@@ -1,24 +1,11 @@
-/***************************************************************************
- *   Copyright 2013 Sebastian Kügler <sebas@kde.org>                       *
- *   Copyright 2014, 2016 Kai Uwe Broulik <kde@privat.broulik.de>          *
- *   Copyright 2020 Carson Black <uhhadd@gmail.com>                        *
- *   Copyright 2020 Ismael Asensio <isma.af@gmail.com>                     *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU Library General Public License as       *
- *   published by the Free Software Foundation; either version 2 of the    *
- *   License, or (at your option) any later version.                       *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU Library General Public License for more details.                  *
- *                                                                         *
- *   You should have received a copy of the GNU Library General Public     *
- *   License along with this program; if not, write to the                 *
- *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .        *
- ***************************************************************************/
+/*
+    SPDX-FileCopyrightText: 2013 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2014, 2016 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2020 Carson Black <uhhadd@gmail.com>
+    SPDX-FileCopyrightText: 2020 Ismael Asensio <isma.af@gmail.com>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.8
 import QtQuick.Layouts 1.1
@@ -133,22 +120,14 @@ PlasmaExtras.Representation {
 
     Item { // Album Art Background + Details
         anchors.fill: parent
+        clip: true
 
-        Image {
+        ShaderEffect {
             id: backgroundImage
+            property Image source: albumArt
 
-            source: root.albumArt
-            sourceSize.width: 512 /*
-                                    * Setting a sourceSize.width here
-                                    * prevents flickering when resizing the
-                                    * plasmoid on a desktop.
-                                    */
-
-            anchors.fill: parent
-            fillMode: Image.PreserveAspectCrop
-
-            asynchronous: true
-            visible: !!root.track && status === Image.Ready && !softwareRendering
+            anchors.centerIn: parent
+            visible: !!root.track && source.status === Image.Ready && !softwareRendering
 
             layer.enabled: !softwareRendering
             layer.effect: HueSaturation {
@@ -166,6 +145,16 @@ PlasmaExtras.Representation {
                     samples: 63
 
                     transparentBorder: false
+                }
+            }
+            // use State to avoid unnecessary reevaluation of width and height
+            states: State {
+                name: "albumArtReady"
+                when: plasmoid.expanded && backgroundImage.visible && albumArt.paintedWidth > 0
+                PropertyChanges {
+                    target: backgroundImage
+                    width: parent.width * Math.max(1, source.paintedWidth / source.paintedHeight)
+                    height: parent.width * Math.max(1, source.paintedHeight / source.paintedWidth)
                 }
             }
         }

@@ -1,19 +1,8 @@
 /*
- *   Copyright (C) 2009 Petri Damstén <damu@iki.fi>
- *
- *   This program is free software; you can redistribute it and/or
- *   modify it under the terms of the GNU General Public License as
- *   published by the Free Software Foundation; either version 2 of
- *   the License, or (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2009 Petri Damstén <damu@iki.fi>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "location_gps.h"
 #include "geolocdebug.h"
@@ -63,7 +52,9 @@ void Gpsd::run()
 #else
             if (m_gpsdata->online) {
 #endif
-#if GPSD_API_MAJOR_VERSION >= 10
+#if defined(STATUS_UNK) // STATUS_NO_FIX was renamed to STATUS_UNK without bumping API version
+                if (m_gpsdata->fix.status != STATUS_UNK) {
+#elif GPSD_API_MAJOR_VERSION >= 10
                 if (m_gpsdata->fix.status != STATUS_NO_FIX) {
 #else
                 if (m_gpsdata->status != STATUS_NO_FIX) {
@@ -120,6 +111,6 @@ void Gps::update()
     }
 }
 
-K_EXPORT_PLASMA_GEOLOCATIONPROVIDER(gps, Gps)
+K_PLUGIN_CLASS_WITH_JSON(Gps, "plasma-geolocation-gps.json")
 
 #include "location_gps.moc"

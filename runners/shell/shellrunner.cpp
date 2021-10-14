@@ -1,21 +1,10 @@
 /*
- *   Copyright (C) 2006 Aaron Seigo <aseigo@kde.org>
- *   Copyright (C) 2016 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2006 Aaron Seigo <aseigo@kde.org>
+    SPDX-FileCopyrightText: 2016 Kai Uwe Broulik <kde@privat.broulik.de>
+    SPDX-FileCopyrightText: 2020-2021 Alexander Lohnau <alexander.lonau@gmx.de>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "shellrunner.h"
 
@@ -30,7 +19,7 @@
 
 #include <KIO/CommandLauncherJob>
 
-K_EXPORT_PLASMA_RUNNER_WITH_JSON(ShellRunner, "plasma-runner-shell.json")
+K_PLUGIN_CLASS_WITH_JSON(ShellRunner, "plasma-runner-shell.json")
 
 ShellRunner::ShellRunner(QObject *parent, const KPluginMetaData &metaData, const QVariantList &args)
     : Plasma::AbstractRunner(parent, metaData, args)
@@ -54,14 +43,14 @@ ShellRunner::~ShellRunner()
 void ShellRunner::match(Plasma::RunnerContext &context)
 {
     QStringList envs;
-    QString command = context.query();
-    if (parseShellCommand(context.query(), envs, command)) {
-        const QString term = context.query();
+    std::optional<QString> parsingResult = parseShellCommand(context.query(), envs);
+    if (parsingResult.has_value()) {
+        const QString command = parsingResult.value();
         Plasma::QueryMatch match(this);
         match.setId(QStringLiteral("exec://") + command);
         match.setType(Plasma::QueryMatch::ExactMatch);
         match.setIcon(m_matchIcon);
-        match.setText(i18n("Run %1", term));
+        match.setText(i18n("Run %1", context.query()));
         match.setData(QVariantList({command, envs}));
         match.setRelevance(0.7);
         match.setActions(m_actionList);
@@ -82,7 +71,7 @@ void ShellRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryM
     job->start();
 }
 
-bool ShellRunner::parseShellCommand(const QString &query, QStringList &envs, QString &command)
+std::optional<QString> ShellRunner::parseShellCommand(const QString &query, QStringList &envs)
 {
     const static QRegularExpression envRegex = QRegularExpression(QStringLiteral("^.+=.+$"));
     const QStringList split = KShell::splitArgs(query);
@@ -91,15 +80,14 @@ bool ShellRunner::parseShellCommand(const QString &query, QStringList &envs, QSt
         if (!executablePath.isEmpty()) {
             QStringList executableParts{executablePath};
             executableParts << split.mid(split.indexOf(entry) + 1);
-            command = KShell::joinArgs(executableParts);
-            return true;
+            return KShell::joinArgs(executableParts);
         } else if (envRegex.match(entry).hasMatch()) {
             envs.append(entry);
         } else {
-            return false;
+            return std::nullopt;
         }
     }
-    return false;
+    return std::nullopt;
 }
 
 #include "shellrunner.moc"

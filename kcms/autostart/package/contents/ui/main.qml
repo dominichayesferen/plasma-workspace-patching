@@ -1,21 +1,8 @@
-/***************************************************************************
- *   Copyright (C) 2020 by Nicolas Fella <nicolas.fella@gmx.de             *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA          *
- ***************************************************************************/
+/*
+    SPDX-FileCopyrightText: 2020 Nicolas Fella <nicolas.fella@gmx.de
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 import QtQuick 2.10
 import QtQuick.Controls 2.10
@@ -108,7 +95,7 @@ KCM.ScrollViewKCM {
             width: parent.width - (Kirigami.Units.largeSpacing * 4)
             visible: parent.count === 0
             text: i18n("No user-specified autostart items")
-            explanation: xi18nc("@info", "Click the <interface>Add...</interface> button below to add some")
+            explanation: xi18nc("@info", "Click the <interface>Add…</interface> button below to add some")
         }
     }
 
@@ -161,7 +148,7 @@ KCM.ScrollViewKCM {
             id: menuButton
 
             icon.name: "list-add"
-            text: i18n("Add...")
+            text: i18n("Add…")
 
             checkable: true
             checked: menu.opened
@@ -187,19 +174,19 @@ KCM.ScrollViewKCM {
             dim: false
 
             MenuItem {
-                text: i18n("Add Application...")
+                text: i18n("Add Application…")
                 icon.name: "list-add"
 
                 onClicked: kcm.model.showApplicationDialog(root)
             }
             MenuItem {
-                text: i18n("Add Login Script...")
+                text: i18n("Add Login Script…")
                 icon.name: "list-add"
 
                 onClicked: loginFileDialogLoader.active = true
             }
             MenuItem {
-                text: i18n("Add Logout Script...")
+                text: i18n("Add Logout Script…")
                 icon.name: "list-add"
 
                 onClicked: logoutFileDialogLoader.active = true

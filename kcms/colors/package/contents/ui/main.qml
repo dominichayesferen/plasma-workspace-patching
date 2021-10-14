@@ -1,33 +1,21 @@
 /*
- * Copyright 2018 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2018 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
 
 import QtQuick 2.6
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.2
 import QtQuick.Dialogs 1.0 as QtDialogs
 import QtQuick.Controls 2.3 as QtControls
+import QtQuick.Templates 2.3 as T
 import QtQml 2.15
 
 import org.kde.kirigami 2.8 as Kirigami
 import org.kde.newstuff 1.62 as NewStuff
-import org.kde.kcm 1.3 as KCM
+import org.kde.kcm 1.5 as KCM
+import org.kde.kquickcontrols 2.0 as KQuickControls
 import org.kde.private.kcms.colors 1.0 as Private
 
 KCM.GridViewKCM {
@@ -57,11 +45,21 @@ KCM.GridViewKCM {
         extraEnabledConditions: !kcm.downloadingFile
     }
 
+    KCM.SettingHighlighter {
+        target: accentBox
+        highlight: accentBox.checked
+    }
+
     Component.onCompleted: {
         // The thumbnails are a bit more elaborate and need more room, especially when translated
         view.implicitCellWidth = Kirigami.Units.gridUnit * 13;
         view.implicitCellHeight = Kirigami.Units.gridUnit * 12;
     }
+
+    // we have a duplicate property here as "var" instead of "color", so that we
+    // can set it to "undefined", which lets us use the "a || b" shorthand for
+    // "a if a is defined, otherwise b"
+    readonly property var accentColor: Qt.colorEqual(kcm.accentColor, "transparent") ? undefined : kcm.accentColor
 
     DropArea {
         anchors.fill: parent
@@ -131,6 +129,104 @@ KCM.GridViewKCM {
                 }
             }
         }
+
+        Kirigami.FormLayout {
+            Layout.fillWidth: true
+
+            QtControls.ButtonGroup {
+                buttons: [notAccentBox, accentBox]
+            }
+
+            QtControls.RadioButton {
+                id: notAccentBox
+
+                Kirigami.FormData.label: i18n("Use accent color:")
+                text: i18n("From current color scheme")
+
+                checked: Qt.colorEqual(kcm.accentColor, "transparent")
+                onToggled: {
+                    if (enabled) {
+                        kcm.accentColor = "transparent"
+                    }
+                }
+            }
+            RowLayout {
+                QtControls.RadioButton {
+                    id: accentBox
+                    checked: !Qt.colorEqual(kcm.accentColor, "transparent")
+                    text: i18n("Custom:")
+
+                    onToggled: {
+                        if (enabled) {
+                            kcm.accentColor = colorRepeater.model[0]
+                        }
+                    }
+                }
+                component ColorRadioButton : T.RadioButton {
+                    id: control
+                    opacity: accentBox.checked ? 1.0 : 0.5
+                    autoExclusive: false
+
+                    property color color: "transparent"
+
+                    MouseArea {
+                        enabled: false
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                    }
+
+                    implicitWidth: Math.round(Kirigami.Units.gridUnit * 1.25)
+                    implicitHeight: Math.round(Kirigami.Units.gridUnit * 1.25)
+
+                    background: Rectangle {
+                        color: control.color
+                        radius: height / 2
+                        border {
+                            color: Qt.rgba(0, 0, 0, 0.15)
+                            width: control.visualFocus ? 2 : 0
+                        }
+                    }
+                    indicator: Rectangle {
+                        color: "white"
+                        radius: height / 2
+                        visible: control.checked
+                        anchors {
+                            fill: parent
+                            margins: Math.round(Kirigami.Units.smallSpacing * 1.25)
+                        }
+                        border {
+                            color: Qt.rgba(0, 0, 0, 0.15)
+                            width: 1
+                        }
+                    }
+                }
+                Repeater {
+                    id: colorRepeater
+
+                    model: [
+                        "#e93a9a",
+                        "#e93d58",
+                        "#e9643a",
+                        "#e8cb2d",
+                        "#3dd425",
+                        "#00d3b8",
+                        "#3daee9",
+                        "#b875dc",
+                        "#926ee4",
+                        "#686b6f",
+                    ]
+                    delegate: ColorRadioButton {
+                        color: modelData
+                        checked: Qt.colorEqual(kcm.accentColor, modelData)
+
+                        onToggled: {
+                            kcm.accentColor = modelData
+                            checked = Qt.binding(() => Qt.colorEqual(kcm.accentColor, modelData));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     view.delegate: KCM.GridDelegate {
@@ -150,7 +246,7 @@ KCM.GridViewKCM {
             color: model.palette.window
 
             Kirigami.Theme.inherit: false
-            Kirigami.Theme.highlightColor: model.palette.highlight
+            Kirigami.Theme.highlightColor: root.accentColor || model.palette.highlight
             Kirigami.Theme.textColor: model.palette.text
 
             Rectangle {
@@ -224,9 +320,9 @@ KCM.GridViewKCM {
                     // alternative base color we set here.
                     Kirigami.Theme.inherit: false
                     Kirigami.Theme.backgroundColor: model.palette.base
-                    Kirigami.Theme.highlightColor: model.palette.highlight
+                    Kirigami.Theme.highlightColor: root.accentColor != undefined ? kcm.accentBackground(root.accentColor, model.palette.base) : model.palette.highlight
                     Kirigami.Theme.highlightedTextColor: model.palette.highlightedText
-                    Kirigami.Theme.linkColor: model.palette.link
+                    Kirigami.Theme.linkColor: root.accentColor || model.palette.link
                     Kirigami.Theme.textColor: model.palette.text
                     Column {
                         id: listPreviewColumn
@@ -274,7 +370,7 @@ KCM.GridViewKCM {
         actions: [
             Kirigami.Action {
                 iconName: "document-edit"
-                tooltip: i18n("Edit Color Scheme...")
+                tooltip: i18n("Edit Color Scheme…")
                 enabled: !model.pendingDeletion
                 onTriggered: kcm.editScheme(model.schemeName, root)
             },
@@ -331,12 +427,12 @@ KCM.GridViewKCM {
             alignment: Qt.AlignRight
             actions: [
                 Kirigami.Action {
-                    text: i18n("Install from File...")
+                    text: i18n("Install from File…")
                     icon.name: "document-import"
                     onTriggered: fileDialogLoader.active = true
                 },
                 Kirigami.Action {
-                    text: i18n("Get New Color Schemes...")
+                    text: i18n("Get New Color Schemes…")
                     icon.name: "get-hot-new-stuff"
                     onTriggered: { newStuffPage.open(); }
                 }
@@ -366,14 +462,20 @@ KCM.GridViewKCM {
         asynchronous: true
 
         sourceComponent: NewStuff.Dialog {
+            id: newStuffDialog
             configFile: "colorschemes.knsrc"
             viewMode: NewStuff.Page.ViewMode.Tiles
             Connections {
-                target: newStuffPage.item
-                function onChangedEntriesChanged() {
-                    kcm.reloadModel(newStuffPage.item.changedEntries);
+                target: newStuffDialog.engine
+                function onEntryEvent(entry, event) {
+                    if (event == 1) { // StatusChangedEvent
+                        kcm.knsEntryChanged(entry)
+                    } else if (event == 2) { // AdoptedEvent
+                        kcm.loadSelectedColorScheme()
+                    }
                 }
             }
+
         }
     }
 

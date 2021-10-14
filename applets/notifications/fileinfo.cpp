@@ -1,50 +1,22 @@
 /*
-    Copyright (C) 2021 Kai Uwe Broulik <kde@broulik.de>
+    SPDX-FileCopyrightText: 2021 Kai Uwe Broulik <kde@broulik.de>
 
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-2.1-or-later
 */
 
 #include "fileinfo.h"
 
+#include <QAction>
 #include <QMimeDatabase>
-#include <QTimer>
 
 #include <KApplicationTrader>
+#include <KAuthorized>
+#include <KLocalizedString>
+#include <KIO/ApplicationLauncherJob>
+#include <KIO/JobUiDelegate>
 #include <KIO/MimeTypeFinderJob>
-
-Application::Application() = default;
-
-Application::Application(const KService::Ptr &service)
-    : m_service(service)
-{
-}
-
-QString Application::name() const
-{
-    return m_service ? m_service->name() : QString();
-}
-
-QString Application::iconName() const
-{
-    return m_service ? m_service->icon() : QString();
-}
-
-bool Application::isValid() const
-{
-    return m_service && m_service->isValid();
-}
+#include <KIO/OpenUrlJob>
+#include <KNotificationJobUiDelegate>
 
 FileInfo::FileInfo(QObject *parent)
     : QObject(parent)
@@ -103,9 +75,14 @@ QString FileInfo::iconName() const
     return m_iconName;
 }
 
-Application FileInfo::preferredApplication() const
+QAction *FileInfo::openAction() const
 {
-    return m_preferredApplication;
+    return m_openAction;
+}
+
+QString FileInfo::openActionIconName() const
+{
+    return m_openAction ? m_openAction->icon().name() : QString();
 }
 
 void FileInfo::reload()
@@ -156,20 +133,54 @@ void FileInfo::mimeTypeFound(const QString &mimeType)
         return;
     }
 
+    const QString oldOpenActionIconName = openActionIconName();
+
+    bool emitOpenActionChanged = false;
+    if (!m_openAction) {
+        m_openAction = new QAction(this);
+        connect(m_openAction, &QAction::triggered, this, [this] {
+            auto *job = new KIO::ApplicationLauncherJob(m_preferredApplication);
+            if (m_preferredApplication) {
+                job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled));
+            } else {
+                // needs KIO::JobUiDelegate for open with handler
+                job->setUiDelegate(new KIO::JobUiDelegate(KJobUiDelegate::AutoErrorHandlingEnabled, nullptr /*widget*/));
+            }
+            job->setUrls({m_url});
+            job->start();
+        });
+        emitOpenActionChanged = true;
+    }
+
     m_mimeType = mimeType;
 
-    KService::Ptr preferredApp;
+    m_preferredApplication.reset();
 
     if (!mimeType.isEmpty()) {
         const auto type = QMimeDatabase().mimeTypeForName(mimeType);
         m_iconName = type.iconName();
 
-        preferredApp = KApplicationTrader::preferredService(mimeType);
+        m_preferredApplication = KApplicationTrader::preferredService(mimeType);
     } else {
         m_iconName.clear();
     }
 
-    m_preferredApplication = Application(preferredApp);
+    if (m_preferredApplication) {
+        m_openAction->setText(i18n("Open with %1", m_preferredApplication->name()));
+        m_openAction->setIcon(QIcon::fromTheme(m_preferredApplication->icon()));
+        m_openAction->setEnabled(true);
+    } else {
+        m_openAction->setText(i18n("Open with…"));
+        m_openAction->setIcon(QIcon::fromTheme(QStringLiteral("system-run")));
+        m_openAction->setEnabled(KAuthorized::authorizeAction(QStringLiteral("openwith")));
+    }
 
-    emit mimeTypeChanged();
+    Q_EMIT mimeTypeChanged();
+
+    if (emitOpenActionChanged) {
+        Q_EMIT openActionChanged();
+    }
+    if (oldOpenActionIconName != openActionIconName()) {
+        Q_EMIT openActionIconNameChanged();
+    }
 }

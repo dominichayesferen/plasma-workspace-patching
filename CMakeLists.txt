@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(plasma-workspace)
-set(PROJECT_VERSION "5.22.5")
+set(PROJECT_VERSION "5.23.0")
 set(PROJECT_VERSION_MAJOR 5)
 
 set(QT_MIN_VERSION "5.15.0")
 set(KF5_MIN_VERSION "5.82")
+set(KDE_COMPILERSETTINGS_LEVEL "5.82")
 set(INSTALL_SDDM_THEME TRUE)
+option(INSTALL_SDDM_WAYLAND_SESSION OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,7 +30,6 @@ include(ECMOptionalAddSubdirectory)
 include(ECMQtDeclareLoggingCategory)
 include(ECMQueryQmake)
 include(ECMInstallIcons)
-include(KDEPackageAppTemplates)
 include(KDEClangFormat)
 include(KDEGitCommitHooks)
 include(ECMConfiguredInstall)
@@ -40,7 +41,7 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
                     Plasma DocTools Runner Notifications NotifyConfig Su NewStuff Wallet IdleTime
                     Declarative I18n KCMUtils TextWidgets Crash GlobalAccel DBusAddons Wayland
                     CoreAddons People ActivitiesStats Activities KIO Prison PlasmaQuick Package
-                    GuiAddons Archive ItemModels IconThemes UnitConversion ItemModels Init)
+                    GuiAddons Archive ItemModels IconThemes UnitConversion ItemModels Init TextEditor)
 
 find_package(KDED CONFIG REQUIRED)
 
@@ -71,7 +72,6 @@ set_package_properties(KF5Baloo PROPERTIES DESCRIPTION "File Searching"
                        PURPOSE "Needed for the File Search runner."
                       )
 
-find_package(KF5TextEditor)
 find_package(KWinDBusInterface CONFIG REQUIRED)
 
 find_package(KF5Screen CONFIG REQUIRED)
@@ -192,6 +192,9 @@ configure_file(config-appstream.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-appst
 add_subdirectory(login-sessions)
 
 plasma_install_package(lookandfeel org.kde.breeze.desktop look-and-feel lookandfeel)
+plasma_install_package(lookandfeel.dark org.kde.breezedark.desktop look-and-feel lookandfeel)
+plasma_install_package(lookandfeel.twilight org.kde.breezetwilight.desktop look-and-feel lookandfeel)
+
 
 if (INSTALL_SDDM_THEME)
     configure_file(sddm-theme/theme.conf.cmake ${CMAKE_CURRENT_BINARY_DIR}/sddm-theme/theme.conf)
@@ -203,7 +206,12 @@ if (INSTALL_SDDM_THEME)
     PATTERN "theme.conf.cmake" EXCLUDE)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sddm-theme/theme.conf DESTINATION ${KDE_INSTALL_FULL_DATADIR}/sddm/themes/breeze)
     install(DIRECTORY lookandfeel/contents/components DESTINATION ${KDE_INSTALL_FULL_DATADIR}/sddm/themes/breeze PATTERN "README.txt" EXCLUDE)
+endif()
 
+if (INSTALL_SDDM_WAYLAND_SESSION)
+    install(FILES sddm-wayland-session/plasma-wayland.conf DESTINATION /etc/sddm.conf.d)
+else()
+    message(STATUS "INSTALL_SDDM_WAYLAND_SESSION is disabled. As soon as it's installed, SDDM will default to use Wayland and KWin for its greeter session (BETA, do not deploy to final users yet).")
 endif()
 
 add_definitions(-DQT_NO_URL_CAST_FROM_STRING)
@@ -236,9 +244,6 @@ add_subdirectory(statusnotifierwatcher)
 add_subdirectory(startkde)
 add_subdirectory(themes)
 
-find_package(KF5I18n CONFIG REQUIRED)
-ki18n_install(po)
-
 add_subdirectory(kcms)
 
 add_subdirectory(containmentactions)
@@ -251,6 +256,8 @@ add_subdirectory(kioslave)
 add_subdirectory(ktimezoned)
 add_subdirectory(menu)
 add_subdirectory(phonon)
+
+add_subdirectory(interactiveconsole)
 
 # This ensures pressing the eject button on a CD drive ejects the disc
 # It listens to the Solid::OpticalDrive::ejectPressed signal that is only
@@ -269,9 +276,7 @@ if(KF5Holidays_FOUND)
     add_subdirectory(plasmacalendarintegration)
 endif()
 
-add_subdirectory(templates)
-
-#ki18n_install(po)
+ki18n_install(po)
 
 install(FILES plasma-workspace.categories   DESTINATION  ${KDE_INSTALL_LOGGINGCATEGORIESDIR})
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)

@@ -1,24 +1,11 @@
 /*
- *   Copyright 2008 Aaron Seigo <aseigo@kde.org>
- *   Copyright 2013 Sebastian Kügler <sebas@kde.org>
- *   Copyright 2013 Ivan Cukic <ivan.cukic@kde.org>
- *   Copyright 2013 Marco Martin <mart@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2008 Aaron Seigo <aseigo@kde.org>
+    SPDX-FileCopyrightText: 2013 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2013 Ivan Cukic <ivan.cukic@kde.org>
+    SPDX-FileCopyrightText: 2013 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 #include "shellcorona.h"
 #include "strutmanager.h"
@@ -93,7 +80,6 @@ ShellCorona::ShellCorona(QObject *parent)
     , m_activityController(new KActivities::Controller(this))
     , m_addPanelAction(nullptr)
     , m_addPanelsMenu(nullptr)
-    , m_interactiveConsole(nullptr)
     , m_waylandPlasmaShell(nullptr)
     , m_closingDown(false)
     , m_strutManager(new StrutManager(this))
@@ -102,12 +88,9 @@ ShellCorona::ShellCorona(QObject *parent)
     qmlRegisterUncreatableType<DesktopView>("org.kde.plasma.shell", 2, 0, "Desktop", QStringLiteral("It is not possible to create objects of type Desktop"));
     qmlRegisterUncreatableType<PanelView>("org.kde.plasma.shell", 2, 0, "Panel", QStringLiteral("It is not possible to create objects of type Panel"));
 
-    m_lookAndFeelPackage = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LookAndFeel"));
     KConfigGroup cg(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), "KDE");
     const QString packageName = cg.readEntry("LookAndFeelPackage", QString());
-    if (!packageName.isEmpty()) {
-        m_lookAndFeelPackage.setPath(packageName);
-    }
+    m_lookAndFeelPackage = KPackage::PackageLoader::self()->loadPackage(QStringLiteral("Plasma/LookAndFeel"), packageName);
 }
 
 void ShellCorona::init()
@@ -168,7 +151,7 @@ void ShellCorona::init()
     KGlobalAccel::self()->setGlobalShortcut(dashboardAction, Qt::CTRL | Qt::Key_F12);
 
     checkAddPanelAction();
-    connect(KSycoca::self(), SIGNAL(databaseChanged(QStringList)), this, SLOT(checkAddPanelAction(QStringList)));
+    connect(KSycoca::self(), QOverload<>::of(&KSycoca::databaseChanged), this, &ShellCorona::checkAddPanelAction);
 
     // Activity stuff
     QAction *activityAction = actions()->addAction(QStringLiteral("manage activities"));
@@ -1438,102 +1421,41 @@ void ShellCorona::toggleDashboard()
     setDashboardShown(!KWindowSystem::showingDesktop());
 }
 
-void ShellCorona::loadInteractiveConsole()
-{
-    if (KSharedConfig::openConfig()->isImmutable() || !KAuthorized::authorize(QStringLiteral("plasma-desktop/scripting_console"))) {
-        delete m_interactiveConsole;
-        m_interactiveConsole = nullptr;
-        return;
-    }
-
-    if (!m_interactiveConsole) {
-        const QUrl consoleQML = kPackage().fileUrl("interactiveconsole");
-        if (consoleQML.isEmpty()) {
-            return;
-        }
-
-        m_interactiveConsole = new KDeclarative::QmlObjectSharedEngine(this);
-        m_interactiveConsole->setInitializationDelayed(true);
-        m_interactiveConsole->setSource(consoleQML);
-
-        QObject *engine = new WorkspaceScripting::ScriptEngine(this, m_interactiveConsole);
-        m_interactiveConsole->rootContext()->setContextProperty(QStringLiteral("scriptEngine"), engine);
-
-        m_interactiveConsole->completeInitialization();
-        if (m_interactiveConsole->rootObject()) {
-            connect(m_interactiveConsole->rootObject(), SIGNAL(visibleChanged(bool)), this, SLOT(interactiveConsoleVisibilityChanged(bool)));
-        }
-    }
-}
-
-void ShellCorona::showInteractiveConsole()
-{
-    loadInteractiveConsole();
-    if (m_interactiveConsole && m_interactiveConsole->rootObject()) {
-        m_interactiveConsole->rootObject()->setProperty("mode", "desktop");
-        m_interactiveConsole->rootObject()->setProperty("visible", true);
-    }
-}
-
-void ShellCorona::loadScriptInInteractiveConsole(const QString &script)
-{
-    showInteractiveConsole();
-    if (m_interactiveConsole) {
-        m_interactiveConsole->rootObject()->setProperty("script", script);
-    }
-}
-
-void ShellCorona::showInteractiveKWinConsole()
-{
-    loadInteractiveConsole();
-
-    if (m_interactiveConsole && m_interactiveConsole->rootObject()) {
-        m_interactiveConsole->rootObject()->setProperty("mode", "windowmanager");
-        m_interactiveConsole->rootObject()->setProperty("visible", true);
-    }
-}
-
-void ShellCorona::loadKWinScriptInInteractiveConsole(const QString &script)
-{
-    showInteractiveKWinConsole();
-    if (m_interactiveConsole) {
-        m_interactiveConsole->rootObject()->setProperty("script", script);
-    }
-}
-
-void ShellCorona::evaluateScript(const QString &script)
+QString ShellCorona::evaluateScript(const QString &script)
 {
     if (calledFromDBus()) {
         if (immutability() == Plasma::Types::SystemImmutable) {
             sendErrorReply(QDBusError::Failed, QStringLiteral("Widgets are locked"));
-            return;
+            return QString();
         } else if (!KAuthorized::authorize(QStringLiteral("plasma-desktop/scripting_console"))) {
             sendErrorReply(QDBusError::Failed, QStringLiteral("Administrative policies prevent script execution"));
-            return;
+            return QString();
         }
     }
 
     WorkspaceScripting::ScriptEngine scriptEngine(this);
+    QString buffer;
+    QTextStream bufferStream(&buffer, QIODevice::WriteOnly | QIODevice::Text);
 
-    connect(&scriptEngine, &WorkspaceScripting::ScriptEngine::printError, this, [](const QString &msg) {
+    connect(&scriptEngine, &WorkspaceScripting::ScriptEngine::printError, this, [&bufferStream](const QString &msg) {
         qWarning() << msg;
+        bufferStream << msg;
     });
-    connect(&scriptEngine, &WorkspaceScripting::ScriptEngine::print, this, [](const QString &msg) {
+    connect(&scriptEngine, &WorkspaceScripting::ScriptEngine::print, this, [&bufferStream](const QString &msg) {
         qDebug() << msg;
+        bufferStream << msg;
     });
 
     scriptEngine.evaluateScript(script);
-    if (!scriptEngine.errorString().isEmpty() && calledFromDBus()) {
-        sendErrorReply(QDBusError::Failed, scriptEngine.errorString());
-    }
-}
 
-void ShellCorona::interactiveConsoleVisibilityChanged(bool visible)
-{
-    if (!visible) {
-        m_interactiveConsole->deleteLater();
-        m_interactiveConsole = nullptr;
+    bufferStream.flush();
+
+    if (calledFromDBus() && !scriptEngine.errorString().isEmpty()) {
+        sendErrorReply(QDBusError::Failed, scriptEngine.errorString());
+        return QString();
     }
+
+    return buffer;
 }
 
 void ShellCorona::checkActivities()
@@ -1729,12 +1651,8 @@ Plasma::Containment *ShellCorona::setContainmentTypeForScreen(int screen, const 
     return newContainment;
 }
 
-void ShellCorona::checkAddPanelAction(const QStringList &sycocaChanges)
+void ShellCorona::checkAddPanelAction()
 {
-    if (!sycocaChanges.isEmpty() && !sycocaChanges.contains(QLatin1String("services"))) {
-        return;
-    }
-
     delete m_addPanelAction;
     m_addPanelAction = nullptr;
 
@@ -1743,20 +1661,20 @@ void ShellCorona::checkAddPanelAction(const QStringList &sycocaChanges)
     const QList<KPluginMetaData> panelContainmentPlugins = Plasma::PluginLoader::listContainmentsMetaDataOfType(QStringLiteral("Panel"));
 
     auto filter = [](const KPluginMetaData &md) -> bool {
-        return md.value(QStringLiteral("NoDisplay")) != QLatin1String("true")
+        return !md.rawData().value(QStringLiteral("NoDisplay")).toBool()
             && KPluginMetaData::readStringList(md.rawData(), QStringLiteral("X-Plasma-ContainmentCategories")).contains(QLatin1String("panel"));
     };
     QList<KPluginMetaData> templates = KPackage::PackageLoader::self()->findPackages(QStringLiteral("Plasma/LayoutTemplate"), QString(), filter);
 
     if (panelContainmentPlugins.count() + templates.count() == 1) {
         m_addPanelAction = new QAction(this);
-        connect(m_addPanelAction, SIGNAL(triggered(bool)), this, SLOT(addPanel()));
+        connect(m_addPanelAction, &QAction::triggered, this, qOverload<>(&ShellCorona::addPanel));
     } else if (!panelContainmentPlugins.isEmpty()) {
         m_addPanelAction = new QAction(this);
         m_addPanelsMenu.reset(new QMenu);
         m_addPanelAction->setMenu(m_addPanelsMenu.data());
         connect(m_addPanelsMenu.data(), &QMenu::aboutToShow, this, &ShellCorona::populateAddPanelsMenu);
-        connect(m_addPanelsMenu.data(), SIGNAL(triggered(QAction *)), this, SLOT(addPanel(QAction *)));
+        connect(m_addPanelsMenu.data(), &QMenu::triggered, this, qOverload<QAction *>(&ShellCorona::addPanel));
     }
 
     if (m_addPanelAction) {
@@ -1775,14 +1693,14 @@ void ShellCorona::populateAddPanelsMenu()
     const QList<KPluginMetaData> panelContainmentPlugins = Plasma::PluginLoader::listContainmentsMetaDataOfType(QStringLiteral("Panel"));
     QMap<QString, QPair<KPluginMetaData, KPluginMetaData>> sorted;
     for (const KPluginMetaData &plugin : panelContainmentPlugins) {
-        if (plugin.value(QStringLiteral("NoDisplay")) == QLatin1String("true")) {
+        if (plugin.rawData().value(QStringLiteral("NoDisplay")).toBool()) {
             continue;
         }
         sorted.insert(plugin.name(), qMakePair(plugin, KPluginMetaData()));
     }
 
     auto filter = [](const KPluginMetaData &md) -> bool {
-        return md.value(QStringLiteral("NoDisplay")) != QLatin1String("true")
+        return !md.rawData().value(QStringLiteral("NoDisplay")).toBool()
             && KPluginMetaData::readStringList(md.rawData(), QStringLiteral("X-Plasma-ContainmentCategories")).contains(QLatin1String("panel"));
     };
     const QList<KPluginMetaData> templates = KPackage::PackageLoader::self()->findPackages(QStringLiteral("Plasma/LayoutTemplate"), QString(), filter);
@@ -1852,7 +1770,7 @@ Plasma::Containment *ShellCorona::addPanel(const QString &plugin)
     }
 
     // find out what screen this panel should go on
-    QScreen *wantedScreen = QGuiApplication::screenAt(QCursor::pos());
+    QScreen *wantedScreen = qGuiApp->focusWindow() ? qGuiApp->focusWindow()->screen() : qGuiApp->primaryScreen();
 
     QList<Plasma::Types::Location> availableLocations;
     availableLocations << Plasma::Types::LeftEdge << Plasma::Types::TopEdge << Plasma::Types::RightEdge << Plasma::Types::BottomEdge;
@@ -2204,6 +2122,24 @@ void ShellCorona::activateTaskManagerEntry(int index)
             return;
         }
     }
+}
+
+QString ShellCorona::defaultShell()
+{
+    KSharedConfig::Ptr startupConf = KSharedConfig::openConfig(QStringLiteral("plasmashellrc"));
+    KConfigGroup startupConfGroup(startupConf, "Shell");
+    const QString defaultValue = qEnvironmentVariable("PLASMA_DEFAULT_SHELL", "org.kde.plasma.desktop");
+    QString value = startupConfGroup.readEntry("ShellPackage", defaultValue);
+
+    // In the global theme an empty value was written, make sure we still return a shell package
+    return value.isEmpty() ? defaultValue : value;
+}
+
+void ShellCorona::refreshCurrentShell()
+{
+    KSharedConfig::openConfig(QStringLiteral("plasmashellrc"))->reparseConfiguration();
+    //  FIXME:   setShell(defaultShell());
+    QProcess::startDetached("plasmashell", {"--replace"});
 }
 
 // Desktop corona handler

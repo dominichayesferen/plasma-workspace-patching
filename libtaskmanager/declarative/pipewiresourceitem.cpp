@@ -1,23 +1,9 @@
 /*
- * Render a PipeWire stream into a QtQuick scene as a standard Item
- * Copyright 2020 Aleix Pol Gonzalez <aleixpol@kde.org>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) version 3, or any
- * later version accepted by the membership of KDE e.V. (or its
- * successor approved by the membership of KDE e.V.), which shall
- * act as a proxy defined in Section 6 of version 3 of the license.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library.  If not, see <https://www.gnu.org/licenses/>.
- */
+    Render a PipeWire stream into a QtQuick scene as a standard Item
+    SPDX-FileCopyrightText: 2020 Aleix Pol Gonzalez <aleixpol@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+*/
 
 #include "pipewiresourceitem.h"
 #include "pipewiresourcestream.h"
@@ -137,37 +123,35 @@ void PipeWireSourceItem::setNodeId(uint nodeId)
 
 QSGNode *PipeWireSourceItem::updatePaintNode(QSGNode *node, QQuickItem::UpdatePaintNodeData *)
 {
-    if (m_createNextTexture) {
-        auto texture = m_createNextTexture();
-        if (!texture) {
-            delete node;
-            return nullptr;
-        }
-
-        if (m_needsRecreateTexture) {
-            delete node;
-            node = nullptr;
-            m_needsRecreateTexture = false;
-        }
-
-        QSGImageNode *textureNode = static_cast<QSGImageNode *>(node);
-        if (!textureNode) {
-            textureNode = window()->createImageNode();
-            textureNode->setOwnsTexture(true);
-            node = textureNode;
-        }
-
-        textureNode->setTexture(texture);
-
-        if (texture) {
-            const auto br = boundingRect().toRect();
-            QRect rect({0, 0}, texture->textureSize().scaled(br.size(), Qt::KeepAspectRatio));
-            rect.moveCenter(br.center());
-
-            textureNode->setRect(rect);
-        }
+    if (Q_UNLIKELY(!m_createNextTexture)) {
+        return node;
     }
-    return node;
+
+    auto texture = m_createNextTexture();
+    if (!texture) {
+        delete node;
+        return nullptr;
+    }
+
+    if (m_needsRecreateTexture) {
+        delete node;
+        node = nullptr;
+        m_needsRecreateTexture = false;
+    }
+
+    QSGImageNode *textureNode = static_cast<QSGImageNode *>(node);
+    if (!textureNode) {
+        textureNode = window()->createImageNode();
+        textureNode->setOwnsTexture(true);
+    }
+    textureNode->setTexture(texture);
+
+    const auto br = boundingRect().toRect();
+    QRect rect({0, 0}, texture->textureSize().scaled(br.size(), Qt::KeepAspectRatio));
+    rect.moveCenter(br.center());
+    textureNode->setRect(rect);
+
+    return textureNode;
 }
 
 QString PipeWireSourceItem::error() const

@@ -1,28 +1,16 @@
 /*
- *  Copyright 2019 David Redondo <kde@david-redondo.de>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  2.010-1301, USA.
- */
+    SPDX-FileCopyrightText: 2019 David Redondo <kde@david-redondo.de>
 
-#ifndef SLIDEFILTERMODEL_H
-#define SLIDEFILTERMODEL_H
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
+
+#pragma once
 
 #include <image.h>
 
 #include <QSortFilterProxyModel>
 #include <QVector>
+#include <QFileInfo>
 
 #include <random>
 
@@ -37,7 +25,7 @@ public:
     bool lessThan(const QModelIndex &source_left, const QModelIndex &source_right) const override;
     bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
     void setSourceModel(QAbstractItemModel *sourceModel) override;
-    void setSortingMode(Image::SlideshowMode mode);
+    void setSortingMode(Image::SlideshowMode slideshowMode, bool slideshowFoldersFirst);
     void invalidate();
     void invalidateFilter();
 
@@ -50,10 +38,13 @@ Q_SIGNALS:
 private:
     void buildRandomOrder();
 
+    QString getLocalFilePath(const QModelIndex& modelIndex) const;
+    QString getFilePathWithDir(const QFileInfo& fileInfo) const;
+
     QVector<int> m_randomOrder;
     Image::SlideshowMode m_SortingMode;
+    bool m_SortingFoldersFirst;
     bool m_usedInConfig;
     std::random_device m_randomDevice;
     std::mt19937 m_random;
 };
-#endif

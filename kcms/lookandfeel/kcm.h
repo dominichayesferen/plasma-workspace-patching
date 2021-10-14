@@ -1,37 +1,28 @@
 /*
-   Copyright (c) 2014 Marco Martin <mart@kde.org>
-   Copyright (c) 2014 Vishesh Handa <me@vhanda.in>
-   Copyright (c) 2019 Cyril Rossi <cyril.rossi@enioka.com>
-   Copyright (c) 2021 Benjamin Port <benjamin.port@enioka.com>
+    SPDX-FileCopyrightText: 2014 Marco Martin <mart@kde.org>
+    SPDX-FileCopyrightText: 2014 Vishesh Handa <me@vhanda.in>
+    SPDX-FileCopyrightText: 2019 Cyril Rossi <cyril.rossi@enioka.com>
+    SPDX-FileCopyrightText: 2021 Benjamin Port <benjamin.port@enioka.com>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License version 2 as published by the Free Software Foundation.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: LGPL-2.0-only
 */
 
-#ifndef _KCM_SEARCH_H
-#define _KCM_SEARCH_H
+#pragma once
 
 #include <KConfig>
 #include <KConfigGroup>
+#include <KNSCore/EntryWrapper>
+#include <KSharedConfig>
+
 #include <QDir>
+#include <QStandardItemModel>
 
 #include <KPackage/Package>
 #include <KQuickAddons/ManagedConfigModule>
 
+#include "lookandfeelsettings.h"
+
 class QQuickItem;
-class QStandardItemModel;
-class LookAndFeelSettings;
 class LookAndFeelData;
 
 class KCMLookandFeel : public KQuickAddons::ManagedConfigModule
@@ -39,6 +30,7 @@ class KCMLookandFeel : public KQuickAddons::ManagedConfigModule
     Q_OBJECT
     Q_PROPERTY(LookAndFeelSettings *lookAndFeelSettings READ lookAndFeelSettings CONSTANT)
     Q_PROPERTY(QStandardItemModel *lookAndFeelModel READ lookAndFeelModel CONSTANT)
+    Q_PROPERTY(bool resetDefaultLayout READ resetDefaultLayout WRITE setResetDefaultLayout NOTIFY resetDefaultLayoutChanged)
 
 public:
     enum Roles {
@@ -67,11 +59,13 @@ public:
 
     Q_INVOKABLE int pluginIndex(const QString &pluginName) const;
 
+    bool resetDefaultLayout() const;
+    void setResetDefaultLayout(bool reset);
+
     // Setters of the various theme pieces
     void setWidgetStyle(const QString &style);
     void setColors(const QString &scheme, const QString &colorFile);
     void setIcons(const QString &theme);
-    void setGTK(const QString &theme);
     void setPlasmaTheme(const QString &theme);
     void setCursorTheme(const QString theme);
     void setSplashScreen(const QString &theme);
@@ -79,8 +73,16 @@ public:
     void setWindowSwitcher(const QString &theme);
     void setDesktopSwitcher(const QString &theme);
     void setWindowDecoration(const QString &library, const QString &theme);
+    void setWindowPlacement(const QString &value);
+    void setShellPackage(const QString &name);
 
-    Q_INVOKABLE void reloadModel();
+    Q_INVOKABLE void knsEntryChanged(KNSCore::EntryWrapper *wrapper);
+    Q_INVOKABLE void reloadConfig()
+    {
+        ManagedConfigModule::load();
+    }
+
+    void addKPackageToModel(const KPackage::Package &pkg);
 
     bool isSaveNeeded() const override;
 
@@ -88,6 +90,9 @@ public Q_SLOTS:
     void load() override;
     void save() override;
     void defaults() override;
+
+Q_SIGNALS:
+    void resetDefaultLayoutChanged();
 
 private:
     // List only packages which provide at least one of the components
@@ -111,6 +116,7 @@ private:
                           KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
     void
     writeNewDefaults(KConfigGroup &cg, KConfigGroup &cgd, const QString &key, const QString &value, KConfig::WriteConfigFlags writeFlags = KConfig::Normal);
+
     static KConfig configDefaults(const QString &filename);
 
     LookAndFeelData *m_data;
@@ -118,7 +124,7 @@ private:
     KPackage::Package m_package;
     QStringList m_cursorSearchPaths;
 
-    KConfig m_config;
+    KSharedConfig::Ptr m_config;
     KConfigGroup m_configGroup;
 
     bool m_applyColors : 1;
@@ -128,7 +134,10 @@ private:
     bool m_applyCursors : 1;
     bool m_applyWindowSwitcher : 1;
     bool m_applyDesktopSwitcher : 1;
+    bool m_applyWindowPlacement : 1 = true;
+    bool m_applyShellPackage : 1 = true;
+    bool m_resetDefaultLayout : 1;
     bool m_applyWindowDecoration : 1;
-};
 
-#endif
+    bool m_plasmashellChanged = false;
+};

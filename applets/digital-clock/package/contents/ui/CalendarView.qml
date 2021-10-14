@@ -1,21 +1,10 @@
 /*
- * Copyright 2013 Sebastian Kügler <sebas@kde.org>
- * Copyright 2015 Martin Klapetek <mklapetek@kde.org>
- * Copyright 2021 Carl Schwan <carlschwan@kde.org>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2013 Sebastian Kügler <sebas@kde.org>
+    SPDX-FileCopyrightText: 2015 Martin Klapetek <mklapetek@kde.org>
+    SPDX-FileCopyrightText: 2021 Carl Schwan <carlschwan@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 import QtQuick 2.4
 import QtQuick.Layouts 1.1
 import QtQml 2.15
@@ -100,7 +89,7 @@ PlasmaExtras.Representation {
                 }
                 PlasmaComponents3.ToolButton {
                     visible: agenda.visible && ApplicationIntegration.korganizerInstalled
-                    text: i18nc("@action:button Add event", "Add...")
+                    text: i18nc("@action:button Add event", "Add…")
                     Layout.rightMargin: calendar.paddings
                     icon.name: "list-add"
                     onClicked: ApplicationIntegration.launchKorganizer()
@@ -527,7 +516,7 @@ PlasmaExtras.Representation {
 
                 PlasmaComponents3.ToolButton {
                     visible: KCMShell.authorize("clock.desktop").length > 0
-                    text: i18n("Switch...")
+                    text: i18n("Switch…")
                     icon.name: "preferences-system-time"
                     onClicked: KCMShell.openSystemSettings("clock")
 

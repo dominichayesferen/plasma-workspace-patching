@@ -1,21 +1,8 @@
 /*
- *   Copyright 2011 Marco Martin <mart@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU Library General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2011 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 import QtQuick 2.12
 import org.kde.plasma.plasmoid 2.0
@@ -28,6 +15,17 @@ PlasmaCore.FrameSvgItem {
 
     property bool animationEnabled: true
     property var highlightedItem: null
+
+    property var containerMargins: {
+        let item = currentItemHighLight;
+        while (item.parent) {
+            item = item.parent;
+            if (item.isAppletContainer) {
+                return item.getMargins;
+            }
+        }
+        return undefined;
+    }
 
     z: -1 // always draw behind icons
     opacity: systemTrayState.expanded ? 1 : 0
@@ -99,32 +97,40 @@ PlasmaCore.FrameSvgItem {
     }
 
     function updateHighlightedItem() {
+        var forceEdgeHighlight;
         if (systemTrayState.expanded) {
             if (systemTrayState.activeApplet && systemTrayState.activeApplet.parent && systemTrayState.activeApplet.parent.inVisibleLayout) {
-                changeHighlightedItem(systemTrayState.activeApplet.parent.container);
+                changeHighlightedItem(systemTrayState.activeApplet.parent.container, forceEdgeHighlight=false);
             } else { // 'Show hiden items' popup
-                changeHighlightedItem(parent);
+                changeHighlightedItem(parent, forceEdgeHighlight=true);
             }
         } else {
             highlightedItem = null;
         }
     }
 
-    function changeHighlightedItem(nextItem) {
+    function changeHighlightedItem(nextItem, forceEdgeHighlight) {
         // do not animate the first appearance
         // or when the property value of a highlighted item changes
         if (!highlightedItem || (highlightedItem === nextItem)) {
             animationEnabled = false;
         }
+        var returnAllMargins;
+
+        const p = parent.mapFromItem(nextItem, 0, 0);
+        if (containerMargins && (parent.oneRowOrColumn || forceEdgeHighlight)) {
+            x = p.x - containerMargins('left', returnAllMargins=true);
+            y = p.y - containerMargins('top', returnAllMargins=true);
+            width = nextItem.width + containerMargins('left', returnAllMargins=true) + containerMargins('right', true);
+            height = nextItem.height + containerMargins('bottom', returnAllMargins=true) + containerMargins('top', true);
+        } else {
+            x = p.x;
+            y = p.y;
+            width = nextItem.width
+            height = nextItem.height
+        }
 
         highlightedItem = nextItem;
-
-        const p = parent.mapFromItem(highlightedItem, 0, 0)
-        x = p.x;
-        y = p.y;
-        width = highlightedItem.width
-        height = highlightedItem.height
-
         animationEnabled = true;
     }
 

@@ -1,21 +1,8 @@
 /*
- *   Copyright 2009 Aaron Seigo <aseigo@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License as
- *   published by the Free Software Foundation; either version 2, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2009 Aaron Seigo <aseigo@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 #include "widget.h"
 #include "scriptengine.h"
@@ -58,7 +45,7 @@ Widget::~Widget()
 uint Widget::id() const
 {
     if (d->applet) {
-        return d->applet.data()->id();
+        return d->applet->id();
     }
 
     return 0;
@@ -67,7 +54,7 @@ uint Widget::id() const
 QString Widget::type() const
 {
     if (d->applet) {
-        return d->applet.data()->pluginMetaData().pluginId();
+        return d->applet->pluginMetaData().pluginId();
     }
 
     return QString();
@@ -76,7 +63,7 @@ QString Widget::type() const
 void Widget::remove()
 {
     if (d->applet) {
-        d->applet.data()->destroy();
+        d->applet->destroy();
         d->applet.clear();
     }
 }
@@ -84,14 +71,14 @@ void Widget::remove()
 void Widget::setGlobalShortcut(const QString &shortcut)
 {
     if (d->applet) {
-        d->applet.data()->setGlobalShortcut(QKeySequence(shortcut));
+        d->applet->setGlobalShortcut(QKeySequence(shortcut));
     }
 }
 
 QString Widget::globalShorcut() const
 {
     if (d->applet) {
-        return d->applet.data()->globalShortcut().toString();
+        return d->applet->globalShortcut().toString();
     }
 
     return QString();
@@ -99,7 +86,7 @@ QString Widget::globalShorcut() const
 
 Plasma::Applet *Widget::applet() const
 {
-    return d->applet.data();
+    return d->applet;
 }
 
 int Widget::index() const
@@ -108,8 +95,7 @@ int Widget::index() const
         return -1;
     }
 
-    Plasma::Applet *applet = d->applet.data();
-    Plasma::Containment *c = applet->containment();
+    Plasma::Containment *c = d->applet->containment();
     if (!c) {
         return -1;
     }
@@ -136,8 +122,7 @@ void Widget::setIndex(int index)
         return;
     }
 
-    Plasma::Applet *applet = d->applet.data();
-    Plasma::Containment *c = applet->containment();
+    Plasma::Containment *c = d->applet->containment();
     if (!c) {
         return;
     }
@@ -152,7 +137,7 @@ void Widget::setIndex(int index)
 
 QJSValue Widget::geometry() const
 {
-    QQuickItem *appletItem = d->applet.data()->property("_plasma_graphicObject").value<QQuickItem *>();
+    QQuickItem *appletItem = d->applet->property("_plasma_graphicObject").value<QQuickItem *>();
 
     if (appletItem) {
         QJSValue rect = engine()->newObject();
@@ -171,8 +156,8 @@ void Widget::setGeometry(const QJSValue &geometry)
 {
     Q_UNUSED(geometry)
     /*if (d->applet) {
-        d->applet.data()->setGeometry(geometry);
-        KConfigGroup cg = d->applet.data()->config().parent();
+        d->applet->setGeometry(geometry);
+        KConfigGroup cg = d->applet->config().parent();
         if (cg.isValid()) {
             cg.writeEntry("geometry", geometry);
         }
@@ -182,7 +167,7 @@ void Widget::setGeometry(const QJSValue &geometry)
 void Widget::showConfigurationInterface()
 {
     /* if (d->applet) {
-         d->applet.data()->showConfigurationInterface();
+         d->applet->showConfigurationInterface();
      }*/
 }
 

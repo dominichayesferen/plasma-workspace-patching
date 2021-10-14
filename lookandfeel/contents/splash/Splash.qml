@@ -1,21 +1,8 @@
 /*
- *   Copyright 2014 Marco Martin <mart@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License version 2,
- *   or (at your option) any later version, as published by the Free
- *   Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2014 Marco Martin <mart@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 import QtQuick 2.5
 import QtQuick.Window 2.2
@@ -41,14 +28,6 @@ Rectangle {
     Item {
         id: content
         anchors.fill: parent
-        opacity: 0
-        TextMetrics {
-            id: units
-            text: "M"
-            property int gridUnit: boundingRect.height
-            property int largeSpacing: PlasmaCore.Units.gridUnit
-            property int smallSpacing: Math.max(2, gridUnit/4)
-        }
 
         Image {
             id: logo
@@ -98,7 +77,7 @@ Rectangle {
                 // https://bugreports.qt.io/browse/QTBUG-67007
                 renderType: Screen.devicePixelRatio % 1 !== 0 ? Text.QtRendering : Text.NativeRendering
                 anchors.verticalCenter: parent.verticalCenter
-                text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "This is the first text the user sees while starting in the splash screen, should be translated as something short, is a form that can be seen on a product. Plasma is the project name so shouldn't be translated.", "Plasma made by KDE")
+                text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "This is the first text the user sees while starting in the splash screen, should be translated as something short, is a form that can be seen on a product. Plasma is the project name so shouldn't be translated.", "Plasma 25th Anniversary Edition by KDE")
             }
             Image {
                 source: "images/kde.svgz"

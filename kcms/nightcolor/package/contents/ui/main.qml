@@ -1,19 +1,9 @@
-/********************************************************************
-Copyright 2017 Roman Gilg <subdiff@gmail.com>
+/*
+    SPDX-FileCopyrightText: 2017 Roman Gilg <subdiff@gmail.com>
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*********************************************************************/
 import QtQuick 2.12
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.5 as QQC2
@@ -27,6 +17,7 @@ KCM.SimpleKCM {
     id: root
     property int error: cA.error
     property bool defaultRequested: false
+    property var locator
     implicitHeight: Kirigami.Units.gridUnit * 29
     implicitWidth: Kirigami.Units.gridUnit * 35
 
@@ -34,12 +25,25 @@ KCM.SimpleKCM {
         id: cA
     }
 
-    CC.Geolocator {
-        id: locator
-    }
-
     CC.SunCalc {
         id: sunCalc
+    }
+
+    // the Geolocator object is created dynamically so we can have control over when geolocation is attempted
+    // because the object attempts geolocation immediately when created, which is unnecessary (and bad for privacy)
+
+    function startLocator() {
+        root.locator = Qt.createQmlObject('import org.kde.colorcorrect 0.1 as CC; CC.Geolocator {}', root, "geoLocatorObj");
+    }
+
+    function endLocator() {
+        root.locator.destroy();
+    }
+
+    Component.onCompleted: {
+        if (cA.mode == CC.CompositorAdaptor.ModeAutomatic && cA.active) {
+            startLocator();
+        }
     }
 
     function calcNeedsSave() {
@@ -195,7 +199,7 @@ KCM.SimpleKCM {
                     }
                 }
                 QQC2.Label {
-                        text: tempSlider.value + i18n(" K")
+                        text: i18nc("Color temperature in Kelvin", "%1K", tempSlider.value)
                 }
                 //row 2
                 QQC2.Label {
@@ -229,16 +233,35 @@ KCM.SimpleKCM {
                 currentIndex: cA.mode
                 onCurrentIndexChanged: {
                     cA.modeStaged = currentIndex;
+                    if (currentIndex == CC.CompositorAdaptor.ModeAutomatic) {
+                        startLocator();
+                    } else {
+                        endLocator();
+                    }
                     calcNeedsSave();
                 }
             }
+
+            // Inform about geolocation access in auto mode
+            QQC2.Label {
+                visible: modeSwitcher.currentIndex === CC.CompositorAdaptor.ModeAutomatic
+                enabled: activator.checked
+                wrapMode: Text.Wrap
+                Layout.maximumWidth: modeSwitcher.width
+                text: i18n("The device's location will be periodically updated using GPS (if available), or by sending network information to <a href=\"https://location.services.mozilla.com\">Mozilla Location Service</a>.")
+                onLinkActivated: { Qt.openUrlExternally("https://location.services.mozilla.com"); }
+                font: Kirigami.Theme.smallFont
+            }
+
+            // Workaround for Layout.margins not working in Kirigami FormLayout (bug 434625)
+            Item { implicitHeight: Kirigami.Units.largeSpacing }
 
             // Show current location in auto mode
             QQC2.Label {
                 visible: modeSwitcher.currentIndex === CC.CompositorAdaptor.ModeAutomatic
                 enabled: activator.checked
                 wrapMode: Text.Wrap
-                text: i18n("Latitude: %1   Longitude: %2", Math.round(locator.latitude * 100)/100, Math.round(locator.longitude * 100)/100)
+                text: i18n("Latitude: %1°   Longitude: %2°", Math.round(locator.latitude * 100)/100, Math.round(locator.longitude * 100)/100)
             }
 
             // Show time entry fields in manual timings mode

@@ -1,22 +1,9 @@
-/***************************************************************************
- *   Copyright (C) 2012 Aurélien Gâteau <agateau@kde.org>                  *
- *   Copyright (C) 2013-2015 by Eike Hein <hein@kde.org>                   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .        *
- ***************************************************************************/
+/*
+    SPDX-FileCopyrightText: 2012 Aurélien Gâteau <agateau@kde.org>
+    SPDX-FileCopyrightText: 2013-2015 Eike Hein <hein@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "appsmodel.h"
 #include "actionlist.h"
@@ -565,7 +552,9 @@ void AppsModel::refreshInternal()
         m_changeTimer->setInterval(100);
         connect(m_changeTimer, SIGNAL(timeout()), this, SLOT(refresh()));
 
-        connect(KSycoca::self(), SIGNAL(databaseChanged(QStringList)), SLOT(checkSycocaChanges(QStringList)));
+        connect(KSycoca::self(), QOverload<>::of(&KSycoca::databaseChanged), this, [this]() {
+            m_changeTimer->start();
+        });
     } else {
         KServiceGroup::Ptr group = KServiceGroup::group(m_entryPath);
         processServiceGroup(group);
@@ -713,13 +702,6 @@ void AppsModel::sortEntries()
             return c.compare(a->name(), b->name()) < 0;
         }
     });
-}
-
-void AppsModel::checkSycocaChanges(const QStringList &changes)
-{
-    if (changes.contains(QLatin1String("services")) || changes.contains(QLatin1String("apps")) || changes.contains(QLatin1String("xdgdata-apps"))) {
-        m_changeTimer->start();
-    }
 }
 
 void AppsModel::entryChanged(AbstractEntry *entry)

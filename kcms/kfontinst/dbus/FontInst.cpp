@@ -1,25 +1,7 @@
 /*
- * KFontInst - KDE Font Installer
- *
- * Copyright 2003-2009 Craig Drummond <craig@kde.org>
- *
- * ----
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- * Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2003-2009 Craig Drummond <craig@kde.org>
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "FontInst.h"
 #include "Fc.h"
@@ -35,8 +17,6 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#define KFI_DBUG qDebug() << time(nullptr)
 
 namespace KFI
 {
@@ -58,8 +38,9 @@ typedef void (*SignalHandler)(int);
 
 static void registerSignalHandler(SignalHandler handler)
 {
-    if (!handler)
+    if (!handler) {
         handler = SIG_DFL;
+    }
 
     sigset_t mask;
     sigemptyset(&mask);
@@ -103,13 +84,13 @@ FontInst::FontInst()
     new FontinstAdaptor(this);
     QDBusConnection bus = QDBusConnection::sessionBus();
 
-    KFI_DBUG << "Connecting to session bus";
+    // qDebug() << "Connecting to session bus";
     if (!bus.registerService(OrgKdeFontinstInterface::staticInterfaceName())) {
-        KFI_DBUG << "Failed to register service!";
+        // qDebug() << "Failed to register service!";
         ::exit(-1);
     }
     if (!bus.registerObject(FONTINST_PATH, this)) {
-        KFI_DBUG << "Failed to register object!";
+        // qDebug() << "Failed to register object!";
         ::exit(-1);
     }
 
@@ -121,29 +102,33 @@ FontInst::FontInst()
     itsConnectionsTimer->start(constConnectionsTimeout);
     itsFontListTimer->start(constFontListTimeout);
 
-    for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i)
+    for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
         theFolders[i].init(FOLDER_SYS == i, isSystem);
+    }
 
     updateFontList(false);
 }
 
 FontInst::~FontInst()
 {
-    for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i)
+    for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
         theFolders[i].saveDisabled();
+    }
 }
 
 void FontInst::list(int folders, int pid)
 {
-    KFI_DBUG << folders << pid;
+    // qDebug() << folders << pid;
 
     itsConnections.insert(pid);
     updateFontList(false);
     QList<KFI::Families> fonts;
 
-    for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i)
-        if (0 == folders || folders & (1 << i))
+    for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
+        if (0 == folders || folders & (1 << i)) {
             fonts += theFolders[i].list();
+        }
+    }
 
     itsConnectionsTimer->start(constConnectionsTimeout);
     itsFontListTimer->start(constFontListTimeout);
@@ -152,7 +137,7 @@ void FontInst::list(int folders, int pid)
 
 void FontInst::statFont(const QString &name, int folders, int pid)
 {
-    KFI_DBUG << name << folders << pid;
+    // qDebug() << name << folders << pid;
 
     bool checkSystem = 0 == folders || folders & SYS_MASK || isSystem, checkUser = 0 == folders || (folders & USR_MASK && !isSystem);
     FamilyCont::ConstIterator fam;
@@ -162,22 +147,23 @@ void FontInst::statFont(const QString &name, int folders, int pid)
     if ((checkSystem && findFont(name, FOLDER_SYS, fam, st)) || (checkUser && findFont(name, FOLDER_USER, fam, st, !checkSystem))) {
         Family rv((*fam).name());
         rv.add(*st);
-        KFI_DBUG << "Found font, emit details...";
+        // qDebug() << "Found font, emit details...";
         emit fontStat(pid, rv);
     } else {
-        KFI_DBUG << "Font not found, emit empty details...";
+        // qDebug() << "Font not found, emit empty details...";
         emit fontStat(pid, Family(name));
     }
 }
 
 void FontInst::install(const QString &file, bool createAfm, bool toSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG << file << createAfm << toSystem << pid << checkConfig;
+    // qDebug() << file << createAfm << toSystem << pid << checkConfig;
 
     itsConnections.insert(pid);
 
-    if (checkConfig)
+    if (checkConfig) {
         updateFontList();
+    }
 
     EFolder folder = isSystem || toSystem ? FOLDER_SYS : FOLDER_USER;
     Family font;
@@ -186,10 +172,13 @@ void FontInst::install(const QString &file, bool createAfm, bool toSystem, int p
     int result = Utils::FILE_BITMAP == type && !FC::bitmapsEnabled() ? STATUS_BITMAPS_DISABLED : Utils::FILE_INVALID == type ? STATUS_NOT_FONT_FILE : STATUS_OK;
 
     if (STATUS_OK == result) {
-        if (Utils::FILE_AFM != type && Utils::FILE_PFM != type)
-            for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT) && STATUS_OK == result; ++i)
-                if (theFolders[i].contains(font.name(), (*font.styles().begin()).value()))
+        if (Utils::FILE_AFM != type && Utils::FILE_PFM != type) {
+            for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT) && STATUS_OK == result; ++i) {
+                if (theFolders[i].contains(font.name(), (*font.styles().begin()).value())) {
                     result = STATUS_ALREADY_INSTALLED;
+                }
+            }
+        }
 
         if (STATUS_OK == result) {
             QString name(Misc::modifyName(Misc::getFile(file))), destFolder(Misc::getDestFolder(theFolders[folder].location(), name));
@@ -197,7 +186,7 @@ void FontInst::install(const QString &file, bool createAfm, bool toSystem, int p
             result = Utils::FILE_AFM != type && Utils::FILE_PFM != type && Misc::fExists(destFolder + name) ? (int)KIO::ERR_FILE_ALREADY_EXIST : (int)STATUS_OK;
             if (STATUS_OK == result) {
                 if (toSystem && !isSystem) {
-                    KFI_DBUG << "Send request to system helper" << file << destFolder << name;
+                    // qDebug() << "Send request to system helper" << file << destFolder << name;
                     QVariantMap args;
                     args["method"] = "install";
                     args["file"] = file;
@@ -207,16 +196,19 @@ void FontInst::install(const QString &file, bool createAfm, bool toSystem, int p
                     args["type"] = (int)type;
                     result = performAction(args);
                 } else {
-                    if (!Misc::dExists(destFolder))
+                    if (!Misc::dExists(destFolder)) {
                         result = Misc::createDir(destFolder) ? (int)STATUS_OK : (int)KIO::ERR_WRITE_ACCESS_DENIED;
+                    }
 
-                    if (STATUS_OK == result)
+                    if (STATUS_OK == result) {
                         result = QFile::copy(file, destFolder + name) ? (int)STATUS_OK : (int)KIO::ERR_WRITE_ACCESS_DENIED;
+                    }
 
                     if (STATUS_OK == result) {
                         Misc::setFilePerms(QFile::encodeName(destFolder + name));
-                        if ((Utils::FILE_SCALABLE == type || Utils::FILE_PFM == type) && createAfm)
+                        if ((Utils::FILE_SCALABLE == type || Utils::FILE_PFM == type) && createAfm) {
                             Utils::createAfm(destFolder + name, type);
+                        }
                     }
                 }
 
@@ -242,12 +234,13 @@ void FontInst::install(const QString &file, bool createAfm, bool toSystem, int p
 
 void FontInst::uninstall(const QString &family, quint32 style, bool fromSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG << family << style << fromSystem << pid << checkConfig;
+    // qDebug() << family << style << fromSystem << pid << checkConfig;
 
     itsConnections.insert(pid);
 
-    if (checkConfig)
+    if (checkConfig) {
         updateFontList();
+    }
 
     EFolder folder = isSystem || fromSystem ? FOLDER_SYS : FOLDER_USER;
     FamilyCont::ConstIterator fam;
@@ -267,8 +260,9 @@ void FontInst::uninstall(const QString &family, quint32 style, bool fromSystem, 
             for (; it != end; ++it) {
                 fileList.append((*it).path());
                 theFolders[FOLDER_SYS].addModifiedDir(Misc::getDir((*it).path()));
-                if (!wasDisabled && Misc::isHidden(Misc::getFile((*it).path())))
+                if (!wasDisabled && Misc::isHidden(Misc::getFile((*it).path()))) {
                     wasDisabled = true;
+                }
             }
             QVariantMap args;
             args["method"] = "uninstall";
@@ -279,39 +273,45 @@ void FontInst::uninstall(const QString &family, quint32 style, bool fromSystem, 
                 FileCont empty;
                 s.setFiles(files);
                 (*st).setFiles(empty);
-                if (wasDisabled)
+                if (wasDisabled) {
                     theFolders[FOLDER_SYS].setDisabledDirty();
+                }
             }
         } else {
-            for (; it != end; ++it)
+            for (; it != end; ++it) {
                 if (!Misc::fExists((*it).path()) || QFile::remove((*it).path())) {
                     // Also remove any AFM or PFM files...
                     QStringList other;
                     Misc::getAssociatedFiles((*it).path(), other);
                     QStringList::ConstIterator oit(other.constBegin()), oend(other.constEnd());
-                    for (; oit != oend; ++oit)
+                    for (; oit != oend; ++oit) {
                         QFile::remove(*oit);
+                    }
 
                     theFolders[folder].addModifiedDir(Misc::getDir((*it).path()));
                     (*st).remove(*it);
                     s.add(*it);
-                    if (!theFolders[folder].disabledDirty() && Misc::isHidden(Misc::getFile((*it).path())))
+                    if (!theFolders[folder].disabledDirty() && Misc::isHidden(Misc::getFile((*it).path()))) {
                         theFolders[folder].setDisabledDirty();
+                    }
                 }
+            }
         }
 
         if (STATUS_OK == result) {
             if ((*st).files().isEmpty()) {
                 (*fam).remove(*st);
-                if ((*fam).styles().isEmpty())
+                if ((*fam).styles().isEmpty()) {
                     theFolders[folder].removeFont(*fam);
-            } else
+                }
+            } else {
                 result = STATUS_PARTIAL_DELETE;
+            }
             del.add(s);
         }
         emit fontsRemoved(Families(del, FOLDER_SYS == folder));
     }
-    KFI_DBUG << "status" << result;
+    // qDebug() << "status" << result;
     emit status(pid, result);
 
     itsConnectionsTimer->start(constConnectionsTimeout);
@@ -320,27 +320,29 @@ void FontInst::uninstall(const QString &family, quint32 style, bool fromSystem, 
 
 void FontInst::uninstall(const QString &name, bool fromSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG << name << fromSystem << pid << checkConfig;
+    // qDebug() << name << fromSystem << pid << checkConfig;
 
     FamilyCont::ConstIterator fam;
     StyleCont::ConstIterator st;
-    if (findFont(name, fromSystem || isSystem ? FOLDER_SYS : FOLDER_USER, fam, st))
+    if (findFont(name, fromSystem || isSystem ? FOLDER_SYS : FOLDER_USER, fam, st)) {
         uninstall((*fam).name(), (*st).value(), fromSystem, pid, checkConfig);
-    else
+    } else {
         emit status(pid, KIO::ERR_DOES_NOT_EXIST);
+    }
 }
 
 void FontInst::move(const QString &family, quint32 style, bool toSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG << family << style << toSystem << pid << checkConfig;
+    // qDebug() << family << style << toSystem << pid << checkConfig;
 
     itsConnections.insert(pid);
-    if (checkConfig)
+    if (checkConfig) {
         updateFontList();
+    }
 
-    if (isSystem)
+    if (isSystem) {
         emit status(pid, KIO::ERR_UNSUPPORTED_ACTION);
-    else {
+    } else {
         FamilyCont::ConstIterator fam;
         StyleCont::ConstIterator st;
         EFolder from = toSystem ? FOLDER_USER : FOLDER_SYS, to = toSystem ? FOLDER_SYS : FOLDER_USER;
@@ -366,11 +368,12 @@ void FontInst::move(const QString &family, quint32 style, bool toSystem, int pid
             args["gid"] = getgid();
             int result = performAction(args);
 
-            if (STATUS_OK == result)
+            if (STATUS_OK == result) {
                 updateFontList();
+            }
             emit status(pid, result);
         } else {
-            KFI_DBUG << "does not exist";
+            // qDebug() << "does not exist";
             emit status(pid, KIO::ERR_DOES_NOT_EXIST);
         }
     }
@@ -381,36 +384,39 @@ void FontInst::move(const QString &family, quint32 style, bool toSystem, int pid
 
 static bool renameFontFile(const QString &from, const QString &to, int uid = -1, int gid = -1)
 {
-    if (!QFile::rename(from, to))
+    if (!QFile::rename(from, to)) {
         return false;
+    }
 
     QByteArray dest(QFile::encodeName(to));
     Misc::setFilePerms(dest);
-    if (-1 != uid && -1 != gid)
+    if (-1 != uid && -1 != gid) {
         ::chown(dest.data(), uid, gid);
+    }
     return true;
 }
 
 void FontInst::enable(const QString &family, quint32 style, bool inSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG << family << style << inSystem << pid << checkConfig;
+    // qDebug() << family << style << inSystem << pid << checkConfig;
     toggle(true, family, style, inSystem, pid, checkConfig);
 }
 
 void FontInst::disable(const QString &family, quint32 style, bool inSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG << family << style << inSystem << pid << checkConfig;
+    // qDebug() << family << style << inSystem << pid << checkConfig;
     toggle(false, family, style, inSystem, pid, checkConfig);
 }
 
 void FontInst::removeFile(const QString &family, quint32 style, const QString &file, bool fromSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG << family << style << file << fromSystem << pid << checkConfig;
+    // qDebug() << family << style << file << fromSystem << pid << checkConfig;
 
     itsConnections.insert(pid);
 
-    if (checkConfig)
+    if (checkConfig) {
         updateFontList();
+    }
 
     // First find the family/style
     EFolder folder = isSystem || fromSystem ? FOLDER_SYS : FOLDER_USER;
@@ -426,9 +432,11 @@ void FontInst::removeFile(const QString &family, quint32 style, const QString &f
         QString dir(Misc::getDir(file));
 
         result = KIO::ERR_DOES_NOT_EXIST;
-        for (; it != end && STATUS_OK != result; ++it)
-            if (Misc::getDir((*it).path()) == dir)
+        for (; it != end && STATUS_OK != result; ++it) {
+            if (Misc::getDir((*it).path()) == dir) {
                 result = STATUS_OK;
+            }
+        }
 
         if (STATUS_OK == result) {
             // OK, found folder - so can now proceed to delete the file...
@@ -441,8 +449,9 @@ void FontInst::removeFile(const QString &family, quint32 style, const QString &f
                 result = Misc::fExists(file) ? QFile::remove(file) ? (int)STATUS_OK : (int)KIO::ERR_WRITE_ACCESS_DENIED : (int)KIO::ERR_DOES_NOT_EXIST;
             }
 
-            if (STATUS_OK == result)
+            if (STATUS_OK == result) {
                 theFolders[folder].addModifiedDir(dir);
+            }
         }
     }
 
@@ -451,14 +460,15 @@ void FontInst::removeFile(const QString &family, quint32 style, const QString &f
 
 void FontInst::reconfigure(int pid, bool force)
 {
-    KFI_DBUG << pid << force;
+    // qDebug() << pid << force;
     bool sysModified(theFolders[FOLDER_SYS].isModified());
 
     saveDisabled();
 
-    KFI_DBUG << theFolders[FOLDER_USER].isModified() << sysModified;
-    if (!isSystem && (force || theFolders[FOLDER_USER].isModified()))
+    // qDebug() << theFolders[FOLDER_USER].isModified() << sysModified;
+    if (!isSystem && (force || theFolders[FOLDER_USER].isModified())) {
         theFolders[FOLDER_USER].configure(force);
+    }
 
     if (sysModified) {
         if (isSystem) {
@@ -485,10 +495,10 @@ QString FontInst::folderName(bool sys)
 
 void FontInst::saveDisabled()
 {
-    if (isSystem)
+    if (isSystem) {
         theFolders[FOLDER_SYS].saveDisabled();
-    else
-        for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i)
+    } else {
+        for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
             if (FOLDER_SYS == i && !isSystem) {
                 if (theFolders[i].disabledDirty()) {
                     QVariantMap args;
@@ -496,28 +506,33 @@ void FontInst::saveDisabled()
                     performAction(args);
                     theFolders[i].saveDisabled();
                 }
-            } else
+            } else {
                 theFolders[i].saveDisabled();
+            }
+        }
+    }
 }
 
 void FontInst::connectionsTimeout()
 {
     bool canExit(true);
 
-    KFI_DBUG << "exiting";
+    // qDebug() << "exiting";
     checkConnections();
 
     for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
-        if (theFolders[i].disabledDirty())
+        if (theFolders[i].disabledDirty()) {
             canExit = false;
+        }
         theFolders[i].saveDisabled();
     }
 
     if (0 == itsConnections.count()) {
-        if (canExit)
+        if (canExit) {
             qApp->exit(0);
-        else // Try again later...
+        } else { // Try again later...
             itsConnectionsTimer->start(constConnectionsTimeout);
+        }
     }
 }
 
@@ -534,27 +549,30 @@ void FontInst::updateFontList(bool emitChanges)
 
     if (fcModified || theFolders[FOLDER_SYS].fonts().isEmpty() || (!isSystem && theFolders[FOLDER_USER].fonts().isEmpty())
         || theFolders[FOLDER_SYS].disabledDirty() || (!isSystem && theFolders[FOLDER_USER].disabledDirty())) {
-        KFI_DBUG << "Need to refresh font lists";
+        // qDebug() << "Need to refresh font lists";
         if (fcModified) {
-            KFI_DBUG << "Re-init FC";
-            if (!FcInitReinitialize())
-                KFI_DBUG << "Re-init failed????";
+            // qDebug() << "Re-init FC";
+            if (!FcInitReinitialize()) {
+                // qDebug() << "Re-init failed????";
+            }
         }
 
         Folder::Flat old[FOLDER_COUNT];
 
         if (emitChanges) {
-            KFI_DBUG << "Flatten existing font lists";
-            for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i)
+            // qDebug() << "Flatten existing font lists";
+            for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
                 old[i] = theFolders[i].flatten();
+            }
         }
 
         saveDisabled();
 
-        for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i)
+        for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
             theFolders[i].clearFonts();
+        }
 
-        KFI_DBUG << "update list of fonts";
+        // qDebug() << "update list of fonts";
 
         FcPattern *pat = FcPatternCreate();
         FcObjectSet *os = FcObjectSetBuild(FC_FILE,
@@ -578,8 +596,9 @@ void FontInst::updateFontList(bool emitChanges)
         FcObjectSetDestroy(os);
 
         theFolders[FOLDER_SYS].loadDisabled();
-        if (!isSystem)
+        if (!isSystem) {
             theFolders[FOLDER_USER].loadDisabled();
+        }
 
         if (list) {
             QString home(Misc::dirSyntax(QDir::homePath()));
@@ -595,8 +614,9 @@ void FontInst::updateFontList(bool emitChanges)
                     qulonglong writingSystems(WritingSystems::instance()->get(list->fonts[i]));
                     FcBool scalable = FcFalse;
 
-                    if (FcResultMatch != FcPatternGetBool(list->fonts[i], FC_SCALABLE, 0, &scalable))
+                    if (FcResultMatch != FcPatternGetBool(list->fonts[i], FC_SCALABLE, 0, &scalable)) {
                         scalable = FcFalse;
+                    }
 
                     FC::getDetails(list->fonts[i], family, styleVal, index, foundry);
                     FamilyCont::ConstIterator fam = theFolders[isSystem || 0 != fileName.indexOf(home) ? FOLDER_SYS : FOLDER_USER].addFont(Family(family));
@@ -605,8 +625,9 @@ void FontInst::updateFontList(bool emitChanges)
                     Q_UNUSED(file);
 
                     (*style).setWritingSystems((*style).writingSystems() | writingSystems);
-                    if (scalable)
+                    if (scalable) {
                         (*style).setScalable();
+                    }
                 }
             }
 
@@ -614,37 +635,39 @@ void FontInst::updateFontList(bool emitChanges)
         }
 
         if (emitChanges) {
-            KFI_DBUG << "Look for differences";
+            // qDebug() << "Look for differences";
             for (int i = 0; i < (isSystem ? 1 : FOLDER_COUNT); ++i) {
-                KFI_DBUG << "Flatten, and take copies...";
+                // qDebug() << "Flatten, and take copies...";
                 Folder::Flat newList = theFolders[i].flatten(), onlyNew = newList;
 
-                KFI_DBUG << "Determine differences...";
+                // qDebug() << "Determine differences...";
                 onlyNew.subtract(old[i]);
                 old[i].subtract(newList);
 
-                KFI_DBUG << "Emit changes...";
+                // qDebug() << "Emit changes...";
                 Families families = onlyNew.build(isSystem || i == FOLDER_SYS);
 
-                if (!families.items.isEmpty())
+                if (!families.items.isEmpty()) {
                     emit fontsAdded(families);
+                }
 
                 families = old[i].build(isSystem || i == FOLDER_SYS);
-                if (!families.items.isEmpty())
+                if (!families.items.isEmpty()) {
                     emit fontsRemoved(families);
+                }
             }
         }
-        KFI_DBUG << "updated list of fonts";
+        // qDebug() << "updated list of fonts";
     }
 }
 
 void FontInst::toggle(bool enable, const QString &family, quint32 style, bool inSystem, int pid, bool checkConfig)
 {
-    KFI_DBUG;
     itsConnections.insert(pid);
 
-    if (checkConfig)
+    if (checkConfig) {
         updateFontList();
+    }
 
     EFolder folder = isSystem || inSystem ? FOLDER_SYS : FOLDER_USER;
     FamilyCont::ConstIterator fam;
@@ -661,7 +684,7 @@ void FontInst::toggle(bool enable, const QString &family, quint32 style, bool in
         for (; it != end && STATUS_OK == result; ++it) {
             QString to = Misc::getDir((*it).path()) + QString(enable ? Misc::unhide(Misc::getFile((*it).path())) : Misc::hide(Misc::getFile((*it).path())));
             if (to != (*it).path()) {
-                KFI_DBUG << "MOVE:" << (*it).path() << " to " << to;
+                // qDebug() << "MOVE:" << (*it).path() << " to " << to;
                 // If the font is a system font, and we're not root, then just go through the actions here - so
                 // that we can build the list of changes that would happen...
                 if ((inSystem && !isSystem) || renameFontFile((*it).path(), to)) {
@@ -726,10 +749,12 @@ void FontInst::toggle(bool enable, const QString &family, quint32 style, bool in
             QHash<File, QString>::ConstIterator fit(movedFonts.constBegin()), fend(movedFonts.constEnd());
             QHash<QString, QString>::ConstIterator ait(movedAssoc.constBegin()), aend(movedAssoc.constEnd());
 
-            for (; fit != fend; ++fit)
+            for (; fit != fend; ++fit) {
                 renameFontFile(fit.value(), fit.key().path());
-            for (; ait != aend; ++ait)
+            }
+            for (; ait != aend; ++ait) {
                 renameFontFile(ait.value(), ait.key());
+            }
         }
     }
     emit status(pid, result);
@@ -745,42 +770,45 @@ void FontInst::addModifedSysFolders(const Family &family)
     for (; style != styleEnd; ++style) {
         FileCont::ConstIterator file((*style).files().begin()), fileEnd((*style).files().end());
 
-        for (; file != fileEnd; ++file)
+        for (; file != fileEnd; ++file) {
             theFolders[FOLDER_SYS].addModifiedDir(Misc::getDir((*file).path()));
+        }
     }
 }
 
 void FontInst::checkConnections()
 {
-    KFI_DBUG;
     QSet<int>::ConstIterator it(itsConnections.begin()), end(itsConnections.end());
     QSet<int> remove;
 
-    for (; it != end; ++it)
-        if (0 != kill(*it, 0))
+    for (; it != end; ++it) {
+        if (0 != kill(*it, 0)) {
             remove.insert(*it);
+        }
+    }
     itsConnections.subtract(remove);
 }
 
 bool FontInst::findFontReal(const QString &family, const QString &style, EFolder folder, FamilyCont::ConstIterator &fam, StyleCont::ConstIterator &st)
 {
-    KFI_DBUG;
     Family f(family);
     fam = theFolders[folder].fonts().find(f);
-    if (theFolders[folder].fonts().end() == fam)
+    if (theFolders[folder].fonts().end() == fam) {
         return false;
+    }
 
     StyleCont::ConstIterator end((*fam).styles().end());
-    for (st = (*fam).styles().begin(); st != end; ++st)
-        if (FC::createStyleName((*st).value()) == style)
+    for (st = (*fam).styles().begin(); st != end; ++st) {
+        if (FC::createStyleName((*st).value()) == style) {
             return true;
+        }
+    }
 
     return false;
 }
 
 bool FontInst::findFont(const QString &font, EFolder folder, FamilyCont::ConstIterator &fam, StyleCont::ConstIterator &st, bool updateList)
 {
-    KFI_DBUG;
     QString family, style;
 
     decompose(font, family, style);
@@ -800,12 +828,11 @@ bool FontInst::findFont(const QString &font, EFolder folder, FamilyCont::ConstIt
 
 bool FontInst::findFontReal(const QString &family, quint32 style, EFolder folder, FamilyCont::ConstIterator &fam, StyleCont::ConstIterator &st)
 {
-    KFI_DBUG;
     fam = theFolders[folder].fonts().find(Family(family));
 
-    if (theFolders[folder].fonts().end() == fam)
+    if (theFolders[folder].fonts().end() == fam) {
         return false;
-    else {
+    } else {
         st = (*fam).styles().find(style);
 
         return (*fam).styles().end() != st;
@@ -814,7 +841,6 @@ bool FontInst::findFontReal(const QString &family, quint32 style, EFolder folder
 
 bool FontInst::findFont(const QString &family, quint32 style, EFolder folder, FamilyCont::ConstIterator &fam, StyleCont::ConstIterator &st, bool updateList)
 {
-    KFI_DBUG;
     if (!findFontReal(family, style, folder, fam, st)) {
         if (updateList) {
             // Not found, so refresh font list and try again...
@@ -833,7 +859,7 @@ int FontInst::performAction(const QVariantMap &args)
 
     action.setHelperId("org.kde.fontinst");
     action.setArguments(args);
-    KFI_DBUG << "Call " << args["method"].toString() << " on helper";
+    // qDebug() << "Call " << args["method"].toString() << " on helper";
     itsFontListTimer->stop();
     itsConnectionsTimer->stop();
 
@@ -854,7 +880,7 @@ int FontInst::performAction(const QVariantMap &args)
         }
         return KIO::ERR_INTERNAL;
     }
-    KFI_DBUG << "Success!";
+    // qDebug() << "Success!";
     return STATUS_OK;
 }
 

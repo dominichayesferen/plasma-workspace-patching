@@ -1,24 +1,11 @@
-/* This file is part of the KDE project
+/*
 
-   Copyright (C) by Andrew Stanley-Jones <asj@cban.com>
-   Copyright (C) 2000 by Carsten Pfeiffer <pfeiffer@kde.org>
-   Copyright (C) 2004  Esben Mose Hansen <kde@mosehansen.dk>
-   Copyright (C) 2008 by Dmitry Suzdalev <dimsuz@gmail.com>
+    SPDX-FileCopyrightText: Andrew Stanley-Jones <asj@cban.com>
+    SPDX-FileCopyrightText: 2000 Carsten Pfeiffer <pfeiffer@kde.org>
+    SPDX-FileCopyrightText: 2004 Esben Mose Hansen <kde@mosehansen.dk>
+    SPDX-FileCopyrightText: 2008 Dmitry Suzdalev <dimsuz@gmail.com>
 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public
-   License as published by the Free Software Foundation; either
-   version 2 of the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; see the file COPYING.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: GPL-2.0-or-later
 */
 
 #include "klipper.h"
@@ -89,6 +76,25 @@ private:
 };
 }
 
+ClipboardContentTextEdit::ClipboardContentTextEdit(QWidget *parent)
+    : KTextEdit(parent)
+{
+}
+
+void ClipboardContentTextEdit::keyPressEvent(QKeyEvent *event)
+{
+    // Handle Ctrl+Enter to accept
+    const int key = event->key();
+    if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+        if ((key == Qt::Key_Enter && (event->modifiers() == Qt::KeypadModifier)) || !event->modifiers()) {
+            Q_EMIT done();
+            event->accept();
+            return;
+        }
+    }
+    KTextEdit::keyPressEvent(event);
+}
+
 // config == KGlobal::config for process, otherwise applet
 Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mode)
     : QObject(parent)
@@ -157,7 +163,7 @@ Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mo
     QString CONFIGURE = QStringLiteral("configure");
     m_configureAction = m_collection->addAction(CONFIGURE);
     m_configureAction->setIcon(QIcon::fromTheme(CONFIGURE));
-    m_configureAction->setText(i18n("&Configure Klipper..."));
+    m_configureAction->setText(i18n("&Configure Klipper…"));
     connect(m_configureAction, &QAction::triggered, this, &Klipper::slotConfigure);
 
     if (KlipperMode::Standalone == m_mode) {
@@ -175,7 +181,7 @@ Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mo
     // add an edit-possibility
     m_editAction = m_collection->addAction(QStringLiteral("edit_clipboard"));
     m_editAction->setIcon(QIcon::fromTheme(QStringLiteral("document-properties")));
-    m_editAction->setText(i18n("&Edit Contents..."));
+    m_editAction->setText(i18n("&Edit Contents…"));
     KGlobalAccel::setGlobalShortcut(m_editAction, QKeySequence());
     connect(m_editAction, &QAction::triggered, this, [this]() {
         editData(m_history->first());
@@ -183,7 +189,7 @@ Klipper::Klipper(QObject *parent, const KSharedConfigPtr &config, KlipperMode mo
 
     // add barcode for mobile phones
     m_showBarcodeAction = m_collection->addAction(QStringLiteral("show-barcode"));
-    m_showBarcodeAction->setText(i18n("&Show Barcode..."));
+    m_showBarcodeAction->setText(i18n("&Show Barcode…"));
     KGlobalAccel::setGlobalShortcut(m_showBarcodeAction, QKeySequence());
     connect(m_showBarcodeAction, &QAction::triggered, this, [this]() {
         showBarcode(m_history->first());
@@ -872,7 +878,6 @@ void Klipper::editData(const QSharedPointer<const HistoryItem> &item)
     QPointer<QDialog> dlg(new QDialog());
     dlg->setWindowTitle(i18n("Edit Contents"));
     QDialogButtonBox *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, dlg);
-    buttons->button(QDialogButtonBox::Ok)->setShortcut(Qt::CTRL | Qt::Key_Return);
     connect(buttons, &QDialogButtonBox::accepted, dlg.data(), &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, dlg.data(), &QDialog::reject);
     connect(dlg.data(), &QDialog::finished, dlg.data(), [this, dlg, item](int result) {
@@ -880,10 +885,10 @@ void Klipper::editData(const QSharedPointer<const HistoryItem> &item)
         dlg->deleteLater();
     });
 
-    KTextEdit *edit = new KTextEdit(dlg);
+    ClipboardContentTextEdit *edit = new ClipboardContentTextEdit(dlg);
     edit->setAcceptRichText(false);
     if (item) {
-        edit->setPlainText(item->text());
+        edit->setPlainText(item->mimeData()->text());
     }
     edit->setFocus();
     edit->setMinimumSize(300, 40);
@@ -892,6 +897,7 @@ void Klipper::editData(const QSharedPointer<const HistoryItem> &item)
     layout->addWidget(buttons);
     dlg->adjustSize();
 
+    connect(edit, &ClipboardContentTextEdit::done, dlg.data(), &QDialog::accept);
     connect(dlg.data(), &QDialog::accepted, this, [this, edit, item]() {
         QString text = edit->toPlainText();
         if (item) {
@@ -984,12 +990,12 @@ void Klipper::showBarcode(const QSharedPointer<const HistoryItem> &item)
 void Klipper::slotAskClearHistory()
 {
     int clearHist = KMessageBox::warningContinueCancel(nullptr,
-                                               i18n("Really delete entire clipboard history?"),
-                                               i18n("Delete clipboard history?"),
-                                               KStandardGuiItem::cont(),
-                                               KStandardGuiItem::cancel(),
-                                               QStringLiteral("klipperClearHistoryAskAgain"),
-                                               KMessageBox::Dangerous);
+                                                       i18n("Really delete entire clipboard history?"),
+                                                       i18n("Delete clipboard history?"),
+                                                       KStandardGuiItem::cont(),
+                                                       KStandardGuiItem::cancel(),
+                                                       QStringLiteral("klipperClearHistoryAskAgain"),
+                                                       KMessageBox::Dangerous);
     if (clearHist == KMessageBox::Continue) {
         history()->slotClear();
         saveHistory();

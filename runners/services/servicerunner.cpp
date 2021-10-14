@@ -1,22 +1,10 @@
 /*
- *   Copyright (C) 2006 Aaron Seigo <aseigo@kde.org>
- *   Copyright (C) 2014 Vishesh Handa <vhanda@kde.org>
- *   Copyright (C) 2016-2020 Harald Sitter <sitter@kde.org>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2006 Aaron Seigo <aseigo@kde.org>
+    SPDX-FileCopyrightText: 2014 Vishesh Handa <vhanda@kde.org>
+    SPDX-FileCopyrightText: 2016-2020 Harald Sitter <sitter@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "servicerunner.h"
 
@@ -239,11 +227,10 @@ private:
             query = generateQuery(queryList);
         }
 
-        KService::List services = KServiceTypeTrader::self()->query(QStringLiteral("Application"), query);
-        services += KServiceTypeTrader::self()->query(QStringLiteral("KCModule"), query);
+        const KService::List services = KServiceTypeTrader::self()->query(QStringLiteral("Application"), query);
 
         qCDebug(RUNNER_SERVICES) << "got " << services.count() << " services from " << query;
-        for (const KService::Ptr &service : qAsConst(services)) {
+        for (const KService::Ptr &service : services) {
             if (disqualify(service)) {
                 continue;
             }
@@ -295,21 +282,9 @@ private:
                 }
             }
 
-            const bool isKCM = service->serviceTypes().contains(QLatin1String("KCModule"));
-            if (!isKCM && (service->categories().contains(QLatin1String("KDE")) || service->serviceTypes().contains(QLatin1String("KCModule")))) {
+            if (service->categories().contains(QLatin1String("KDE"))) {
                 qCDebug(RUNNER_SERVICES) << "found a kde thing" << id << match.subtext() << relevance;
                 relevance += .09;
-            }
-
-            if (isKCM) {
-                if (service->parentApp() == QStringLiteral("kinfocenter")) {
-                    match.setMatchCategory(i18n("System Information"));
-                } else {
-                    match.setMatchCategory(i18n("System Settings"));
-                }
-                // KCMs are, on the balance, less relevant. Drop it ever so much. So they may get outscored
-                // by an otherwise equally applicable match.
-                relevance -= .001;
             }
 
             qCDebug(RUNNER_SERVICES) << service->name() << "is this relevant:" << relevance;

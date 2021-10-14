@@ -1,21 +1,9 @@
 /*
-   Copyright (c) 2015 Antonis Tsiapaliokas <antonis.tsiapaliokas@kde.org>
-   Copyright (c) 2017 Marco Martin <mart@kde.org>
-   Copyright (c) 2019 Benjamin Port <benjamin.port@enioka.com>
+    SPDX-FileCopyrightText: 2015 Antonis Tsiapaliokas <antonis.tsiapaliokas@kde.org>
+    SPDX-FileCopyrightText: 2017 Marco Martin <mart@kde.org>
+    SPDX-FileCopyrightText: 2019 Benjamin Port <benjamin.port@enioka.com>
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public
-   License version 2 as published by the Free Software Foundation.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
-
-   You should have received a copy of the GNU Library General Public License
-   along with this library; see the file COPYING.LIB.  If not, write to
-   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-   Boston, MA 02110-1301, USA.
+    SPDX-License-Identifier: LGPL-2.0-only
 */
 
 import QtQuick 2.1
@@ -35,7 +23,7 @@ KCM.SimpleKCM {
     Kirigami.Action {
         id: kscreenAction
         visible: KCMShell.authorize("kcm_kscreen.desktop").length > 0
-        text: i18n("Change Display Scaling...")
+        text: i18n("Change Display Scaling…")
         iconName: "preferences-desktop-display"
         onTriggered: KCMShell.open("kcm_kscreen.desktop")
     }
@@ -92,7 +80,7 @@ KCM.SimpleKCM {
                 id: adjustAllFontsButton
                 Layout.preferredWidth: formLayout.maxImplicitWidth
                 icon.name: "font-select-symbolic"
-                text: i18n("&Adjust All Fonts...")
+                text: i18n("&Adjust All Fonts…")
 
                 onClicked: kcm.adjustAllFonts();
                 enabled: !kcm.fontsSettings.isImmutable("font")

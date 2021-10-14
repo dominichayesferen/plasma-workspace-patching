@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Wallpaper
+Name[ar]=الخلفية
 Name[ast]=Fondu de pantalla
 Name[az]=Divar Kağızı
 Name[bs]=Pozadina
@@ -58,6 +59,6 @@ X-KDE-Library=plasma_packagestructure_wallpaper
 
 X-KDE-PluginInfo-Author=Marco Martin
 X-KDE-PluginInfo-Email=notmart@gmail.com
-X-KDE-PluginInfo-Name=Plasma/Wallpaper
+KPackageStructure=Plasma/Wallpaper
 X-KDE-PluginInfo-Version=1
 X-KDE-ParentApp=org.kde.plasmashell

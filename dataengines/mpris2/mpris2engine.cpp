@@ -1,20 +1,8 @@
 /*
- *   Copyright 2007-2012 Alex Merry <alex.merry@kdemail.net>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library General Public License version 2 as
- *   published by the Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2007-2012 Alex Merry <alex.merry@kdemail.net>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "mpris2engine.h"
 
@@ -191,6 +179,6 @@ void Mpris2Engine::createMultiplexer()
     addSource(m_multiplexer.data());
 }
 
-K_EXPORT_PLASMA_DATAENGINE_WITH_JSON(mpris2, Mpris2Engine, "plasma-dataengine-mpris2.json")
+K_PLUGIN_CLASS_WITH_JSON(Mpris2Engine, "plasma-dataengine-mpris2.json")
 
 #include "mpris2engine.moc"

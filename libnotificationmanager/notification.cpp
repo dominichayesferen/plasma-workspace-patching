@@ -1,24 +1,10 @@
 /*
- * Copyright 2008 Dmitry Suzdalev <dimsuz@gmail.com>
- * Copyright 2017 David Edmundson <davidedmundson@kde.org>
- * Copyright 2018-2019 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) version 3, or any
- * later version accepted by the membership of KDE e.V. (or its
- * successor approved by the membership of KDE e.V.), which shall
- * act as a proxy defined in Section 6 of version 3 of the license.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2008 Dmitry Suzdalev <dimsuz@gmail.com>
+    SPDX-FileCopyrightText: 2017 David Edmundson <davidedmundson@kde.org>
+    SPDX-FileCopyrightText: 2018-2019 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+*/
 
 #include "notification.h"
 #include "notification_p.h"
@@ -29,10 +15,10 @@
 #include <QRegularExpression>
 #include <QXmlStreamReader>
 
+#include <KApplicationTrader>
 #include <KConfig>
 #include <KConfigGroup>
 #include <KService>
-#include <KServiceTypeTrader>
 
 #include "debug.h"
 
@@ -276,17 +262,25 @@ KService::Ptr Notification::Private::serviceForDesktopEntry(const QString &deskt
     // Try if it's a renamed flatpak
     if (!service) {
         const QString desktopId = desktopEntry + QLatin1String(".desktop");
-        // HACK Querying for XDG lists in KServiceTypeTrader does not work, do it manually
-        const auto services = KServiceTypeTrader::self()->query(QStringLiteral("Application"), QStringLiteral("exist Exec and exist [X-Flatpak-RenamedFrom]"));
-        for (auto it = services.constBegin(); it != services.constEnd() && !service; ++it) {
-            const QVariant renamedFrom = (*it)->property(QStringLiteral("X-Flatpak-RenamedFrom"), QVariant::String);
-            const auto names = renamedFrom.toString().split(QChar(';'));
+
+        const auto services = KApplicationTrader::query([&desktopId](const KService::Ptr &app) -> bool {
+            const QString renamedFrom = app->property(QStringLiteral("X-Flatpak-RenamedFrom"), QVariant::String).toString();
+
+            if (renamedFrom.isEmpty()) {
+                return false;
+            }
+
+            const auto names = renamedFrom.split(QChar(';'));
             for (const QString &name : names) {
                 if (name == desktopId) {
-                    service = *it;
-                    break;
+                    return true;
                 }
             }
+            return false;
+        });
+
+        if (!services.isEmpty()) {
+            service = services.first();
         }
     }
 

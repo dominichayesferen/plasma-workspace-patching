@@ -1,28 +1,16 @@
 /*
- *  This file is part of the KDE libraries
- *  Copyright (c) 2001 Waldo Bastian <bastian@kde.org>
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Library General Public
- *  License version 2 as published by the Free Software Foundation.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Library General Public License for more details.
- *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this library; see the file COPYING.LIB.  If not, write to
- *  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- *  Boston, MA 02110-1301, USA.
- **/
+    SPDX-FileCopyrightText: 2001 Waldo Bastian <bastian@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-only
+*/
 
 #include "autostart.h"
+
+#include "../plasmaautostart/plasmaautostart.h"
 
 #include <QDir>
 #include <QHash>
 #include <QStandardPaths>
-#include <kautostart.h>
 
 AutoStart::AutoStart()
     : m_phase(-1)
@@ -79,8 +67,8 @@ void AutoStart::loadAutoStartList()
     }
 
     for (auto it = files.constBegin(); it != files.constEnd(); ++it) {
-        KAutostart config(*it);
-        if (!config.autostarts(QStringLiteral("KDE"), KAutostart::CheckAll)) {
+        PlasmaAutostart config(*it);
+        if (!config.autostarts(QStringLiteral("KDE"), PlasmaAutostart::CheckAll)) {
             continue;
         }
 
@@ -88,7 +76,7 @@ void AutoStart::loadAutoStartList()
         item.service = *it;
         item.name = extractName(it.key());
         item.startAfter = config.startAfter();
-        item.phase = qMax(KAutostart::BaseDesktop, config.startPhase());
+        item.phase = qMax(PlasmaAutostart::BaseDesktop, config.startPhase());
         m_startList.append(item);
     }
 }

@@ -1,23 +1,8 @@
 /*
- * Copyright 2016 Kai Uwe Broulik <kde@privat.broulik.de>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+    SPDX-FileCopyrightText: 2016 Kai Uwe Broulik <kde@privat.broulik.de>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
 
 #include "iconapplet.h"
 
@@ -53,6 +38,7 @@
 #include <KIO/OpenUrlJob>
 #include <KIO/StatJob>
 
+#include <abstracttasksmodel.h>
 #include <startuptasksmodel.h>
 
 IconApplet::IconApplet(QObject *parent, const QVariantList &data)
@@ -385,7 +371,7 @@ QList<QAction *> IconApplet::contextualActions()
                     m_openWithMenu.reset(new QMenu());
                 }
                 m_openWithMenu->clear();
-                m_fileItemActions->addOpenWithActionsTo(m_openWithMenu.data());
+                m_fileItemActions->insertOpenWithActionsTo(nullptr, m_openWithMenu.data(), QStringList());
 
                 m_openWithActions = m_openWithMenu->actions();
             }
@@ -589,6 +575,6 @@ void IconApplet::setLocalPath(const QString &localPath)
     config().writeEntry(QStringLiteral("localPath"), localPath);
 }
 
-K_EXPORT_PLASMA_APPLET_WITH_JSON(icon, IconApplet, "metadata.json")
+K_PLUGIN_CLASS_WITH_JSON(IconApplet, "metadata.json")
 
 #include "iconapplet.moc"

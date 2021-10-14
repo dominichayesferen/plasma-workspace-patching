@@ -1,23 +1,8 @@
 /*
- * Copyright 2014  Martin Klapetek <mklapetek@kde.org>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+    SPDX-FileCopyrightText: 2014 Martin Klapetek <mklapetek@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+*/
 
 #include "timezonesi18n.h"
 
@@ -79,9 +64,11 @@ void TimezonesI18n::init()
          {QStringLiteral("Aruba"), i18nc("This is a city associated with particular time zone", "Aruba")},
          {QStringLiteral("Ashgabat"), i18nc("This is a city associated with particular time zone", "Ashgabat")},
          {QStringLiteral("Asmara"), i18nc("This is a city associated with particular time zone", "Asmara")},
+         {QStringLiteral("Astrakhan"), i18nc("This is a city associated with particular time zone", "Astrakhan")},
          {QStringLiteral("Asuncion"), i18nc("This is a city associated with particular time zone", "Asuncion")},
          {QStringLiteral("Athens"), i18nc("This is a city associated with particular time zone", "Athens")},
          {QStringLiteral("Atikokan"), i18nc("This is a city associated with particular time zone", "Atikokan")},
+         {QStringLiteral("Atyrau"), i18nc("This is a city associated with particular time zone", "Atyrau")},
          {QStringLiteral("Auckland"), i18nc("This is a city associated with particular time zone", "Auckland")},
          {QStringLiteral("Azores"), i18nc("This is a city associated with particular time zone", "Azores")},
          {QStringLiteral("Baghdad"), i18nc("This is a city associated with particular time zone", "Baghdad")},
@@ -94,6 +81,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Bangui"), i18nc("This is a city associated with particular time zone", "Bangui")},
          {QStringLiteral("Banjul"), i18nc("This is a city associated with particular time zone", "Banjul")},
          {QStringLiteral("Barbados"), i18nc("This is a city associated with particular time zone", "Barbados")},
+         {QStringLiteral("Barnaul"), i18nc("This is a city associated with particular time zone", "Barnaul")},
          {QStringLiteral("Beirut"), i18nc("This is a city associated with particular time zone", "Beirut")},
          {QStringLiteral("Belem"), i18nc("This is a city associated with particular time zone", "Belem")},
          {QStringLiteral("Belgrade"), i18nc("This is a city associated with particular time zone", "Belgrade")},
@@ -108,6 +96,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Boa_Vista"), i18nc("This is a city associated with particular time zone", "Boa Vista")},
          {QStringLiteral("Bogota"), i18nc("This is a city associated with particular time zone", "Bogota")},
          {QStringLiteral("Boise"), i18nc("This is a city associated with particular time zone", "Boise")},
+         {QStringLiteral("Bougainville"), i18nc("This is a city associated with particular time zone", "Bougainville")},
          {QStringLiteral("Bratislava"), i18nc("This is a city associated with particular time zone", "Bratislava")},
          {QStringLiteral("Brazzaville"), i18nc("This is a city associated with particular time zone", "Brazzaville")},
          {QStringLiteral("Brisbane"), i18nc("This is a city associated with particular time zone", "Brisbane")},
@@ -138,6 +127,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Chicago"), i18nc("This is a city associated with particular time zone", "Chicago")},
          {QStringLiteral("Chihuahua"), i18nc("This is a city associated with particular time zone", "Chihuahua")},
          {QStringLiteral("Chisinau"), i18nc("This is a city associated with particular time zone", "Chisinau")},
+         {QStringLiteral("Chita"), i18nc("This is a city associated with particular time zone", "Chita")},
          {QStringLiteral("Choibalsan"), i18nc("This is a city associated with particular time zone", "Choibalsan")},
          {QStringLiteral("Chongqing"), i18nc("This is a city associated with particular time zone", "Chongqing")},
          {QStringLiteral("Christmas"), i18nc("This is a city associated with particular time zone", "Christmas")},
@@ -181,8 +171,10 @@ void TimezonesI18n::init()
          {QStringLiteral("Enderbury"), i18nc("This is a city associated with particular time zone", "Enderbury")},
          {QStringLiteral("Eucla"), i18nc("This is a city associated with particular time zone", "Eucla")},
          {QStringLiteral("Fakaofo"), i18nc("This is a city associated with particular time zone", "Fakaofo")},
+         {QStringLiteral("Famagusta"), i18nc("This is a city associated with particular time zone", "Famagusta")},
          {QStringLiteral("Faroe"), i18nc("This is a city associated with particular time zone", "Faroe")},
          {QStringLiteral("Fiji"), i18nc("This is a city associated with particular time zone", "Fiji")},
+         {QStringLiteral("Fort_Nelson"), i18nc("This is a city associated with particular time zone", "Fort Nelson")},
          {QStringLiteral("Fortaleza"), i18nc("This is a city associated with particular time zone", "Fortaleza")},
          {QStringLiteral("Freetown"), i18nc("This is a city associated with particular time zone", "Freetown")},
          {QStringLiteral("Funafuti"), i18nc("This is a city associated with particular time zone", "Funafuti")},
@@ -245,6 +237,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Kigali"), i18nc("This is a city associated with particular time zone", "Kigali")},
          {QStringLiteral("Kinshasa"), i18nc("This is a city associated with particular time zone", "Kinshasa")},
          {QStringLiteral("Kiritimati"), i18nc("This is a city associated with particular time zone", "Kiritimati")},
+         {QStringLiteral("Kirov"), i18nc("This is a city associated with particular time zone", "Kirov")},
          {QStringLiteral("Knox"), i18nc("This is a city associated with particular time zone", "Knox")},
          {QStringLiteral("Kolkata"), i18nc("This is a city associated with particular time zone", "Kolkata")},
          {QStringLiteral("Kosrae"), i18nc("This is a city associated with particular time zone", "Kosrae")},
@@ -338,6 +331,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Noumea"), i18nc("This is a city associated with particular time zone", "Noumea")},
          {QStringLiteral("Novokuznetsk"), i18nc("This is a city associated with particular time zone", "Novokuznetsk")},
          {QStringLiteral("Novosibirsk"), i18nc("This is a city associated with particular time zone", "Novosibirsk")},
+         {QStringLiteral("Nuuk"), i18nc("This is a city associated with particular time zone", "Nuuk")},
          {QStringLiteral("Ojinaga"), i18nc("This is a city associated with particular time zone", "Ojinaga")},
          {QStringLiteral("Omsk"), i18nc("This is a city associated with particular time zone", "Omsk")},
          {QStringLiteral("Oral"), i18nc("This is a city associated with particular time zone", "Oral")},
@@ -365,8 +359,10 @@ void TimezonesI18n::init()
          {QStringLiteral("Porto_Velho"), i18nc("This is a city associated with particular time zone", "Porto Velho")},
          {QStringLiteral("Prague"), i18nc("This is a city associated with particular time zone", "Prague")},
          {QStringLiteral("Puerto_Rico"), i18nc("This is a city associated with particular time zone", "Puerto Rico")},
+         {QStringLiteral("Punta_Arenas"), i18nc("This is a city associated with particular time zone", "Punta Arenas")},
          {QStringLiteral("Pyongyang"), i18nc("This is a city associated with particular time zone", "Pyongyang")},
          {QStringLiteral("Qatar"), i18nc("This is a city associated with particular time zone", "Qatar")},
+         {QStringLiteral("Qostanay"), i18nc("This is a city associated with particular time zone", "Qostanay")},
          {QStringLiteral("Qyzylorda"), i18nc("This is a city associated with particular time zone", "Qyzylorda")},
          {QStringLiteral("Rainy_River"), i18nc("This is a city associated with particular time zone", "Rainy River")},
          {QStringLiteral("Rangoon"), i18nc("This is a city associated with particular time zone", "Rangoon")},
@@ -398,6 +394,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Sao_Paulo"), i18nc("This is a city associated with particular time zone", "Sao Paulo")},
          {QStringLiteral("Sao_Tome"), i18nc("This is a city associated with particular time zone", "Sao Tome")},
          {QStringLiteral("Sarajevo"), i18nc("This is a city associated with particular time zone", "Sarajevo")},
+         {QStringLiteral("Saratov"), i18nc("This is a city associated with particular time zone", "Saratov")},
          {QStringLiteral("Scoresbysund"), i18nc("This is a city associated with particular time zone", "Scoresbysund")},
          {QStringLiteral("Seoul"), i18nc("This is a city associated with particular time zone", "Seoul")},
          {QStringLiteral("Shanghai"), i18nc("This is a city associated with particular time zone", "Shanghai")},
@@ -407,6 +404,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Skopje"), i18nc("This is a city associated with particular time zone", "Skopje")},
          {QStringLiteral("Sofia"), i18nc("This is a city associated with particular time zone", "Sofia")},
          {QStringLiteral("South_Georgia"), i18nc("This is a city associated with particular time zone", "South Georgia")},
+         {QStringLiteral("Srednekolymsk"), i18nc("This is a city associated with particular time zone", "Srednekolymsk")},
          {QStringLiteral("St_Barthelemy"), i18nc("This is a city associated with particular time zone", "St Barthelemy")},
          {QStringLiteral("St_Helena"), i18nc("This is a city associated with particular time zone", "St Helena")},
          {QStringLiteral("St_Johns"), i18nc("This is a city associated with particular time zone", "St Johns")},
@@ -434,6 +432,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Tijuana"), i18nc("This is a city associated with particular time zone", "Tijuana")},
          {QStringLiteral("Tirane"), i18nc("This is a city associated with particular time zone", "Tirane")},
          {QStringLiteral("Tokyo"), i18nc("This is a city associated with particular time zone", "Tokyo")},
+         {QStringLiteral("Tomsk"), i18nc("This is a city associated with particular time zone", "Tomsk")},
          {QStringLiteral("Tongatapu"), i18nc("This is a city associated with particular time zone", "Tongatapu")},
          {QStringLiteral("Toronto"), i18nc("This is a city associated with particular time zone", "Toronto")},
          {QStringLiteral("Tortola"), i18nc("This is a city associated with particular time zone", "Tortola")},
@@ -442,6 +441,7 @@ void TimezonesI18n::init()
          {QStringLiteral("Tucuman"), i18nc("This is a city associated with particular time zone", "Tucuman")},
          {QStringLiteral("Tunis"), i18nc("This is a city associated with particular time zone", "Tunis")},
          {QStringLiteral("Ulaanbaatar"), i18nc("This is a city associated with particular time zone", "Ulaanbaatar")},
+         {QStringLiteral("Ulyanovsk"), i18nc("This is a city associated with particular time zone", "Ulyanovsk")},
          {QStringLiteral("Urumqi"), i18nc("This is a city associated with particular time zone", "Urumqi")},
          {QStringLiteral("Ushuaia"), i18nc("This is a city associated with particular time zone", "Ushuaia")},
          {QStringLiteral("Ust-Nera"), i18nc("This is a city associated with particular time zone", "Ust-Nera")},
@@ -647,7 +647,7 @@ void TimezonesI18n::init()
         ENTRY_ISO_3166(UnitedArabEmirates, "United Arab Emirates"),
         ENTRY_ISO_3166(Tajikistan, "Tajikistan"),
         ENTRY_ISO_3166(PalestinianTerritories, "Palestine, State of"),
-        ENTRY_ISO_3166(Vietnam, "Viet Nam"),
+        ENTRY_ISO_3166(Vietnam, "Vietnam"),
         ENTRY_ISO_3166(HongKong, "Hong Kong"),
         ENTRY_ISO_3166(Indonesia, "Indonesia"),
         ENTRY_ISO_3166(Israel, "Israel"),
@@ -678,7 +678,7 @@ void TimezonesI18n::init()
         ENTRY_ISO_3166(Armenia, "Armenia"),
         ENTRY_ISO_3166(Portugal, "Portugal"),
         ENTRY_ISO_3166(Bermuda, "Bermuda"),
-        ENTRY_ISO_3166(CapeVerde, "Cape Verde"),
+        ENTRY_ISO_3166(CapeVerde, "Cabo Verde"),
         ENTRY_ISO_3166(FaroeIslands, "Faroe Islands"),
         ENTRY_ISO_3166(Iceland, "Iceland"),
         ENTRY_ISO_3166(SouthGeorgiaAndTheSouthSandwichIslands, "South Georgia and the South Sandwich Islands"),
@@ -746,9 +746,9 @@ void TimezonesI18n::init()
         ENTRY_ISO_3166(Micronesia, "Micronesia, Federated States of"),
         ENTRY_ISO_3166(Vanuatu, "Vanuatu"),
         ENTRY_ISO_3166(Kiribati, "Kiribati"),
-        ENTRY_ISO_3166(Tokelau, "Tokelau"),
+        ENTRY_ISO_3166(TokelauCountry, "Tokelau"),
         ENTRY_ISO_3166(Fiji, "Fiji"),
-        ENTRY_ISO_3166(Tuvalu, "Tuvalu"),
+        ENTRY_ISO_3166(TuvaluCountry, "Tuvalu"),
         ENTRY_ISO_3166(FrenchPolynesia, "French Polynesia"),
         ENTRY_ISO_3166(SolomonIslands, "Solomon Islands"),
         ENTRY_ISO_3166(Guam, "Guam"),

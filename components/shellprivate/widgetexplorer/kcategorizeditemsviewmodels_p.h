@@ -1,24 +1,10 @@
 /*
- *   Copyright (C) 2007 Ivan Cukic <ivan.cukic+kde@gmail.com>
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU Library/Lesser General Public License
- *   version 2, or (at your option) any later version, as published by the
- *   Free Software Foundation
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details
- *
- *   You should have received a copy of the GNU Library/Lesser General Public
- *   License along with this program; if not, write to the
- *   Free Software Foundation, Inc.,
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2007 Ivan Cukic <ivan.cukic+kde@gmail.com>
 
-#ifndef PLASMA_KCATEGORIZEDITEMSVIEWMODELS_P_H
-#define PLASMA_KCATEGORIZEDITEMSVIEWMODELS_P_H
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
+
+#pragma once
 
 #include <QIcon>
 #include <QPair>
@@ -180,5 +166,3 @@ private:
 } // end of namespace
 
 Q_DECLARE_METATYPE(KCategorizedItemsViewModels::Filter)
-
-#endif /*KCATEGORIZEDITEMSVIEWMODELS_H_*/

@@ -1,22 +1,9 @@
 /*
- * Copyright (C) 2019 David Edmundson <davidedmundson@kde.org>
- * Copyright (C) 2019 Aleix Pol Gonzalez <aleixpol@kde.org>
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Library General Public
- *  License as published by the Free Software Foundation; either
- *  version 2 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Library General Public License for more details.
- *
- *  You should have received a copy of the GNU Library General Public License
- *  along with this library; see the file COPYING.LIB.  If not, write to
- *  the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- *  Boston, MA 02110-1301, USA.
- */
+    SPDX-FileCopyrightText: 2019 David Edmundson <davidedmundson@kde.org>
+    SPDX-FileCopyrightText: 2019 Aleix Pol Gonzalez <aleixpol@kde.org>
+
+    SPDX-License-Identifier: LGPL-2.0-or-later
+*/
 
 #include "feedback.h"
 
@@ -34,8 +21,14 @@
 
 K_PLUGIN_FACTORY_WITH_JSON(FeedbackFactory, "kcm_feedback.json", registerPlugin<Feedback>(); registerPlugin<FeedbackData>();)
 
-// Program to icon hash
-static QHash<QString, QString> s_programs = {{"plasmashell", "plasmashell"}, {"plasma-discover", "plasmadiscover"}};
+struct Information {
+    QString icon;
+    QString kuserfeedbackComponent;
+};
+static QHash<QString, Information> s_programs = {
+    { "plasmashell", {"plasmashell", "plasmashell"} },
+    { "plasma-discover", {"plasmadiscover", "discover" } },
+};
 
 inline void swap(QJsonValueRef v1, QJsonValueRef v2)
 {
@@ -51,7 +44,7 @@ Feedback::Feedback(QObject *parent, const QVariantList &args)
 {
     Q_UNUSED(args)
 
-    qmlRegisterType<FeedbackSettings>();
+    qmlRegisterAnonymousType<FeedbackSettings>("org.kde.userfeedback.kcm", 1);
 
     setAboutData(new KAboutData(QStringLiteral("kcm_feedback"),
                                 i18n("User Feedback"),
@@ -103,7 +96,7 @@ void Feedback::programFinished(int exitCode)
         }
 
         const QString description = line.mid(sepIdx + 1);
-        m_uses[modeValue][description] << s_programs[program];
+        m_uses[modeValue][description] << s_programs[program].icon;
     }
     p->deleteLater();
     m_feedbackSources = {};
@@ -130,6 +123,18 @@ bool Feedback::feedbackEnabled() const
 FeedbackSettings *Feedback::feedbackSettings() const
 {
     return m_data->settings();
+}
+
+QJsonArray Feedback::audits() const
+{
+    QJsonArray ret;
+    for (auto it = s_programs.constBegin(); it != s_programs.constEnd(); ++it) {
+        ret += QJsonObject {
+            { "program", it.key() },
+            { "audits", QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + '/' + it->kuserfeedbackComponent + QStringLiteral("/kuserfeedback/audit")).toString() },
+        };
+    }
+    return ret;
 }
 
 #include "feedback.moc"

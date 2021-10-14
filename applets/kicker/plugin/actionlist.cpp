@@ -1,22 +1,9 @@
-/***************************************************************************
- *   Copyright (C) 2013 by Aurélien Gâteau <agateau@kde.org>               *
- *   Copyright (C) 2014 by Eike Hein <hein@kde.org>                        *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .        *
- ***************************************************************************/
+/*
+    SPDX-FileCopyrightText: 2013 Aurélien Gâteau <agateau@kde.org>
+    SPDX-FileCopyrightText: 2014 Eike Hein <hein@kde.org>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
 
 #include "actionlist.h"
 #include "menuentryeditor.h"
@@ -298,6 +285,7 @@ QVariantList recentDocumentActions(KService::Ptr service)
 
     while (list.count() < 6 && resultIt != results.end()) {
         const QString resource = (*resultIt).resource();
+        const QString mimeType = (*resultIt).mimetype();
         ++resultIt;
 
         const QUrl url(resource);
@@ -316,7 +304,7 @@ QVariantList recentDocumentActions(KService::Ptr service)
             list << createTitleActionItem(i18n("Recent Files"));
         }
 
-        QVariantMap item = createActionItem(url.fileName(), fileItem.iconName(), QStringLiteral("_kicker_recentDocument"), resource);
+        QVariantMap item = createActionItem(url.fileName(), fileItem.iconName(), QStringLiteral("_kicker_recentDocument"), QStringList{resource, mimeType});
 
         list << item;
     }
@@ -356,14 +344,30 @@ bool handleRecentDocumentAction(KService::Ptr service, const QString &actionId, 
         return false;
     }
 
-    QString argument = _argument.toString();
+    const QStringList argument = _argument.toStringList();
+    const auto resource = argument.at(0);
+    const auto mimeType = argument.at(1);
+
+    // prevents using a service file that does not support opening a mime type for a file it created
+    // for instance a screenshot tool
+    if (!mimeType.isEmpty()) {
+        if (!service->hasMimeType(mimeType)) {
+            // needs to find the application that supports this mimetype
+            service = KApplicationTrader::preferredService(mimeType);
+
+            if (!service) {
+                // no service found to handle the mimetype
+                return false;
+            }
+        }
+    }
 
     if (argument.isEmpty()) {
         return false;
     }
 
     auto *job = new KIO::ApplicationLauncherJob(service);
-    job->setUrls({QUrl(argument)});
+    job->setUrls({QUrl::fromUserInput(resource)});
     job->setUiDelegate(new KNotificationJobUiDelegate(KJobUiDelegate::AutoHandlingEnabled));
     return job->exec();
 }
@@ -386,7 +390,7 @@ QVariantList editApplicationAction(const KService::Ptr &service)
 
     if (canEditApplication(service)) {
         // TODO: Using the KMenuEdit icon might be misleading.
-        QVariantMap editAction = Kicker::createActionItem(i18n("Edit Application..."), QStringLiteral("kmenuedit"), QStringLiteral("editApplication"));
+        QVariantMap editAction = Kicker::createActionItem(i18n("Edit Application…"), QStringLiteral("kmenuedit"), QStringLiteral("editApplication"));
         actionList << editAction;
     }
 
@@ -430,7 +434,7 @@ QVariantList appstreamActions(const KService::Ptr &service)
     for (const auto &component : components) {
         const QString componentId = component.id();
 
-        QVariantMap appstreamAction = Kicker::createActionItem(i18nc("@action opens a software center with the application", "Uninstall or Manage Add-Ons..."),
+        QVariantMap appstreamAction = Kicker::createActionItem(i18nc("@action opens a software center with the application", "Uninstall or Manage Add-Ons…"),
                                                                appStreamHandler->icon(),
                                                                "manageApplication",
                                                                QVariant(QLatin1String("appstream://") + componentId));
