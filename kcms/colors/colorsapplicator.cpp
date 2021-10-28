@@ -88,9 +88,12 @@ void applyScheme(const QString &colorSchemePath, KConfig *configOutput, KConfig:
         }
 
         if (item == QStringLiteral("Colors:Selection") && hasAccent()) {
+            QColor accentbg = accentBackground(getAccent(), config->group("Colors:View").readEntry<QColor>("BackgroundNormal", QColor()));
             for (const auto& entry : {QStringLiteral("BackgroundNormal"), QStringLiteral("BackgroundAlternate")}) {
-                targetGroup.writeEntry(entry, accentBackground(getAccent(), config->group("Colors:View").readEntry<QColor>("BackgroundNormal", QColor())));
+                targetGroup.writeEntry(entry, accentbg);
             }
+            targetGroup.writeEntry(QStringLiteral("ForegroundNormal"), accentForeground(accentbg, true));
+            targetGroup.writeEntry(QStringLiteral("ForegroundInactive"), accentForeground(accentbg, false));
         }
 
         if (sourceGroup.hasGroup("Inactive")) {
@@ -114,6 +117,9 @@ void applyScheme(const QString &colorSchemePath, KConfig *configOutput, KConfig:
                                       QStringLiteral("activeBlend"),
                                       QStringLiteral("inactiveBlend")};
 
+    const QStringList accentColorListWM{QStringLiteral("activeBackground"),
+                                 QStringLiteral("activeBlend")};
+
     const QVector<QColor> defaultWMColors{KColorScheme(QPalette::Normal, KColorScheme::Header, config).background().color(),
                                           KColorScheme(QPalette::Normal, KColorScheme::Header, config).foreground().color(),
                                           inactiveHeaderColorScheme.background().color(),
@@ -123,8 +129,14 @@ void applyScheme(const QString &colorSchemePath, KConfig *configOutput, KConfig:
 
     int i = 0;
     for (const QString &coloritem : colorItemListWM) {
-        groupWMOut.writeEntry(coloritem, groupWMTheme.readEntry(coloritem, defaultWMColors.value(i)), writeConfigFlag);
+        if (hasAccent() && accentColorListWM.contains(coloritem) && (config->group("WM").readEntry<QColor>("activeBackground", QColor()) == config->group("Colors:Selection").readEntry<QColor>("BackgroundNormal", QColor()))) {
+            QColor accentbg = accentBackground(getAccent(), config->group("Colors:Window").readEntry<QColor>("BackgroundNormal", QColor()));
+            groupWMOut.writeEntry(coloritem, accentbg);
+            groupWMOut.writeEntry("activeForeground", accentForeground(accentbg, true));
+        } else {
+            groupWMOut.writeEntry(coloritem, groupWMTheme.readEntry(coloritem, defaultWMColors.value(i)), writeConfigFlag);
         ++i;
+        }
     }
 
     const QStringList groupNameList{QStringLiteral("ColorEffects:Inactive"), QStringLiteral("ColorEffects:Disabled")};

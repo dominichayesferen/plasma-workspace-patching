@@ -16,6 +16,7 @@
 #include <KColorScheme>
 #include <KConfigGroup>
 #include <KSharedConfig>
+#include <KColorUtils>
 
 #include <algorithm>
 
@@ -58,6 +59,12 @@ QVariant ColorsModel::data(const QModelIndex &index, int role) const
         return item.pendingDeletion;
     case RemovableRole:
         return item.removable;
+    case ColorTitlebarRole:
+        if (item.palette.color(QPalette::Highlight) == item.activeTitleBarBackground) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     return QVariant();
@@ -104,6 +111,7 @@ QHash<int, QByteArray> ColorsModel::roleNames() const
         {ActiveTitleBarForegroundRole, QByteArrayLiteral("activeTitleBarForeground")},
         {RemovableRole, QByteArrayLiteral("removable")},
         {PendingDeletionRole, QByteArrayLiteral("pendingDeletion")},
+        {ColorTitlebarRole, QByteArrayLiteral("colorTitlebar")},
     };
 }
 

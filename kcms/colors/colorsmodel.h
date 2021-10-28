@@ -22,6 +22,7 @@ struct ColorsModelData {
     QColor activeTitleBarForeground;
     bool removable;
     bool pendingDeletion;
+    bool colorTitlebar;
 };
 Q_DECLARE_TYPEINFO(ColorsModelData, Q_MOVABLE_TYPE);
 
@@ -44,6 +45,9 @@ public:
         ActiveTitleBarForegroundRole,
         RemovableRole,
         PendingDeletionRole,
+        // Code for accent colouring
+        ColorTitlebarRole,
+        AccentForegroundRole,
     };
 
     int rowCount(const QModelIndex &parent) const override;

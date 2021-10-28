@@ -49,12 +49,31 @@ inline QColor accentBackground(const QColor& accent, const QColor& background)
     auto c = accent;
     // light bg
     if (KColorUtils::luma(background) > 0.5) {
-        c.setAlphaF(0.7);
+        c.setAlphaF(1.0);
     } else {
     // dark bg
-        c.setAlphaF(0.4);
+        c.setAlphaF(0.7);
     }
     return alphaBlend(c, background);
+}
+
+inline QColor accentForeground(const QColor& accent, const bool& isActive)
+{
+    auto c = QColor(Qt::white);
+    // light bg
+    if (KColorUtils::luma(accent) > 0.5) {
+        c = QColor(Qt::black);
+    } else {
+    // dark bg
+        c = QColor(Qt::white);
+    }
+
+    if (isActive) {
+        c.setAlphaF(1.0);
+    } else {
+        c.setAlphaF(0.7);
+    }
+    return alphaBlend(c, accent);
 }
 
 /**
