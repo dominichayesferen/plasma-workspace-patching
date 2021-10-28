@@ -32,7 +32,6 @@ ColumnLayout {
                     var uuid = clipboardMenu.model.get(clipboardMenu.view.currentIndex).UuidRole
                     if (uuid) {
                         clipboardSource.service(uuid, "select")
-                        clipboardMenu.view.currentIndex = 0
                         if (plasmoid.hideOnWindowDeactivate) {
                             plasmoid.expanded = false;
                         }
@@ -77,6 +76,8 @@ ColumnLayout {
                 placeholderText: i18n("Search…")
                 clearButtonShown: true
                 Layout.fillWidth: true
+
+                inputMethodHints: Qt.ImhNoPredictiveText
 
                 // Only override delete key behavior to delete list items if
                 // it would do nothing

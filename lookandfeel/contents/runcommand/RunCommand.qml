@@ -86,6 +86,8 @@ ColumnLayout {
             Layout.minimumWidth: PlasmaCore.Units.gridUnit * 25
             Layout.maximumWidth: PlasmaCore.Units.gridUnit * 25
 
+            inputMethodHints: Qt.ImhNoPredictiveText
+
             activeFocusOnPress: true
             placeholderText: results.runnerName ? i18ndc("plasma_lookandfeel_org.kde.lookandfeel",
                                                          "Textfield placeholder text, query specific KRunner",
@@ -251,6 +253,10 @@ ColumnLayout {
                     queryField.cursorPosition = queryField.text.length
                     queryField.focus = true;
                 }
+            }
+
+            Keys.onEscapePressed: {
+                runnerWindow.visible = false
             }
 
             onActivated: {
